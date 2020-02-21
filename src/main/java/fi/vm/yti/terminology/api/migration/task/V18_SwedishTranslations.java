@@ -13,8 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Migration for YTI-797, add descriptions to meta model and fix on typo in
- * prefLabel.
+ * Migration for YTI-46.
  */
 @Component
 public class V18_SwedishTranslations implements MigrationTask {
