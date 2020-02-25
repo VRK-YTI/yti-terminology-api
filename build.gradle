@@ -61,7 +61,7 @@ dependencies {
 
     implementation 'fi.vm.yti:yti-spring-security:0.1.13'
     implementation 'fi.vm.yti:yti-spring-migration:0.1.4'
-
+    implementation 'fi.vm.yti:yti-spring-mq:0.1.4'
     implementation 'org.apache.activemq:activemq-broker'
     implementation 'org.elasticsearch:elasticsearch:6.5.4'
     implementation 'org.elasticsearch.client:elasticsearch-rest-client:6.5.4'
@@ -76,6 +76,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
     implementation 'org.apache.commons:commons-lang3:3.9'
     implementation 'org.jsoup:jsoup:1.12.1'
+    implementation 'com.github.ben-manes.caffeine:caffeine:2.8.1'
 
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'

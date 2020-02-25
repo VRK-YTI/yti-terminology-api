@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
 
 import fi.vm.yti.security.AuthenticatedUserProvider;
+import fi.vm.yti.mq.service.YtiMQService;
 import fi.vm.yti.terminology.api.TermedRequester;
 import fi.vm.yti.terminology.api.frontend.FrontendGroupManagementService;
 import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
@@ -162,9 +163,8 @@ public class NtrfMapper {
             this.termedRequester.exchange("/nodes", POST, params, String.class, deleteAndSave, userId.toString(),
                     USER_PASSWORD);
         } catch (HttpServerErrorException ex) {
-            logger.error(ex.getResponseBodyAsString());
             String error = ex.getResponseBodyAsString();
-            System.err.println("Termed status:" + error);
+            logger.error("Termed status:" + error);
             Pattern pairRegex = Pattern
                     .compile("\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}");
             Matcher matcher = pairRegex.matcher(error);
@@ -292,8 +292,9 @@ public class NtrfMapper {
         }
         GenericDeleteAndSave operation = new GenericDeleteAndSave(deleteNodeList, addNodeList);
 //        GenericDeleteAndSave operation = new GenericDeleteAndSave(emptyList(), addNodeList);
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()){
             logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+        }
         if (!updateAndDeleteInternalNodes(userId, operation, true)) {
             response.addStatusMessage(
                     new ImportStatusMessage("Vocabulary", "Processing records, import failed for " + currentRecord));
@@ -350,7 +351,7 @@ public class NtrfMapper {
         statusList.forEach(v -> {
             StatusMessage m = (StatusMessage) v;
             response.addStatusMessage(new ImportStatusMessage(m.getLevel(), m.getRecord(), m.getMessage().toString()));
-            logger.info("Item : " + m.getRecord() + " value : " + m.getMessage().toString());
+            logger.warn("Item : " + m.getRecord() + " value : " + m.getMessage().toString());
         });
 
         response.setProcessingTotal(records.size());
@@ -871,7 +872,8 @@ public class NtrfMapper {
         TypeId typeId = null;
         typeId = typeMap.get("Concept").getDomain();
         GenericNode node = null;
-        node = new GenericNode(currentId, code, vocabulary.getUri() + code, 0L, createdBy, new Date(), "", new Date(),
+        String uri = vocabulary.getUri().endsWith("/")? vocabulary.getUri()+code:vocabulary.getUri()+"/"+code ;
+        node = new GenericNode(currentId, code, uri, 0L, createdBy, new Date(), "", new Date(),
                 typeId, properties, references, emptyMap());
         // Send item to termed-api
         // First add terms
@@ -1076,7 +1078,9 @@ public class NtrfMapper {
                 handleGRAM((GRAM) li, properties);
                 String prefLabel = ((GRAM) li).getContent();
                 // Add actual pref-label for term
-                logger.info("Handle Term with GRAM:" + prefLabel);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Handle Term with GRAM:" + prefLabel);
+                }
                 termName = termName.concat(prefLabel+" ");
             } else {
                 logger.error(" TERM: unhandled contentclass=" + li.getClass().getName() + " value=" + li.toString());
@@ -1209,7 +1213,7 @@ public class NtrfMapper {
                 // <SCOPE>yliopistolain <LINK
                 // href="https://www.finlex.fi/fi/laki/kaannokset/2009/en20090558_20160644.pdf">558/2009
                 // käännöksessä</LINK></SCOPE>
-                logger.info("Unimplemented SCOPE WITH LINK");
+                logger.warn("Unimplemented SCOPE WITH LINK");
                 // @TODO! Make impl
             }
         });
@@ -1339,8 +1343,10 @@ public class NtrfMapper {
         if (brefId.startsWith("#"))
             brefId = o.getHref().substring(1);
 
-        logger.info("handleBCON add item from source record:" + currentRecord + "--> target:" + brefId + " Type"
+        if(logger.isDebugEnabled()){
+            logger.debug("handleBCON add item from source record:" + currentRecord + "--> target:" + brefId + " Type"
                 + o.getTypr());
+        }
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1376,7 +1382,9 @@ public class NtrfMapper {
         if (brefId.startsWith("#"))
             brefId = o.getHref().substring(1);
 
-        logger.info("handleRCON add item from source record:" + currentRecord + "--> target:" + brefId);
+        if(logger.isDebugEnabled()){
+            logger.debug("handleRCON add item from source record:" + currentRecord + "--> target:" + brefId);
+        }
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1413,7 +1421,9 @@ public class NtrfMapper {
         if (rrefId.startsWith("#"))
             rrefId = rc.getHref().substring(1);
 
-        System.out.println("handleRCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        if(logger.isDebugEnabled()){
+            logger.debug("handleRCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        }
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1451,7 +1461,9 @@ public class NtrfMapper {
         if (rrefId.startsWith("#"))
             rrefId = bc.getHref().substring(1);
 
-        logger.info("handleBCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        if(logger.isDebugEnabled()){
+            logger.debug("handleBCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        }
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1489,7 +1501,9 @@ public class NtrfMapper {
         if (rrefId.startsWith("#"))
             rrefId = nc.getHref().substring(1);
 
-        logger.info("handleNCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        if(logger.isDebugEnabled()){
+            logger.debug("handleNCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        }
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1525,7 +1539,9 @@ public class NtrfMapper {
             if (nrefId.startsWith("#")) {
                 nrefId = o.getHref().substring(1);
             }
-            logger.info("handleNCON add item from source record:" + currentRecord + "--> target:" + nrefId);
+            if(logger.isDebugEnabled()){
+                logger.debug("handleNCON add item from source record:" + currentRecord + "--> target:" + nrefId);
+            }
             ConnRef conRef = new ConnRef();
             // Use delayed resolving, so save record id for logging purposes
             conRef.setCode(currentRecord);
@@ -1569,8 +1585,9 @@ public class NtrfMapper {
     private Attribute handleDEF(UUID currentConcept, DEF def, String lang,
             Map<String, List<Attribute>> parentProperties, Map<String, List<Identifier>> parentReferences,
             Map<String, List<Attribute>> termProperties, Graph vocabulary) {
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()){
             logger.debug("handleDEF-part:" + def.getContent());
+        }
 
         String defString = "";
 
@@ -1866,7 +1883,9 @@ public class NtrfMapper {
                     }
                     noteString = noteString.trim().concat("<a href='" + linkRef + "' data-type='external'>"
                             + lc.getContent().get(0).toString().trim() + "</a>");
-                    logger.info("Add LINK:" + linkRef);
+                    if(logger.isDebugEnabled()){
+                        logger.debug("Add LINK:" + linkRef);
+                    }
                 }
             } else if (de instanceof JAXBElement) {
                 JAXBElement j = (JAXBElement) de;

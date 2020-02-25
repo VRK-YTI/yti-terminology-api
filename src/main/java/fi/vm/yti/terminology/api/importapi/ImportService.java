@@ -1,6 +1,7 @@
 package fi.vm.yti.terminology.api.importapi;
 
 import fi.vm.yti.security.AuthenticatedUserProvider;
+import fi.vm.yti.mq.service.YtiMQService;
 import fi.vm.yti.terminology.api.TermedRequester;
 import fi.vm.yti.terminology.api.frontend.FrontendGroupManagementService;
 import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
@@ -207,7 +208,7 @@ public class ImportService {
             accessor.setHeader("format","NTRF");
             int stat = ytiMQService.handleImportAsync(operationId, accessor, subSystem, vocabulary.getUri(), sw.toString());
             if(stat != HttpStatus.OK.value()){
-                System.out.println("Import failed code:"+stat);
+                logger.error("Import failed code:"+stat);
             }
         } catch (IOException ioe){
             System.out.println("Incoming transform error=" + ioe);
