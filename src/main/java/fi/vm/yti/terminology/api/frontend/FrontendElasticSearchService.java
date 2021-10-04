@@ -95,6 +95,10 @@ public class FrontendElasticSearchService {
         boolean superUser = superUser();
         Set<String> privilegedOrganizations = superUser ? Collections.emptySet() : readOrganizations();
 
+        if (request.getQuery().equals("foo")) {
+            throw new RuntimeException(new Exception("Error test"));
+        }
+
         Map<String, List<DeepSearchHitListDTO<?>>> deepSearchHits = null;
         if (request.isSearchConcepts() && !request.getQuery().isEmpty()) {
             try {
