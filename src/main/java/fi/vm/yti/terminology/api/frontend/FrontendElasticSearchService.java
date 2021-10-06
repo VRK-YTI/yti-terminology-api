@@ -97,7 +97,7 @@ public class FrontendElasticSearchService {
 
         if (request.getQuery().equals("foo")) {
             logger.info("Throw dummy exception");
-            // throw new RuntimeException(new Exception("Error test"));
+            throw new RuntimeException(new Exception("Error test"));
         }
 
         Map<String, List<DeepSearchHitListDTO<?>>> deepSearchHits = null;
