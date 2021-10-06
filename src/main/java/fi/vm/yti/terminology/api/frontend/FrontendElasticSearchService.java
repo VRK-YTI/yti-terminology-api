@@ -96,6 +96,7 @@ public class FrontendElasticSearchService {
         Set<String> privilegedOrganizations = superUser ? Collections.emptySet() : readOrganizations();
 
         if (request.getQuery().equals("foo")) {
+            logger.info("Throw dummy exception");
             throw new RuntimeException(new Exception("Error test"));
         }
 
