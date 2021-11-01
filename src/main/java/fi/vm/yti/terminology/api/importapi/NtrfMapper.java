@@ -22,8 +22,10 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import java.util.stream.Collectors;
-import javax.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBElement;
 
+import com.google.common.escape.Escaper;
+import com.google.common.escape.Escapers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1147,6 +1149,7 @@ public class NtrfMapper {
         for (Object o : content) {
             if (o instanceof String) {
                 editorialNote = editorialNote + ((String) o).toString();
+                editorialNote = escapeStringContent(editorialNote);
             } else if (o instanceof JAXBElement) {
                 JAXBElement elem = (JAXBElement) o;
                 editorialNote = editorialNote + elem.getValue().toString();
@@ -1578,6 +1581,7 @@ public class NtrfMapper {
         for (Object de : defItems) {
             if (de instanceof String) {
                 String str = (String) de;
+                str = escapeStringContent(str);
                 // trim and add space
                 if (defString.isEmpty()) {
                     defString = defString.concat(str.trim() + " ");
@@ -1689,7 +1693,7 @@ public class NtrfMapper {
                             linkRef = linkRef.substring(5);
                         }
                         defString = defString.concat("<a href='" + linkRef + "' data-type='external'>"
-                                + lc.getContent().get(0).toString().trim() + "</a> ");
+                                + escapeStringContent(lc.getContent().get(0).toString().trim()) + "</a> ");
                     }
                 } else if (de instanceof JAXBElement) {
                     // HOGR
@@ -1736,7 +1740,7 @@ public class NtrfMapper {
         }
         // Remove newlines just in case
         hrefText = hrefText.replaceAll("\n", "");
-        return hrefText;
+        return escapeStringContent(hrefText);
     }
 
     private String parseLinkRef(LINK li, Graph vocabulary) {
@@ -1781,13 +1785,14 @@ public class NtrfMapper {
                 if (logger.isDebugEnabled())
                     logger.debug("  Parsing note-string:" + de.toString());
                 String str = (String) de;
+                str = escapeStringContent(str);
+
                 // trim and add space
                 if (noteString.isEmpty()){
                     noteString = str;
                 } else {
                     noteString = noteString.concat(str);
                 }
-//                noteString = StringEscapeUtils.unescapeXml(noteString);
                 // Remove newline from string
                 noteString = noteString.replace("\n", "");
             } else if (de instanceof SOURF) {
@@ -1864,8 +1869,10 @@ public class NtrfMapper {
                     if (linkRef.startsWith("href:")) {
                         linkRef = linkRef.substring(5);
                     }
-                    noteString = noteString.trim().concat("<a href='" + linkRef + "' data-type='external'>"
-                            + lc.getContent().get(0).toString().trim() + "</a>");
+
+                    noteString = noteString.concat("<a href='" + linkRef + "' data-type='external'>"
+                            + escapeStringContent(lc.getContent().get(0).toString().trim()) + "</a>");
+
                     logger.info("Add LINK:" + linkRef);
                 }
             } else if (de instanceof JAXBElement) {
@@ -2022,6 +2029,7 @@ public class NtrfMapper {
         for (Object se : sourceItems) {
             if (se instanceof String) {
                 sourceString = sourceString.concat(se.toString());
+                sourceString = escapeStringContent(sourceString);
             } else if (se instanceof NCON) {
                 NCON rc = (NCON) se;
                 sourceString = sourceString.concat("<a href='" + vocabularity.getUri());
@@ -2156,6 +2164,17 @@ public class NtrfMapper {
         return UUID_PATTERN.matcher(s).matches();
     }
 
+    private static String escapeStringContent(String s) {
+        Escaper escaper = Escapers.builder()
+                .addEscape('&', "&amp;")
+                .addEscape('\"', "&quot;")
+                .addEscape('\'', "&apos;")
+                .addEscape('<', "&lt;")
+                .addEscape('>', "&gt;")
+                .build();
+
+        return escaper.escape(s);
+    }
     /**
      * Can be used in with BCON, NCON and RCON references
      */

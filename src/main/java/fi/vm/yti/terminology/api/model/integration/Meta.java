@@ -3,7 +3,7 @@ package fi.vm.yti.terminology.api.model.integration;
 import java.text.ParseException;
 import java.util.Date;
 
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
