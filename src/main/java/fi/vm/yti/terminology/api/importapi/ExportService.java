@@ -3,14 +3,25 @@ package fi.vm.yti.terminology.api.importapi;
 import static java.util.Objects.requireNonNull;
 import static org.springframework.http.HttpMethod.GET;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import fi.vm.yti.terminology.api.importapi.excel.ExcelCreator;
+import fi.vm.yti.terminology.api.importapi.excel.JSONWrapper;
+import jakarta.ws.rs.InternalServerErrorException;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -137,6 +148,19 @@ public class ExportService {
         return requireNonNull(rv);
     }
 
+    /**
+     * Get export data in JSON format and create Excel from it.
+     */
+    @NotNull
+    Workbook getFullVocabularyXLSX(UUID id) {
+        JsonNode json = this.getFullVocabulary(id);
+        List<JSONWrapper> wrappers = new ArrayList<>();
+        json.forEach(node -> wrappers.add(new JSONWrapper(node)));
+
+        ExcelCreator creator = new ExcelCreator(wrappers);
+        return creator.createExcel();
+    }
+
     ResponseEntity<String> getJSON(UUID vocabularyId) {
         return handleJSON(getFullVocabulary(vocabularyId));
     }
@@ -165,6 +189,13 @@ public class ExportService {
         return buildOkResponse(response, TermedContentType.RDF_TURTLE);
     }
 
+    ResponseEntity<InputStreamResource> getXLSX(UUID vocabularyId) {
+        Workbook workbook = getFullVocabularyXLSX(vocabularyId);
+
+        // todo: use better filename
+        return buildExcelResponse(workbook, "test");
+    }
+
     private ResponseEntity<String> handleJSON(JsonNode response) {
         if (response == null || response.isNull()) {
             return buildResponse("null", TermedContentType.JSON, HttpStatus.NOT_FOUND);
@@ -185,5 +216,23 @@ public class ExportService {
             .status(status)
             .contentType(MediaType.valueOf(contentType.getContentType()))
             .body(body);
+    }
+
+    private ResponseEntity<InputStreamResource> buildExcelResponse(final Workbook workbook, final String filename) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        try {
+            workbook.write(out);
+        } catch (final Exception e) {
+            logger.error("Excel output generation issue.", e);
+            throw new InternalServerErrorException("Excel output generation failed!");
+        }
+
+        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename = " + filename + ".xlsx")
+                .body(new InputStreamResource(in));
     }
 }
