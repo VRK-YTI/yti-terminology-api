@@ -5,6 +5,8 @@ import static org.springframework.http.HttpMethod.GET;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -152,13 +154,12 @@ public class ExportService {
      * Get export data in JSON format and create Excel from it.
      */
     @NotNull
-    Workbook getFullVocabularyXLSX(UUID id) {
+    ExcelCreator getFullVocabularyXLSX(UUID id) {
         JsonNode json = this.getFullVocabulary(id);
         List<JSONWrapper> wrappers = new ArrayList<>();
         json.forEach(node -> wrappers.add(new JSONWrapper(node)));
 
-        ExcelCreator creator = new ExcelCreator(wrappers);
-        return creator.createExcel();
+        return new ExcelCreator(wrappers);
     }
 
     ResponseEntity<String> getJSON(UUID vocabularyId) {
@@ -189,11 +190,19 @@ public class ExportService {
         return buildOkResponse(response, TermedContentType.RDF_TURTLE);
     }
 
+    /**
+     * Create excel and send it as a response.
+     */
     ResponseEntity<InputStreamResource> getXLSX(UUID vocabularyId) {
-        Workbook workbook = getFullVocabularyXLSX(vocabularyId);
+        ExcelCreator creator = getFullVocabularyXLSX(vocabularyId);
+        Workbook workbook = creator.createExcel();
+        String filename = String.format(
+                "%s_export_%s",
+                creator.getFilename(),
+                DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
+        );
 
-        // todo: use better filename
-        return buildExcelResponse(workbook, "test");
+        return buildExcelResponse(workbook, filename);
     }
 
     private ResponseEntity<String> handleJSON(JsonNode response) {

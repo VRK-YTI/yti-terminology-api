@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * DTO that stores information in format that can be rendered as Excel sheet.
- *
+ * <p>
  * Features:
  * - First row is a header row with column names.
  * - Localized columns render as multiple columns with language name as a suffix in column header.
@@ -71,9 +71,16 @@ public class SheetDTO {
     }
 
     /**
+     * Add a lit of values to the given non-localized column of the current row.
+     */
+    public void addDataToCurrentRow(@NotNull String columnName, @NotNull List<String> values) {
+        this.addDataToCurrentRow(columnName, "", values);
+    }
+
+    /**
      * Add a list of values to the given localized column of the current row. This should be called in the same order as
      * columns should be rendered in Excel as this also stores the order of columns.
-     *
+     * <p>
      * This works with non-localized columns too, as empty string is used as a locale for non-localized columns.
      */
     public void addDataToCurrentRow(@NotNull String columnName, @NotNull String lang, @NotNull List<String> values) {
@@ -84,8 +91,8 @@ public class SheetDTO {
     /**
      * Add column name to ordered column name list if not present.
      */
-    private void addColumn(@NotNull String columnName) {
-        if (! this.columns.contains(columnName)) {
+    public void addColumn(@NotNull String columnName) {
+        if (!this.columns.contains(columnName)) {
             this.columns.add(columnName);
         }
     }
@@ -95,7 +102,7 @@ public class SheetDTO {
      */
     private @NotNull List<String> getCell(@NotNull String columnName, @NotNull String lang) {
         Map<Integer, List<String>> localizedColumn = this.getLocalizedColumn(columnName, lang);
-        if (! localizedColumn.containsKey(this.currentRowIndex)) {
+        if (!localizedColumn.containsKey(this.currentRowIndex)) {
             localizedColumn.put(this.currentRowIndex, new ArrayList<>());
         }
 
@@ -107,7 +114,7 @@ public class SheetDTO {
      */
     private @NotNull Map<Integer, List<String>> getLocalizedColumn(@NotNull String columnName, @NotNull String lang) {
         Map<String, Map<Integer, List<String>>> column = this.getColumn(columnName);
-        if (! column.containsKey(lang)) {
+        if (!column.containsKey(lang)) {
             column.put(lang, new HashMap<>());
         }
 
@@ -118,7 +125,7 @@ public class SheetDTO {
      * Get/create the pointer of column from the internal data.
      */
     private @NotNull Map<String, Map<Integer, List<String>>> getColumn(@NotNull String name) {
-        if (! this.data.containsKey(name)) {
+        if (!this.data.containsKey(name)) {
             this.data.put(name, new HashMap<>());
         }
 
@@ -129,7 +136,17 @@ public class SheetDTO {
      * Render internal data to the given Excel sheet.
      */
     public void fillSheet(@NotNull Sheet sheet) {
-        this.columns.forEach(column -> this.data.get(column).forEach((language, cells) -> this.fillColumn(sheet, cells, this.makeColumnName(column, language), this.multiColumnModeDisabled.contains(column))));
+        this.columns.forEach(column -> {
+            Map<String, Map<Integer, List<String>>> col = Objects.requireNonNullElse(this.data.get(column), new HashMap<>());
+            col.forEach((language, cells) -> {
+                this.fillColumn(
+                        sheet,
+                        cells,
+                        this.makeColumnName(column, language),
+                        this.multiColumnModeDisabled.contains(column)
+                );
+            });
+        });
     }
 
     /**
@@ -142,20 +159,35 @@ public class SheetDTO {
     /**
      * Render single localized column in Excel sheet. In the multi-column mode this can use multiple actual columns in
      * the Excel sheet.
-     *
+     * <p>
      * Column header (with optional language suffix) is rendered in the first row. In multi-column mode the header cell
      * spans over multiple actual Excel columns if the content needs multiple columns.
      */
-    private void fillColumn(@NotNull Sheet sheet, @NotNull Map<Integer, List<String>> cells, @NotNull String columnName, boolean disableMultiColumnMode) {
+    private void fillColumn(
+            @NotNull Sheet sheet,
+            @NotNull Map<Integer, List<String>> cells,
+            @NotNull String columnName,
+            boolean disableMultiColumnMode
+    ) {
+        this.fillCells(sheet, cells, disableMultiColumnMode);
+        this.fillColumnHeader(sheet, cells, columnName, disableMultiColumnMode);
+    }
+
+    /**
+     * Render header of the column.
+     */
+    private void fillColumnHeader(
+            @NotNull Sheet sheet,
+            @NotNull Map<Integer, List<String>> cells,
+            @NotNull String columnName,
+            boolean disableMultiColumnMode
+    ) {
         // 1. Write column header
         this.fillCell(sheet, 0, this.currentColumnIndex, columnName);
 
-        // 2. Write cells
-        cells.forEach((i, values) -> this.fillCell(sheet, i + 1, this.currentColumnIndex, values, disableMultiColumnMode));
-
-        // 3. Merge header on multi column mode
+        // 2. Merge header cells if needed.
         int usedColumnCount = 1;
-        if (! disableMultiColumnMode) {
+        if (!disableMultiColumnMode) {
             usedColumnCount = Math.max(1, cells.values().stream().mapToInt(List::size).max().orElse(0));
             if (usedColumnCount > 1) {
                 sheet.addMergedRegion(new CellRangeAddress(
@@ -167,8 +199,21 @@ public class SheetDTO {
             }
         }
 
-        // 4. Update currentColumnIndex
+        // 3. Update index based on how many columns were used.
         this.currentColumnIndex += usedColumnCount;
+    }
+
+    /**
+     * Render values of the column.
+     */
+    private void fillCells(
+            @NotNull Sheet sheet,
+            @NotNull Map<Integer, List<String>> cells,
+            boolean disableMultiColumnMode
+    ) {
+        cells.forEach((i, values) -> {
+            this.fillCell(sheet, i + 1, this.currentColumnIndex, values, disableMultiColumnMode);
+        });
     }
 
     /**
@@ -176,7 +221,13 @@ public class SheetDTO {
      * enabled, it will use multiple actual Excel cells. Otherwise, values are joined with semicolon (;) and rendered in
      * a single Excel cell.
      */
-    private void fillCell(@NotNull Sheet sheet, int rowIndex, int columnIndex, List<String> values, boolean disableMultiColumnMode) {
+    private void fillCell(
+            @NotNull Sheet sheet,
+            int rowIndex,
+            int columnIndex,
+            List<String> values,
+            boolean disableMultiColumnMode
+    ) {
         if (disableMultiColumnMode) {
             this.fillCell(sheet, rowIndex, columnIndex, String.join(";", values));
         } else {

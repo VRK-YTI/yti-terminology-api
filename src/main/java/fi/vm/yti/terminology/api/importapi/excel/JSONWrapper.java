@@ -24,6 +24,10 @@ public class JSONWrapper {
         return this.json.get("uri").textValue();
     }
 
+    public String getCode() {
+        return this.json.get("code").textValue();
+    }
+
     public String getCreatedBy() {
         return this.json.get("createdBy").textValue();
     }
@@ -61,6 +65,20 @@ public class JSONWrapper {
         }
 
         return result;
+    }
+
+    /**
+     * Extract given property from JSON and take first value of it. If the property is localized, try to use version in
+     * the given language first.
+     */
+    public String getFirstPropertyValue(@NotNull String name, @NotNull String preferredLanguage) {
+        Map<String, List<String>> property = this.getProperty(name);
+
+        if (property.containsKey(preferredLanguage)) {
+            return property.get(preferredLanguage).get(0);
+        } else {
+            return property.values().stream().flatMap(Collection::stream).findFirst().orElse(null);
+        }
     }
 
     /**
