@@ -7,9 +7,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -17,7 +16,6 @@ import fi.vm.yti.terminology.api.importapi.excel.ExcelCreator;
 import fi.vm.yti.terminology.api.importapi.excel.JSONWrapper;
 import jakarta.ws.rs.InternalServerErrorException;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,26 +45,27 @@ public class ExportService {
         this.termedRequester = termedRequester;
     }
 
-    private Parameters constructFullVocabularyIdQuery(UUID id) {
-        Parameters params = new Parameters();
-        params.add("select", "*, references.prefLabelXl:1");
-        // Get all nodes from given graph
-        // params.add("where", "graph.id:" + id + " AND (type.id:" + Vocabulary + " OR
-        // type.id:"
-        // + TerminologicalVocabulary + ")");
-        params.add("max", "-1");
-        return params;
+    private Parameters constructFullVocabularyQuery() {
+        return this.constructVocabularyTypeQuery("*, references.prefLabelXl:1", null);
     }
 
     private Parameters constructVocabularyTypeQuery(String nodeType) {
+        return this.constructVocabularyTypeQuery("*,references.prefLabelXl:1", nodeType);
+    }
+
+    private Parameters constructVocabularyTypeQuery(@NotNull String select, String nodeType) {
         Parameters params = new Parameters();
-        params.add("select", "*,references.prefLabelXl:1");
-        // Get all nodes from given graph
-        if (nodeType.contains(",")) {
-            params.add("where", "(type.id:"+ nodeType.replaceAll(",", " OR type.id:")+")");
-        } else {
-            params.add("where", "type.id:" + nodeType);
+        params.add("select", select);
+
+        if (nodeType != null) {
+            // Get all nodes from given graph
+            if (nodeType.contains(",")) {
+                params.add("where", "(type.id:"+ nodeType.replaceAll(",", " OR type.id:")+")");
+            } else {
+                params.add("where", "type.id:" + nodeType);
+            }
         }
+
         params.add("max", "-1");
         return params;
     }
@@ -79,7 +78,7 @@ public class ExportService {
          * Concept%20OR%20type.id:Collection&max=-1
          * 
          */
-        Parameters params = constructFullVocabularyIdQuery(id);
+        Parameters params = constructFullVocabularyQuery();
         String path = "/graphs/" + id.toString() + "/node-trees";
         // Execute full search
         JsonNode rv = requireNonNull(termedRequester.exchange(path, GET, params, JsonNode.class));
@@ -102,9 +101,21 @@ public class ExportService {
         return requireNonNull(rv);
     }
 
+    /**
+     * Get concepts of given vocabulary id but select only id, type and uri.
+     */
+    @NotNull
+    JsonNode getConceptURIFromVocabulary(UUID id) {
+        Parameters params = constructVocabularyTypeQuery("id,type,uri", "Concept");
+        String path = "/graphs/" + id.toString() + "/node-trees";
+        // Execute full search
+        JsonNode rv = requireNonNull(termedRequester.exchange(path, GET, params, JsonNode.class));
+        return requireNonNull(rv);
+    }
+
     @NotNull
     String getFullVocabularyRDF(UUID id) {
-        Parameters params = this.constructFullVocabularyIdQuery(id);
+        Parameters params = this.constructFullVocabularyQuery();
         // Get XML-document back
         params.add("Content-Type", TermedContentType.RDF_XML.getContentType());
         String path = "/graphs/" + id.toString() + "/node-trees";
@@ -128,7 +139,7 @@ public class ExportService {
 
     @NotNull
     String getFullVocabularyTXT(UUID id) {
-        Parameters params = this.constructFullVocabularyIdQuery(id);
+        Parameters params = this.constructFullVocabularyQuery();
         // Get XML-document back
         params.add("Content-Type", TermedContentType.RDF_TURTLE.getContentType());
         String path = "/graphs/" + id.toString() + "/node-trees";
@@ -157,9 +168,54 @@ public class ExportService {
     ExcelCreator getFullVocabularyXLSX(UUID id) {
         JsonNode json = this.getFullVocabulary(id);
         List<JSONWrapper> wrappers = new ArrayList<>();
-        json.forEach(node -> wrappers.add(new JSONWrapper(node)));
+        json.forEach(node -> wrappers.add(new JSONWrapper(node, wrappers)));
+
+        this.fetchConceptsFromOtherGraphs(wrappers);
 
         return new ExcelCreator(wrappers);
+    }
+
+    /**
+     * Loop over concept links and fetch their reference concepts from other vocabularies. The URI of that concept is
+     * then stored as a memo to the original concept link.
+     */
+    private void fetchConceptsFromOtherGraphs(@NotNull List<JSONWrapper> wrappers) {
+        List<JSONWrapper> conceptLinks = this.wrappersOfType(wrappers, "ConceptLink");
+        Map<String, String> uris = getExternalURIs(conceptLinks);
+        conceptLinks.forEach(link -> link.setMemo(uris.get(String.format(
+                "%s/%s",
+                link.getFirstPropertyValue("targetGraph", ""),
+                link.getFirstPropertyValue("targetId", "")
+        ))));
+    }
+
+    /**
+     * Filter JSONWrappers by type.
+     */
+    private @NotNull List<JSONWrapper> wrappersOfType(@NotNull List<JSONWrapper> wrappers, @NotNull String type) {
+        return wrappers.stream().filter(wrapper -> wrapper.getType().equals(type)).collect(Collectors.toList());
+    }
+
+    /**
+     * Fetch external vocabularies linked in given concept links and map their content to "${graphId}/${id}": "${uri}"
+     * pairs.
+     */
+    @NotNull
+    private Map<String, String> getExternalURIs(List<JSONWrapper> conceptLinks) {
+        Map<String, String> result = new HashMap<>();
+
+        conceptLinks.stream()
+                .map(link -> link.getFirstPropertyValue("targetGraph", ""))
+                .collect(Collectors.toSet())
+                .forEach(graphId -> {
+                    JsonNode json = this.getConceptURIFromVocabulary(UUID.fromString(graphId));
+                    json.forEach(node -> {
+                        JSONWrapper wrapper = new JSONWrapper(node, List.of());
+                        result.put(graphId + "/" + wrapper.getID(), wrapper.getURI());
+                    });
+                });
+
+        return result;
     }
 
     ResponseEntity<String> getJSON(UUID vocabularyId) {

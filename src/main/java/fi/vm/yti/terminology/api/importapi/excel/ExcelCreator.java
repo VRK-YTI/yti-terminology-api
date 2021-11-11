@@ -6,6 +6,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,18 +56,17 @@ public class ExcelCreator {
         for (JSONWrapper terminology : this.wrappersOfType(TERMINOLOGICAL_VOCABULARY)) {
             this.updateFilename(terminology);
 
-            dto.disableMultiColumnMode("Language");
+            dto.disableMultiColumnMode("LANGUAGE");
 
-            dto.addDataToCurrentRow("Code", terminology.getCode());
-            this.addProperty("Name", "prefLabel", terminology, dto);
-            this.addProperty("Language", "language", terminology, dto);
-            this.addProperty("Priority name", "priority", terminology, dto);
-            this.addPropertyOfReference("Information domain", "inGroup", "prefLabel", terminology, dto);
-            dto.addDataToCurrentRow("Vocabulary type", terminology.getType());
-            this.addProperty("Description", "description", terminology, dto);
-            this.addProperty("Terminology status", "status", terminology, dto);
-            this.addPropertyOfReference("Contributor", "contributor", "prefLabel", terminology, dto);
-            this.addProperty("Contact", "contact", terminology, dto);
+            dto.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("NAME", "prefLabel", terminology, dto);
+            this.addProperty("LANGUAGE", "language", terminology, dto);
+            this.addPropertyOfReference("INFORMATIONDOMAIN", "inGroup", "prefLabel", terminology, dto);
+            dto.addDataToCurrentRow("VOCABULARYTYPE", terminology.getTypeAsText());
+            this.addProperty("DESCRIPTION", "description", terminology, dto);
+            this.addProperty("STATUS", "status", terminology, dto);
+            this.addPropertyOfReference("CONTRIBUTOR", "contributor", "prefLabel", terminology, dto);
+            this.addProperty("CONTACT", "contact", terminology, dto);
             this.addCommonProperties(dto, terminology);
 
             dto.nextRow();
@@ -84,11 +84,11 @@ public class ExcelCreator {
     private void createCollectionsSheet(@NotNull Workbook workbook) {
         SheetDTO dto = new SheetDTO();
         for (JSONWrapper terminology : this.wrappersOfType(COLLECTION)) {
-            dto.addDataToCurrentRow("Code", terminology.getCode());
-            this.addProperty("Name", "prefLabel", terminology, dto);
-            this.addProperty("Definition", "definition", terminology, dto);
-            this.addCodeOfReference("Collection broader", "broader", terminology, dto);
-            this.addCodeOfReference("Member", "member", terminology, dto);
+            dto.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("NAME", "prefLabel", terminology, dto);
+            this.addProperty("DEFINITION", "definition", terminology, dto);
+            this.addCodeOfReference("COLLECTIONBROADER", "broader", terminology, dto);
+            this.addCodeOfReference("MEMBER", "member", terminology, dto);
             this.addCommonProperties(dto, terminology);
 
             dto.nextRow();
@@ -106,32 +106,32 @@ public class ExcelCreator {
     private void createConceptsSheet(@NotNull Workbook workbook) {
         SheetDTO dto = new SheetDTO();
         for (JSONWrapper terminology : this.wrappersOfType(CONCEPT)) {
-            dto.addDataToCurrentRow("Code", terminology.getCode());
-            this.addCodeOfReference("Preferred term", "prefLabelXl", terminology, dto);
-            this.addCodeOfReference("Synonym", "altLabelXl", terminology, dto);
-            this.addCodeOfReference("Non-recommended synonym", "notRecommendedSynonym", terminology, dto);
-            this.addCodeOfReference("Hidden term", "hiddenTerm", terminology, dto);
-            this.addProperty("Definition", "definition", terminology, dto);
-            this.addProperty("Note", "note", terminology, dto);
-            this.addProperty("Editorial note", "editorialNote", terminology, dto);
-            this.addProperty("Example", "example", terminology, dto);
-            this.addProperty("Concept scope", "conceptScope", terminology, dto);
-            this.addProperty("Concept class", "conceptClass", terminology, dto);
-            this.addProperty("Word class", "wordClass", terminology, dto);
-            this.addProperty("Change note", "changeNote", terminology, dto);
-            this.addProperty("History note", "historyNote", terminology, dto);
-            this.addProperty("Concept status", "status", terminology, dto);
-            this.addProperty("Notation", "notation", terminology, dto);
-            this.addProperty("Source", "source", terminology, dto);
-            this.addCodeOfReference("Broader concept", "broader", terminology, dto);
-            this.addCodeOfReference("Narrower concept", "narrower", terminology, dto);
-            this.addConceptLink("Close match in other vocabulary", "closeMatch", terminology, dto);
-            this.addCodeOfReference("Related concept", "related", terminology, dto);
-            this.addCodeOfReference("Is part of concept", "isPartOf", terminology, dto);
-            this.addCodeOfReference("Has part concept", "hasPart", terminology, dto);
-            this.addConceptLink("Related concept in other vocabulary", "relatedMatch", terminology, dto);
-            this.addConceptLink("Matching concept in other vocabulary", "exactMatch", terminology, dto);
-            this.addCodeOfReference("Search term", "searchTerm", terminology, dto);
+            dto.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addCodeOfReference("PREFERREDTERM", "prefLabelXl", terminology, dto);
+            this.addCodeOfReference("SYNONYM", "altLabelXl", terminology, dto);
+            this.addCodeOfReference("NONRECOMMENDEDSYNONYM", "notRecommendedSynonym", terminology, dto);
+            this.addCodeOfReference("HIDDENTERM", "hiddenTerm", terminology, dto);
+            this.addProperty("DEFINITION", "definition", terminology, dto);
+            this.addProperty("NOTE", "note", terminology, dto);
+            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, dto);
+            this.addProperty("EXAMPLE", "example", terminology, dto);
+            this.addProperty("CONCEPTSCOPE", "conceptScope", terminology, dto);
+            this.addProperty("CONCEPTCLASS", "conceptClass", terminology, dto);
+            this.addProperty("WORDCLASS", "wordClass", terminology, dto);
+            this.addProperty("CHANGENOTE", "changeNote", terminology, dto);
+            this.addProperty("HISTORYNOTE", "historyNote", terminology, dto);
+            this.addProperty("STATUS", "status", terminology, dto);
+            this.addProperty("NOTATION", "notation", terminology, dto);
+            this.addProperty("SOURCE", "source", terminology, dto);
+            this.addCodeOfReference("BROADERCONCEPT", "broader", terminology, dto);
+            this.addCodeOfReference("NARROWERCONCEPT", "narrower", terminology, dto);
+            this.addConceptLink("CLOSEMATCHINOTHERVOCABULARY", "closeMatch", terminology, dto);
+            this.addCodeOfReference("RELATEDCONCEPT", "related", terminology, dto);
+            this.addCodeOfReference("ISPARTOFCONCEPT", "isPartOf", terminology, dto);
+            this.addCodeOfReference("HASPARTCONCEPT", "hasPart", terminology, dto);
+            this.addConceptLink("RELATEDCONCEPTINOTHERVOCABULARY", "relatedMatch", terminology, dto);
+            this.addConceptLink("MATCHINGCONCEPTINOTHERVOCABULARY", "exactMatch", terminology, dto);
+            this.addCodeOfReference("SEARCHTERM", "searchTerm", terminology, dto);
             this.addCommonProperties(dto, terminology);
 
             dto.nextRow();
@@ -149,22 +149,22 @@ public class ExcelCreator {
     private void createTermsSheet(@NotNull Workbook workbook) {
         SheetDTO dto = new SheetDTO();
         for (JSONWrapper terminology : this.wrappersOfType(TERM)) {
-            dto.addDataToCurrentRow("Code", terminology.getCode());
-            this.addProperty("Term literal value", "prefLabel", terminology, dto);
-            this.addProperty("Source", "source", terminology, dto);
-            this.addProperty("Scope", "scope", terminology, dto);
-            this.addProperty("Term style", "termStyle", terminology, dto);
-            this.addProperty("Term family", "termFamily", terminology, dto);
-            this.addProperty("Term conjugation", "termConjugation", terminology, dto);
-            this.addProperty("Term equivalency", "termEquivalency", terminology, dto);
-            this.addProperty("Term info", "termInfo", terminology, dto);
-            this.addProperty("Word class", "wordClass", terminology, dto);
-            this.addProperty("Homograph number", "termHomographNumber", terminology, dto);
-            this.addProperty("Editorial note", "editorialNote", terminology, dto);
-            this.addProperty("Draft comment", "draftComment", terminology, dto);
-            this.addProperty("History note", "historyNote", terminology, dto);
-            this.addProperty("Change note", "changeNote", terminology, dto);
-            this.addProperty("Term status", "status", terminology, dto);
+            dto.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("TERMLITERALVALUE", "prefLabel", terminology, dto);
+            this.addProperty("SOURCE", "source", terminology, dto);
+            this.addProperty("SCOPE", "scope", terminology, dto);
+            this.addProperty("TERMSTYLE", "termStyle", terminology, dto);
+            this.addProperty("TERMFAMILY", "termFamily", terminology, dto);
+            this.addProperty("TERMCONJUGATION", "termConjugation", terminology, dto);
+            this.addProperty("TERMEQUIVALENCY", "termEquivalency", terminology, dto);
+            this.addProperty("TERMINFO", "termInfo", terminology, dto);
+            this.addProperty("WORDCLASS", "wordClass", terminology, dto);
+            this.addProperty("HOMOGRAPHNUMBER", "termHomographNumber", terminology, dto);
+            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, dto);
+            this.addProperty("DRAFTCOMMENT", "draftComment", terminology, dto);
+            this.addProperty("HISTORYNOTE", "historyNote", terminology, dto);
+            this.addProperty("CHANGENOTE", "changeNote", terminology, dto);
+            this.addProperty("STATUS", "status", terminology, dto);
             this.addCommonProperties(dto, terminology);
 
             dto.nextRow();
@@ -178,12 +178,8 @@ public class ExcelCreator {
      * Add common details to the given sheet. This could be called last.
      */
     private void addCommonProperties(@NotNull SheetDTO dto, @NotNull JSONWrapper wrapper) {
-        dto.addDataToCurrentRow("Created at", wrapper.getCreatedDate());
-        // todo: uuid is not probably what we want here
-        dto.addDataToCurrentRow("Created by", wrapper.getCreatedBy());
-        dto.addDataToCurrentRow("Modified at", wrapper.getLastModifiedDate());
-        // todo: uuid is not probably what we want here
-        dto.addDataToCurrentRow("Modified by", wrapper.getLastModifiedBy());
+        dto.addDataToCurrentRow("CREATED", wrapper.getCreatedDate());
+        dto.addDataToCurrentRow("MODIFIED", wrapper.getLastModifiedDate());
         dto.addDataToCurrentRow("URI", wrapper.getURI());
     }
 
@@ -240,7 +236,7 @@ public class ExcelCreator {
     }
 
     /**
-     * Map concept link as vocabularyName/prefLabel from JSON to SheetDTO.
+     * Map concept link as URI of the concept in other terminology from JSON to SheetDTO.
      */
     private void addConceptLink(
             @NotNull String columnName,
@@ -251,11 +247,9 @@ public class ExcelCreator {
         dto.addColumn(columnName);
 
         List<String> values = wrapper.getReference(referenceName).stream()
-                .flatMap(reference -> Stream.of(String.format(
-                        "%s/%s",
-                        reference.getFirstPropertyValue("vocabularyLabel", "en"),
-                        reference.getFirstPropertyValue("prefLabel", "en")
-                )))
+                .flatMap(reference -> Stream.ofNullable(reference.getDefinition()))
+                .map(JSONWrapper::getMemo)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         dto.addDataToCurrentRow(columnName, values);
