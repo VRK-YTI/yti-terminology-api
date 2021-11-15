@@ -146,6 +146,15 @@ public class SheetDTO {
                         this.multiColumnModeDisabled.contains(column)
                 );
             });
+
+            if (col.isEmpty()) {
+                this.fillColumn(
+                        sheet,
+                        Map.of(),
+                        this.makeColumnName(column, ""),
+                        this.multiColumnModeDisabled.contains(column)
+                );
+            }
         });
     }
 

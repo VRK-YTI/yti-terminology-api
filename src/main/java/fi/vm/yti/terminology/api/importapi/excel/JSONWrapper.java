@@ -122,10 +122,24 @@ public class JSONWrapper {
     }
 
     /**
+     * Extract given referrer(s) from JSON.
+     */
+    public @NotNull List<JSONWrapper> getReferrer(@NotNull String name) {
+        List<JSONWrapper> result = new ArrayList<>();
+
+        JsonNode referrer = this.json.get("referrers").get(name);
+        if (referrer != null) {
+            referrer.forEach(node -> result.add(new JSONWrapper(node, this.others)));
+        }
+
+        return result;
+    }
+
+    /**
      * Get definition of this wrapper.
-     *
+     * <p>
      * Warning: definition.getDefinition() == definition.
-     *
+     * <p>
      * Instead, this should be used only with getReference or getReferrer like:
      * wrapper.getReference(...).getDefinition().
      */
@@ -134,20 +148,6 @@ public class JSONWrapper {
                 .filter(other -> other.getCode().equals(this.getCode()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    /**
-     * Extract given referrer(s) from JSON.
-     */
-    public @NotNull List<JSONWrapper> getReferrer(@NotNull String name) {
-        List<JSONWrapper> result = new ArrayList<>();
-
-        JsonNode referrer = this.json.get("refeffers").get(name);
-        if (referrer != null) {
-            referrer.forEach(node -> result.add(new JSONWrapper(node, this.others)));
-        }
-
-        return result;
     }
 
     public String getMemo() {

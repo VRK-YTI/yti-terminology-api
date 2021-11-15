@@ -181,6 +181,7 @@ public class ExcelCreator {
         dto.addDataToCurrentRow("CREATED", wrapper.getCreatedDate());
         dto.addDataToCurrentRow("MODIFIED", wrapper.getLastModifiedDate());
         dto.addDataToCurrentRow("URI", wrapper.getURI());
+        dto.addDataToCurrentRow("OPERATION", "");
     }
 
     /**

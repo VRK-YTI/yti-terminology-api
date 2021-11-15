@@ -60,7 +60,7 @@ public class ExportService {
         if (nodeType != null) {
             // Get all nodes from given graph
             if (nodeType.contains(",")) {
-                params.add("where", "(type.id:"+ nodeType.replaceAll(",", " OR type.id:")+")");
+                params.add("where", "(type.id:" + nodeType.replaceAll(",", " OR type.id:") + ")");
             } else {
                 params.add("where", "type.id:" + nodeType);
             }
@@ -278,9 +278,9 @@ public class ExportService {
 
     private ResponseEntity<String> buildResponse(String body, TermedContentType contentType, HttpStatus status) {
         return ResponseEntity
-            .status(status)
-            .contentType(MediaType.valueOf(contentType.getContentType()))
-            .body(body);
+                .status(status)
+                .contentType(MediaType.valueOf(contentType.getContentType()))
+                .body(body);
     }
 
     private ResponseEntity<InputStreamResource> buildExcelResponse(final Workbook workbook, final String filename) {
