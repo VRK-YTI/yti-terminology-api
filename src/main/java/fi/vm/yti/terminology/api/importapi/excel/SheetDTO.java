@@ -22,7 +22,20 @@ import java.util.*;
  */
 public class SheetDTO {
     /**
-     * All the data.
+     * # Data: Map<ColumnName:String, Column>
+     * Data contains all columns, their localized variants and then cells for each row.
+     *
+     * # Column: Map<Language:String, LocalizedColumn>
+     * Column represents column which can have localized variants and then cells for each row. Column is extracted from
+     * the data with SheetDTO::getColumn.
+     *
+     * # LocalizedColumn: Map<RowIndex:Integer, Cell>
+     * LocalizedColumn represents a column but in single language. It contains cells for each row. LocalizedColumn is
+     * extracted from the data with SheetDTO::getLocalizedColumn.
+     *
+     * # Cell: List<Value:String>
+     * Cell represents a single cell in table, but it can have multiple values. Cell is extracted from the data with
+     * SheetDTO::getCell.
      */
     @NotNull
     private final Map<String, Map<String, Map<Integer, List<String>>>> data;
