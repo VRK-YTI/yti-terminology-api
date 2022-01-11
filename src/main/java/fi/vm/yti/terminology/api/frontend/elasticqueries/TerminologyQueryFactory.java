@@ -1,14 +1,12 @@
 package fi.vm.yti.terminology.api.frontend.elasticqueries;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import fi.vm.yti.terminology.api.exception.InvalidQueryException;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -48,17 +46,35 @@ public class TerminologyQueryFactory {
     public SearchRequest createQuery(TerminologySearchRequest request,
                                      boolean superUser,
                                      Set<String> privilegedOrganizations) {
-        return createQuery(request.getQuery(), Collections.emptySet(), pageSize(request), pageFrom(request), superUser, privilegedOrganizations);
+        return createQuery(
+                request,
+                Collections.emptySet(),
+                superUser,
+                privilegedOrganizations);
     }
 
     public SearchRequest createQuery(TerminologySearchRequest request,
                                      Collection<String> additionalTerminologyIds,
                                      boolean superUser,
                                      Set<String> privilegedOrganizations) {
-        return createQuery(request.getQuery(), additionalTerminologyIds, pageSize(request), pageFrom(request), superUser, privilegedOrganizations);
+        return createQuery(
+                request.getQuery(),
+                request.getStatuses(),
+                request.getGroups(),
+                request.getTypes(),
+                request.getOrganizations(),
+                additionalTerminologyIds,
+                pageSize(request),
+                pageFrom(request),
+                superUser,
+                privilegedOrganizations);
     }
 
     private SearchRequest createQuery(String query,
+                                      String[] statuses,
+                                      String[] groupIds,
+                                      String[] types,
+                                      String[] organizationIds,
                                       Collection<String> additionalTerminologyIds,
                                       int pageSize,
                                       int pageFrom,
@@ -70,32 +86,107 @@ public class TerminologyQueryFactory {
 
         QueryBuilder incompleteQuery = statusAndContributorQuery(privilegedOrganizations);
 
-        QueryBuilder labelQuery = null;
+        // collect all queries in these, and later create a bool query if
+        // there are more than one
+        var mustQueries = new ArrayList<QueryBuilder>();
+        var shouldQueries = new ArrayList<QueryBuilder>();
+
         if (!query.isEmpty()) {
-            labelQuery = ElasticRequestUtils.buildPrefixSuffixQuery(query).field("properties.prefLabel.value");
+            var labelQuery = ElasticRequestUtils
+                    .buildPrefixSuffixQuery(query)
+                    .fields(Map.of(
+                            "properties.prefLabel.value", 1.0f,
+                            "references.contributor.properties.prefLabel.value", 2.0f));
+            mustQueries.add(labelQuery);
         }
 
-        TermsQueryBuilder idQuery = null;
+        if (statuses != null && statuses.length > 0) {
+            mustQueries.add(ElasticRequestUtils.buildStatusQuery(
+                    statuses, "properties.status.value"));
+        }
+
+        if (groupIds != null && groupIds.length > 0)  {
+            try {
+                Arrays.stream(groupIds).forEach(x -> UUID.fromString(x));
+            } catch (IllegalArgumentException exception){
+                log.error("One or more group IDs were invalid");
+                throw new InvalidQueryException("One or more group IDs were invalid");
+            }
+
+            mustQueries.add(QueryBuilders.termsQuery(
+                    "references.inGroup.id", groupIds));
+        }
+
+        if (organizationIds != null && organizationIds.length > 0)  {
+            try {
+                Arrays.stream(organizationIds).forEach(x -> UUID.fromString(x));
+            } catch (IllegalArgumentException exception){
+                log.error("One or more organization IDs were invalid");
+                throw new InvalidQueryException("One or organization IDs were invalid");
+            }
+
+            mustQueries.add(QueryBuilders.termsQuery(
+                    "references.contributor.id", organizationIds));
+        }
+
+        QueryBuilder typeQuery = null;
+        if (types != null && types.length > 0)  {
+            final var validTypes = new String[] { "TerminologicalVocabulary", "OtherVocabulary" };
+            if (!Arrays.asList(validTypes).containsAll(Arrays.asList(types))) {
+                log.error("One or more vocabulary types were invalid");
+                throw new InvalidQueryException("One or more vocabulary types were invalid");
+            }
+            // vocabulary type query must also be applied later when
+            // filtering by additionalTerminologyIds
+            typeQuery = QueryBuilders.termsQuery("type.id", types);
+            mustQueries.add(typeQuery);
+        }
+
+        // if the search was also done to concepts, we may have
+        // extra terminologies here
         if (additionalTerminologyIds != null && !additionalTerminologyIds.isEmpty()) {
-            idQuery = QueryBuilders.termsQuery("type.graph.id.keyword", additionalTerminologyIds);
-        }
+            var idQuery = QueryBuilders.termsQuery(
+                    "type.graph.id.keyword",
+                    additionalTerminologyIds);
 
-        if (idQuery != null && labelQuery != null) {
-            sourceBuilder.query(combineIncompleteQuery(QueryBuilders.boolQuery()
-                .should(labelQuery)
-                .should(idQuery)
-                .minimumShouldMatch(1), incompleteQuery, superUser));
-        } else if (idQuery != null) {
-            sourceBuilder.query(combineIncompleteQuery(idQuery, incompleteQuery, superUser));
-        } else if (labelQuery != null) {
-            sourceBuilder.query(combineIncompleteQuery(labelQuery, incompleteQuery, superUser));
-        } else {
-            if (superUser) {
-                sourceBuilder.query(QueryBuilders.matchAllQuery());
+            QueryBuilder boolIdQuery = null;
+            if (typeQuery != null) {
+                shouldQueries.add(QueryBuilders.boolQuery()
+                    .must(idQuery)
+                    .must(typeQuery));
             } else {
-                sourceBuilder.query(incompleteQuery);
+                shouldQueries.add(idQuery);
             }
         }
+
+        QueryBuilder mustQuery = null;
+        if (mustQueries.size() > 1) {
+            // several queries, collect them into a bool query
+            mustQuery = QueryBuilders.boolQuery();
+            for (var boolableQuery : mustQueries) {
+                mustQuery = ((BoolQueryBuilder) mustQuery).must(boolableQuery);
+            }
+        } else if (mustQueries.size() == 1) {
+            mustQuery = mustQueries.get(0);
+        } else {
+            // no specific queries, search all
+            mustQuery = QueryBuilders.matchAllQuery();
+        }
+        mustQuery = combineIncompleteQuery(mustQuery, incompleteQuery, superUser);
+
+        // now we've created the must (AND) query, need to wrap it in another
+        // boolean OR if we have been provided with terminologyIds
+        QueryBuilder shouldQuery = null;
+        if (!shouldQueries.isEmpty()) {
+            shouldQueries.add(mustQuery);
+            shouldQuery = QueryBuilders.boolQuery();
+            for (var boolableQuery : shouldQueries) {
+                shouldQuery = ((BoolQueryBuilder) shouldQuery).should(boolableQuery);
+            }
+            ((BoolQueryBuilder) shouldQuery).minimumShouldMatch(1);
+        }
+
+        sourceBuilder.query(shouldQuery != null ? shouldQuery : mustQuery);
 
         SearchRequest sr = new SearchRequest("vocabularies")
             .source(sourceBuilder);
@@ -128,6 +219,7 @@ public class TerminologyQueryFactory {
                 .size(1000)
                 .query(finalQuery));
         //.fetchSource(false));
+        //log.debug("createMatchingTerminologiesQuery Query request: " + sr.toString());
         return sr;
     }
 

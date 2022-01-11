@@ -1,10 +1,15 @@
 package fi.vm.yti.terminology.api.synchronization;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.emptyMap;
 
+// Ignore unknown properties for easier deployment when groupmanagement
+// introduces new changes
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class GroupManagementOrganization {
 
     private final UUID uuid;

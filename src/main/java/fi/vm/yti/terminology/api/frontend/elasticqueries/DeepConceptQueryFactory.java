@@ -10,8 +10,10 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import fi.vm.yti.terminology.api.exception.InvalidQueryException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
@@ -54,20 +56,45 @@ public class DeepConceptQueryFactory {
     }
 
     public SearchRequest createQuery(String query,
+                                     String[] statuses,
                                      String prefLang,
                                      boolean superUser,
                                      Set<String> incompleteFromTerminologies) {
+        var mustQueries = new ArrayList<QueryBuilder>();
 
         // NOTE: In deep concept query the query should always be non-empty.
-        QueryBuilder labelQuery = ElasticRequestUtils.buildPrefixSuffixQuery(query).field("label.*");
+        var labelQuery = ElasticRequestUtils.buildPrefixSuffixQuery(query).field("label.*");
+        mustQueries.add(labelQuery);
 
-        // Block INCOMPLETE concepts from being shown to users who are not contributors of the terminology. Needed when the terminology itself is in some visible state.
-        QueryBuilder withIncompleteHandling = superUser ? labelQuery : QueryBuilders.boolQuery()
-            .must(labelQuery)
-            .must(QueryBuilders.boolQuery()
-                .should(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("status", "INCOMPLETE")))
-                .should(QueryBuilders.termsQuery("vocabulary.id", incompleteFromTerminologies))
-                .minimumShouldMatch(1));
+        if (statuses != null && statuses.length > 0) {
+            var statusQuery = ElasticRequestUtils.buildStatusQuery(statuses, "status");
+            mustQueries.add(statusQuery);
+        }
+
+        // Block INCOMPLETE concepts from being shown to users who are not
+        // contributors of the terminology. Needed when the terminology itself
+        // is in some visible state.
+        if (!superUser) {
+            var incompleteQuery = QueryBuilders.boolQuery()
+                    .should(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("status", "INCOMPLETE")))
+                    .should(QueryBuilders.termsQuery("vocabulary.id", incompleteFromTerminologies))
+                    .minimumShouldMatch(1);
+            mustQueries.add(incompleteQuery);
+        }
+
+        QueryBuilder withIncompleteHandling = null;
+        if (mustQueries.size() > 1) {
+            withIncompleteHandling = QueryBuilders.boolQuery();
+            for (var mustQuery : mustQueries) {
+                withIncompleteHandling = ((BoolQueryBuilder) withIncompleteHandling).must(mustQuery);
+            }
+        } else if (mustQueries.size() == 1) {
+            // if there's only one query, it's certainly the labelQuery and
+            // no incompleteQuery was needed
+            withIncompleteHandling = mustQueries.get(0);
+        } else {
+            throw new InvalidQueryException();
+        }
 
         SearchRequest sr = new SearchRequest("concepts")
             .source(new SearchSourceBuilder()

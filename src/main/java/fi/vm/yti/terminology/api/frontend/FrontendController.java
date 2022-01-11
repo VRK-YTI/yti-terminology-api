@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import fi.vm.yti.terminology.api.frontend.searchdto.*;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.YtiUser;
-import fi.vm.yti.terminology.api.frontend.searchdto.ConceptSearchRequest;
-import fi.vm.yti.terminology.api.frontend.searchdto.ConceptSearchResponse;
-import fi.vm.yti.terminology.api.frontend.searchdto.TerminologySearchRequest;
-import fi.vm.yti.terminology.api.frontend.searchdto.TerminologySearchResponse;
 import fi.vm.yti.terminology.api.model.termed.GenericDeleteAndSave;
 import fi.vm.yti.terminology.api.model.termed.GenericNode;
 import fi.vm.yti.terminology.api.model.termed.GenericNodeInlined;
@@ -313,5 +310,14 @@ public class FrontendController {
     TerminologySearchResponse searchTerminology(@RequestBody TerminologySearchRequest request) {
         logger.info("POST /searchTerminology requested with query: " + request.toString());
         return elasticSearchService.searchTerminology(request);
+    }
+
+    @Operation(summary = "Get counts", description = "List counts of concepts and vocabularies grouped by different search results")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "List counts of concepts and vocabularies grouped by different search results")
+    @ApiResponse(responseCode = "200", description = "Counts response container object as JSON")
+    @RequestMapping(value = "/counts", method = GET, produces = APPLICATION_JSON_VALUE)
+    CountSearchResponse getCounts() {
+        logger.info("GET /counts requested");
+        return elasticSearchService.getCounts();
     }
 }

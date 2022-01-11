@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -70,6 +71,44 @@ public final class ElasticRequestUtils {
         }
         LOG.warn("Search term string disqualified: '" + searchTerm + "'");
         throw new InvalidQueryException();
+    }
+    public static MatchQueryBuilder buildStatusQuery(final String[] statuses, final String field) {
+        var validStatuses = new String[] {
+                "INCOMPLETE",
+                "SUPERSEDED",
+                "RETIRED",
+                "INVALID",
+                "VALID",
+                "SUGGESTED",
+                "DRAFT"
+        };
+        return ElasticRequestUtils.buildStatusQuery(statuses, field, validStatuses);
+    }
+
+    public static MatchQueryBuilder buildStatusQuery(final String[] statuses, String field, final String[] validStatuses) {
+        var invalid = Arrays.stream(statuses)
+                .filter(el -> Arrays.stream(validStatuses).noneMatch(el::equals))
+                .collect(Collectors.counting());
+        if (invalid > 0) {
+            throw new InvalidQueryException();
+        }
+
+        var filteredStatuses = Arrays.stream(statuses)
+                .filter(x -> Arrays.asList(validStatuses).contains(x))
+                .collect(Collectors.toList());
+        var filteredStatusQuery = String.join(" OR ", filteredStatuses);
+        final StandardQueryParser parser = new StandardQueryParser();
+        try {
+            parser.setAllowLeadingWildcard(true);
+            LOG.debug("Using Lucene query: '" + filteredStatusQuery + "'");
+            var statusQuery = QueryBuilders.matchQuery(
+                    field,
+                    parser.parse(filteredStatusQuery, "").toString());
+            return statusQuery;
+        } catch (final QueryNodeException e) {
+            LOG.warn("status filter disqualified: '" + String.join(", ", statuses) + "'");
+            throw new InvalidQueryException();
+        }
     }
 
     public static @NotNull JsonNode responseContentAsJson(@NotNull ObjectMapper objectMapper,

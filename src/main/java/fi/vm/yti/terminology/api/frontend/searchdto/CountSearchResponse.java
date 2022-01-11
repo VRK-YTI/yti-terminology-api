@@ -1,0 +1,31 @@
+package fi.vm.yti.terminology.api.frontend.searchdto;
+
+import java.util.Collections;
+import java.util.Map;
+
+public class CountSearchResponse {
+
+    private long totalHitCount;
+    private CountDTO counts;
+
+    public CountSearchResponse() {
+        this.totalHitCount = 0;
+        this.counts = new CountDTO();
+    }
+
+    public long getTotalHitCount() {
+        return totalHitCount;
+    }
+
+    public void setTotalHitCount(long totalHitCount) {
+        this.totalHitCount = totalHitCount;
+    }
+
+    public CountDTO getCounts() {
+        return counts;
+    }
+
+    public void setCounts(CountDTO counts) {
+        this.counts = counts;
+    }
+}

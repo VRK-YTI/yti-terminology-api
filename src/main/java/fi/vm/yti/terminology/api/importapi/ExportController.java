@@ -52,13 +52,18 @@ public class ExportController {
      */
     @Operation(summary = "Export a terminology", description = "Export requested terminology in stated format")
     @ApiResponse(responseCode = "200", description = "Requested terminology exported in the requested format")
-    @GetMapping(path = "/{terminologyID}", produces = { APPLICATION_JSON_VALUE, "application/rdf+xml", "text/turtle" })
-    ResponseEntity<String> export(
+    @GetMapping(path = "/{terminologyID}", produces = {
+            APPLICATION_JSON_VALUE,
+            "application/rdf+xml",
+            "text/turtle",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    })
+    ResponseEntity<?> export(
         @Parameter(description = "Terminology identifier (UUID or prefix)") @PathVariable("terminologyID") String terminologyId,
-        @Parameter(description = "Export format JSON, RDF, TURTLE.", example = "JSON") @RequestParam String format) {
+        @Parameter(description = "Export format JSON, RDF, TURTLE, XLSX.", example = "JSON") @RequestParam String format) {
         logger.debug("ExportController uuid:" + terminologyId + " format:" + format);
 
-        ResponseEntity<String> re = null;
+        ResponseEntity<?> re = null;
         UUID id = null;
         // Try to cast incoming as UUID and if fails, assume it is Code ie. name of the
         // vocabulary
@@ -79,6 +84,8 @@ public class ExportController {
                 re = exportService.getJSON(id);
             } else if (format.equalsIgnoreCase("rdf")) {
                 re = exportService.getRDF(id);
+            } else if (format.equalsIgnoreCase("xlsx")) {
+                re = exportService.getXLSX(id);
             } else {
                 re = exportService.getTXT(id);
             }
