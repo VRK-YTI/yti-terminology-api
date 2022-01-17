@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static fi.vm.yti.security.AuthorizationException.check;
 import static fi.vm.yti.terminology.api.model.termed.VocabularyNodeType.TerminologicalVocabulary;
@@ -299,7 +301,7 @@ public class FrontendTermedService {
     }
 
     @NotNull
-    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType) {
+    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType, String language) {
 
         Parameters params = new Parameters();
         params.add("select", "id");
@@ -310,7 +312,23 @@ public class FrontendTermedService {
         params.add("where", "type.id:" + nodeType);
         params.add("max", "-1");
 
-        return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        var initReturn = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        var sorted = StreamSupport.stream(initReturn.spliterator(), false).sorted((t1, t2) -> {
+            var t1lang = StreamSupport.stream(t1.path("properties").path("prefLabel").spliterator(), false).filter(x -> {
+                return x.get("lang").toString().equals(String.format("\"%s\"", language));
+            }).collect(Collectors.toList());
+
+            var t2lang = StreamSupport.stream(t2.path("properties").path("prefLabel").spliterator(), false).filter(x -> {
+                return x.get("lang").toString().equals(String.format("\"%s\"", language));
+            }).collect(Collectors.toList());
+
+            return t1lang.get(0).get("value").toString().compareTo(t2lang.get(0).get("value").toString());
+        }).collect(Collectors.toList());
+
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.valueToTree(sorted);
+
+        //return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
     }
 
     public void bulkChange(GenericDeleteAndSave deleteAndSave, boolean sync) {
