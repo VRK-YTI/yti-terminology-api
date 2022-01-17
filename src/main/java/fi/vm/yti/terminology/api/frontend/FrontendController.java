@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.frontend;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import fi.vm.yti.terminology.api.frontend.searchdto.*;
@@ -219,7 +220,7 @@ public class FrontendController {
     @Operation(summary = "Get organization list", description = "Get organizations available at YTI Group Management Service")
     @ApiResponse(responseCode = "200", description = "The basic info for organizations in unprocessed Termed JSON format")
     @GetMapping(path = "/organizations", produces = APPLICATION_JSON_VALUE)
-    JsonNode getOrganizationList(@RequestParam(defaultValue = "fi") String language) {
+    JsonNode getOrganizationList(@RequestParam Optional<String> language) {
         logger.info("GET /organizations requested");
         return termedService.getNodeListWithoutReferencesOrReferrers(Organization, language);
     }
@@ -227,7 +228,7 @@ public class FrontendController {
     @Operation(summary = "Get information domain list")
     @ApiResponse(responseCode = "200", description = "Information domain list in unprocessed Termed JSON format")
     @GetMapping(path = "/groups", produces = APPLICATION_JSON_VALUE)
-    JsonNode getGroupList(@RequestParam(defaultValue = "fi") String language) {
+    JsonNode getGroupList(@RequestParam Optional<String> language) {
         logger.info("GET /groups requested");
         return termedService.getNodeListWithoutReferencesOrReferrers(Group, language);
     }
