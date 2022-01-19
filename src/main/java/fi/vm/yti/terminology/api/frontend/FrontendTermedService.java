@@ -302,6 +302,7 @@ public class FrontendTermedService {
 
     @NotNull
     JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType, Optional<String> language) {
+        final String[] validLanguages = {"fi", "en", "sv"};
 
         Parameters params = new Parameters();
         params.add("select", "id");
@@ -312,7 +313,7 @@ public class FrontendTermedService {
         params.add("where", "type.id:" + nodeType);
         params.add("max", "-1");
 
-        if (language.isEmpty()) {
+        if (language.isEmpty() || !Arrays.asList(validLanguages).contains(language.get())) {
             return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
         } else {
             var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
