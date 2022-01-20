@@ -59,8 +59,8 @@ public class FrontendTermedService {
 
     @Autowired
     public FrontendTermedService(TermedRequester termedRequester, FrontendGroupManagementService groupManagementService,
-            AuthenticatedUserProvider userProvider, AuthorizationManager authorizationManager,
-            @Value("${namespace.root}") String namespaceRoot) {
+                                 AuthenticatedUserProvider userProvider, AuthorizationManager authorizationManager,
+                                 @Value("${namespace.root}") String namespaceRoot) {
         this.termedRequester = termedRequester;
         this.groupManagementService = groupManagementService;
         this.userProvider = userProvider;
@@ -113,15 +113,15 @@ public class FrontendTermedService {
 
     @NotNull JsonNode getVocabularyList(boolean incomplete) {
 
-        if(userProvider.getUser() != null){ 
-            System.err.println("getVocabularyList:"+userProvider.getUser().getUsername() );
+        if (userProvider.getUser() != null) {
+            System.err.println("getVocabularyList:" + userProvider.getUser().getUsername());
         }
         List<UUID> orgList = new ArrayList<>();
 
         YtiUser user = userProvider.getUser();
         // Resolve current organizations for filtering
-        Map<UUID,?> rolesAndOrgs = user.getRolesInOrganizations();
-        rolesAndOrgs.forEach((k,v)->{
+        Map<UUID, ?> rolesAndOrgs = user.getRolesInOrganizations();
+        rolesAndOrgs.forEach((k, v) -> {
             orgList.add(k);
         });
         Parameters params = new Parameters();
@@ -134,38 +134,38 @@ public class FrontendTermedService {
         params.add("select", "references.inGroup");
 
         params.add("where",
-            "type.id:" +  TerminologicalVocabulary );
+                "type.id:" + TerminologicalVocabulary);
         params.add("max", "-1");
         // Execute full search
-        JsonNode rv =  requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        JsonNode rv = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
         // Super-user sees all
-        if(user.isSuperuser()){
-            return requireNonNull(rv);            
+        if (user.isSuperuser()) {
+            return requireNonNull(rv);
         }
         // normal users sees filtered
         List<JsonNode> nodes = new ArrayList<>();
 
-        for(int x=0;x<rv.size();x++){
+        for (int x = 0; x < rv.size(); x++) {
             JsonNode n = rv.get(x);
-            UUID id=UUID.fromString(n.at("/references/contributor/0/id").textValue());
-            String status=n.at("/properties/status/0/value").textValue();            
-            if(status != null && 
-               status.equalsIgnoreCase("INCOMPLETE")) {
-                if(incomplete && 
-                   orgList.contains(id)){
+            UUID id = UUID.fromString(n.at("/references/contributor/0/id").textValue());
+            String status = n.at("/properties/status/0/value").textValue();
+            if (status != null &&
+                    status.equalsIgnoreCase("INCOMPLETE")) {
+                if (incomplete &&
+                        orgList.contains(id)) {
                     nodes.add(n);
                 } else {
-                    if(logger.isDebugEnabled()){ 
-                        logger.debug("Dropped INCOMPLETE vocabulary "+id.toString());
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Dropped INCOMPLETE vocabulary " + id.toString());
                     }
                 }
             } else {
                 nodes.add(n);
-            }  
+            }
         }
         rv = null;
-        ObjectMapper mapper = new ObjectMapper();        
-        return requireNonNull(mapper.convertValue(nodes,JsonNode.class));
+        ObjectMapper mapper = new ObjectMapper();
+        return requireNonNull(mapper.convertValue(nodes, JsonNode.class));
     }
 
     void createVocabulary(UUID templateGraphId, String prefix, GenericNode vocabularyNode, UUID graphId, boolean sync) {
@@ -301,8 +301,14 @@ public class FrontendTermedService {
     }
 
     @NotNull
-    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType, Optional<String> language) {
+    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType, String language) {
         final String[] validLanguages = {"fi", "en", "sv"};
+
+        if (!Arrays.asList(validLanguages).contains(language)) {
+            language = "fi";
+        }
+
+        final String lang = language;
 
         Parameters params = new Parameters();
         params.add("select", "id");
@@ -313,25 +319,23 @@ public class FrontendTermedService {
         params.add("where", "type.id:" + nodeType);
         params.add("max", "-1");
 
-        if (language.isEmpty() || !Arrays.asList(validLanguages).contains(language.get())) {
-            return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
-        } else {
-            var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
-            var sorted = StreamSupport.stream(init.spliterator(), false).sorted((t1, t2) -> {
-                var t1lang = StreamSupport.stream(t1.path("properties").path("prefLabel").spliterator(), false)
-                        .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", language.get())))
-                        .collect(Collectors.toList());
+        var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        var sorted = StreamSupport.stream(init.spliterator(), false).sorted((t1, t2) -> {
+            var t1lang = StreamSupport
+                    .stream(t1.path("properties").path("prefLabel").spliterator(), false)
+                    .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", lang)))
+                    .collect(Collectors.toList());
 
-                var t2lang = StreamSupport.stream(t2.path("properties").path("prefLabel").spliterator(), false)
-                        .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", language.get())))
-                        .collect(Collectors.toList());
+            var t2lang = StreamSupport
+                    .stream(t2.path("properties").path("prefLabel").spliterator(), false)
+                    .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", lang)))
+                    .collect(Collectors.toList());
 
-                return t1lang.get(0).get("value").toString().compareTo(t2lang.get(0).get("value").toString());
-            }).collect(Collectors.toList());
+            return t1lang.get(0).get("value").toString().compareTo(t2lang.get(0).get("value").toString());
+        }).collect(Collectors.toList());
 
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.valueToTree(sorted);
-        }
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.valueToTree(sorted);
     }
 
     public void bulkChange(GenericDeleteAndSave deleteAndSave, boolean sync) {
@@ -488,7 +492,7 @@ public class FrontendTermedService {
     }
 
     private GenericNodeInlined userNameToDisplayName(GenericNodeInlined node,
-            UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
+                                                     UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
 
         return new GenericNodeInlined(node.getId(), node.getCode(), node.getUri(), node.getNumber(),
                 userIdToDisplayNameMapper.map(node.getCreatedBy()), node.getCreatedDate(),

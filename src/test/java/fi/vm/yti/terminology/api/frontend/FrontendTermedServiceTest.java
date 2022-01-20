@@ -18,8 +18,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -90,21 +88,34 @@ class FrontendTermedServiceTest {
     }
 
     @Test
-    public void testReturnsGroupsUnordered() {
+    public void testReturnsGroupsOrderedInFiWhenUnknownLanguage() throws JsonProcessingException {
+        String jsonData = "[" +
+                "{\"id\": \"789\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
+                "]}}," +
+                "{\"id\": \"456\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Public order\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Järjestys\"}" +
+                "]}}," +
+                "{\"id\": \"123\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
+                "]}} " +
+                "]";
+        JsonNode expectedNode = mapper.readTree(jsonData);
+
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, Optional.empty());
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "random_string");
 
-        assertEquals(initGroupsNode, gotten);
-    }
-
-    @Test
-    public void testReturnsGroupsUnorderedInUnknownLanguage() {
-        when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
-
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, Optional.of("random_string"));
-
-        assertEquals(initGroupsNode, gotten);
+        assertEquals(expectedNode, gotten);
     }
 
     @Test
@@ -133,7 +144,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, Optional.of("fi"));
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "fi");
 
         assertEquals(expectedNode, gotten);
     }
@@ -164,27 +175,34 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, Optional.of("en"));
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "en");
 
         assertEquals(expectedNode, gotten);
     }
 
     @Test
-    public void testReturnsOrganizationsUnordered() {
+    public void testReturnsOrganizationsUnorderedInUnknownLanguages() throws JsonProcessingException {
+        String jsonData = "[" +
+                "{\"id\": \"654\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Test-organization\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
+                "]}}," +
+                "{\"id\": \"321\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
+                "]}}" +
+                "]";
+        JsonNode expectedNode = mapper.readTree(jsonData);
+
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, Optional.empty());
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "random_string");
 
-        assertEquals(initOrgsNode, gotten);
-    }
-
-    @Test
-    public void testReturnsOrganizationsUnorderedInUnknownLanguages() {
-        when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
-
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, Optional.of("random_string"));
-
-        assertEquals(initOrgsNode, gotten);
+        assertEquals(expectedNode, gotten);
     }
 
     @Test
@@ -207,7 +225,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, Optional.of("fi"));
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "fi");
 
         assertEquals(expectedNode, gotten);
     }
@@ -232,7 +250,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, Optional.of("en"));
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "en");
 
         assertEquals(expectedNode, gotten);
     }

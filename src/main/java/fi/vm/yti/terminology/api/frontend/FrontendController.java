@@ -220,7 +220,7 @@ public class FrontendController {
     @Operation(summary = "Get organization list", description = "Get organizations available at YTI Group Management Service")
     @ApiResponse(responseCode = "200", description = "The basic info for organizations in unprocessed Termed JSON format")
     @GetMapping(path = "/organizations", produces = APPLICATION_JSON_VALUE)
-    JsonNode getOrganizationList(@RequestParam Optional<String> language) {
+    JsonNode getOrganizationList(@RequestParam(required = false, defaultValue = "fi") String language) {
         logger.info("GET /organizations requested");
         return termedService.getNodeListWithoutReferencesOrReferrers(Organization, language);
     }
@@ -228,7 +228,7 @@ public class FrontendController {
     @Operation(summary = "Get information domain list")
     @ApiResponse(responseCode = "200", description = "Information domain list in unprocessed Termed JSON format")
     @GetMapping(path = "/groups", produces = APPLICATION_JSON_VALUE)
-    JsonNode getGroupList(@RequestParam Optional<String> language) {
+    JsonNode getGroupList(@RequestParam(required = false, defaultValue = "fi") String language) {
         logger.info("GET /groups requested");
         return termedService.getNodeListWithoutReferencesOrReferrers(Group, language);
     }
