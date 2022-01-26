@@ -321,4 +321,18 @@ public class FrontendController {
         logger.info("GET /counts requested");
         return elasticSearchService.getCounts();
     }
+
+    @Operation(summary = "Get concept and collection counts", description = "List counts of concepts and collections")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "List counts of concepts and collections in particular vocabulary")
+    @ApiResponse(responseCode = "200", description = "Counts response container object as JSON")
+    @RequestMapping(value = "/conceptCounts", method = GET, produces = APPLICATION_JSON_VALUE)
+    CountSearchResponse getCounts(@RequestParam UUID graphId) {
+        logger.info("GET /conceptCounts requested");
+
+        // fetch collections separately and add the count to dto because collections are not stored in elastic search
+        JsonNode collectionList = termedService.getCollectionList(graphId);
+        CountSearchResponse conceptCounts = elasticSearchService.getConceptCounts(graphId);
+        conceptCounts.getCounts().getCategories().put(CountDTO.Category.COLLECTION.getName(), Long.valueOf(collectionList.size()));
+        return conceptCounts;
+    }
 }

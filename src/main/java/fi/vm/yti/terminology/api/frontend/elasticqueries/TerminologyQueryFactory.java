@@ -190,7 +190,7 @@ public class TerminologyQueryFactory {
 
         SearchRequest sr = new SearchRequest("vocabularies")
             .source(sourceBuilder);
-        //log.debug("Terminology Query request: " + sr.toString());
+        log.debug("Terminology Query request: " + sr.toString());
         return sr;
     }
 

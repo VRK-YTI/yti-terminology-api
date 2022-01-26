@@ -96,6 +96,7 @@ dependencies {
     }
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.skyscreamer:jsonassert:1.5.0'
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
     implementation 'org.apache.poi:poi-ooxml:5.0.0'

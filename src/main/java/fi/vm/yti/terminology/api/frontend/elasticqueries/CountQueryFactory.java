@@ -16,8 +16,10 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CountQueryFactory {
@@ -43,6 +45,15 @@ public class CountQueryFactory {
 
         log.debug("Count request: " + sr.toString());
         return sr;
+    }
+
+    public SearchRequest createConceptCountQuery(UUID vocabularyId) {
+        return new SearchRequest("concepts")
+                .source(new SearchSourceBuilder()
+                        .size(0)
+                        .query(QueryBuilders.matchQuery("vocabulary.id", vocabularyId.toString()))
+                        .aggregation(this.createStatusAggregation())
+                        .aggregation(this.createIndexAggregation()));
     }
 
     private TermsAggregationBuilder createStatusAggregation() {
@@ -101,6 +112,8 @@ public class CountQueryFactory {
         CountSearchResponse ret = new CountSearchResponse();
         ret.setTotalHitCount(response.getHits().getTotalHits());
 
+        Map<String, Long> groups = Collections.emptyMap();
+
         Terms catAgg = response.getAggregations().get("catagg");
         var categories = catAgg
                 .getBuckets()
@@ -118,12 +131,19 @@ public class CountQueryFactory {
                         MultiBucketsAggregation.Bucket::getDocCount));
 
         Terms groupAgg = response.getAggregations().get("groupagg");
-        var groups = groupAgg
-                .getBuckets()
-                .stream()
-                .collect(Collectors.toMap(
-                        MultiBucketsAggregation.Bucket::getKeyAsString,
-                        MultiBucketsAggregation.Bucket::getDocCount));
+        if (groupAgg != null) {
+            groups = groupAgg
+                    .getBuckets()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            MultiBucketsAggregation.Bucket::getKeyAsString,
+                            MultiBucketsAggregation.Bucket::getDocCount));
+        }
+
+        categories.putIfAbsent(CountDTO.Category.TERMINOLOGICAL_VOCABULARY.getName(), 0L);
+        categories.putIfAbsent(CountDTO.Category.OTHER_VOCABULARY.getName(), 0L);
+        categories.putIfAbsent(CountDTO.Category.CONCEPT.getName(), 0L);
+        categories.putIfAbsent(CountDTO.Category.COLLECTION.getName(), 0L);
 
         ret.setCounts(new CountDTO(categories, statuses, groups));
 

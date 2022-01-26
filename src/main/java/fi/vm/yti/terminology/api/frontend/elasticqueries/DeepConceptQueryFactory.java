@@ -110,7 +110,7 @@ public class DeepConceptQueryFactory {
                         .fetchSource(sourceIncludes))
                     .subAggregation(AggregationBuilders.max("best_concept_hit")
                         .script(topHitScript))));
-        //log.debug("Deep Concept Query request: " + sr.toString());
+        log.debug("Deep Concept Query request: " + sr.toString());
         return sr;
     }
 

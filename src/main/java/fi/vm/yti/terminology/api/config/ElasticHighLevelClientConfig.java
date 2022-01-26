@@ -1,5 +1,7 @@
 package fi.vm.yti.terminology.api.config;
 
+import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapper;
+import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapperImpl;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -34,7 +36,7 @@ public class ElasticHighLevelClientConfig {
 
     @Bean
     @SuppressWarnings("resource")
-    protected RestHighLevelClient elasticSearchRestHighLevelClient() {
+    protected RestHighLevelClientWrapper elasticSearchRestHighLevelClient() {
         final RestClientBuilder builder = RestClient.builder(
             new HttpHost(elasticsearchHost, elasticsearchPort, "http"))
             .setRequestConfigCallback(
@@ -42,6 +44,6 @@ public class ElasticHighLevelClientConfig {
                     .setConnectTimeout(ES_CONNECTION_TIMEOUT)
                     .setSocketTimeout(ES_CONNECTION_TIMEOUT))
             .setMaxRetryTimeoutMillis(ES_RETRY_TIMEOUT);
-        return new RestHighLevelClient(builder);
+        return new RestHighLevelClientWrapperImpl(new RestHighLevelClient(builder));
     }
 }

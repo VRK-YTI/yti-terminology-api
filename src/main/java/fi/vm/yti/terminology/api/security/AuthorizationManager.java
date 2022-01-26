@@ -55,6 +55,16 @@ public class AuthorizationManager {
         return canModifyAllOrganizations(organizationIds);
     }
 
+    public boolean isUserPartOfOrganization(UUID graphId) {
+        YtiUser user = userProvider.getUser();
+        Optional<UUID> userOrganization = termedService.getOrganizationIds(graphId)
+                .stream()
+                .filter(uuid -> user.isInOrganization(uuid))
+                .findAny();
+
+        return user.isSuperuser() || userOrganization.isPresent();
+    }
+
     private boolean canModifyAllGraphs(Collection<UUID> graphIds) {
 
         Set<UUID> organizationIds = graphIds.stream()

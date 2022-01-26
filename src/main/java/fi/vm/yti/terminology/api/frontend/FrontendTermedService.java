@@ -59,8 +59,8 @@ public class FrontendTermedService {
 
     @Autowired
     public FrontendTermedService(TermedRequester termedRequester, FrontendGroupManagementService groupManagementService,
-                                 AuthenticatedUserProvider userProvider, AuthorizationManager authorizationManager,
-                                 @Value("${namespace.root}") String namespaceRoot) {
+            AuthenticatedUserProvider userProvider, AuthorizationManager authorizationManager,
+            @Value("${namespace.root}") String namespaceRoot) {
         this.termedRequester = termedRequester;
         this.groupManagementService = groupManagementService;
         this.userProvider = userProvider;
@@ -107,21 +107,22 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
     @NotNull JsonNode getVocabularyList(boolean incomplete) {
 
-        if (userProvider.getUser() != null) {
-            System.err.println("getVocabularyList:" + userProvider.getUser().getUsername());
+        if(userProvider.getUser() != null){ 
+            System.err.println("getVocabularyList:"+userProvider.getUser().getUsername() );
         }
         List<UUID> orgList = new ArrayList<>();
 
         YtiUser user = userProvider.getUser();
         // Resolve current organizations for filtering
-        Map<UUID, ?> rolesAndOrgs = user.getRolesInOrganizations();
-        rolesAndOrgs.forEach((k, v) -> {
+        Map<UUID,?> rolesAndOrgs = user.getRolesInOrganizations();
+        rolesAndOrgs.forEach((k,v)->{
             orgList.add(k);
         });
         Parameters params = new Parameters();
@@ -134,38 +135,38 @@ public class FrontendTermedService {
         params.add("select", "references.inGroup");
 
         params.add("where",
-                "type.id:" + TerminologicalVocabulary);
+            "type.id:" +  TerminologicalVocabulary );
         params.add("max", "-1");
         // Execute full search
-        JsonNode rv = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        JsonNode rv =  requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
         // Super-user sees all
-        if (user.isSuperuser()) {
-            return requireNonNull(rv);
+        if(user.isSuperuser()){
+            return requireNonNull(rv);            
         }
         // normal users sees filtered
         List<JsonNode> nodes = new ArrayList<>();
 
-        for (int x = 0; x < rv.size(); x++) {
+        for(int x=0;x<rv.size();x++){
             JsonNode n = rv.get(x);
-            UUID id = UUID.fromString(n.at("/references/contributor/0/id").textValue());
-            String status = n.at("/properties/status/0/value").textValue();
-            if (status != null &&
-                    status.equalsIgnoreCase("INCOMPLETE")) {
-                if (incomplete &&
-                        orgList.contains(id)) {
+            UUID id=UUID.fromString(n.at("/references/contributor/0/id").textValue());
+            String status=n.at("/properties/status/0/value").textValue();            
+            if(status != null && 
+               status.equalsIgnoreCase("INCOMPLETE")) {
+                if(incomplete && 
+                   orgList.contains(id)){
                     nodes.add(n);
                 } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Dropped INCOMPLETE vocabulary " + id.toString());
+                    if(logger.isDebugEnabled()){ 
+                        logger.debug("Dropped INCOMPLETE vocabulary "+id.toString());
                     }
                 }
             } else {
                 nodes.add(n);
-            }
+            }  
         }
         rv = null;
-        ObjectMapper mapper = new ObjectMapper();
-        return requireNonNull(mapper.convertValue(nodes, JsonNode.class));
+        ObjectMapper mapper = new ObjectMapper();        
+        return requireNonNull(mapper.convertValue(nodes,JsonNode.class));
     }
 
     void createVocabulary(UUID templateGraphId, String prefix, GenericNode vocabularyNode, UUID graphId, boolean sync) {
@@ -225,7 +226,8 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, conceptId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
@@ -255,7 +257,8 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, collectionId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
@@ -269,7 +272,10 @@ public class FrontendTermedService {
         params.add("select", "uri");
         params.add("select", "properties.prefLabel");
         params.add("select", "properties.status");
+        params.add("select", "properties.definition");
         params.add("select", "lastModifiedDate");
+        params.add("select", "references.*");
+        params.add("select", "references.prefLabelXl:2");
         params.add("where", "graph.id:" + graphId);
         params.add("where", "type.id:" + "Collection");
         params.add("max", "-1");
@@ -492,14 +498,14 @@ public class FrontendTermedService {
     }
 
     private GenericNodeInlined userNameToDisplayName(GenericNodeInlined node,
-                                                     UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
-
+                                                     UserIdToDisplayNameMapper userIdToDisplayNameMapper,
+                                                     boolean mapUserNames) {
         return new GenericNodeInlined(node.getId(), node.getCode(), node.getUri(), node.getNumber(),
-                userIdToDisplayNameMapper.map(node.getCreatedBy()), node.getCreatedDate(),
-                userIdToDisplayNameMapper.map(node.getLastModifiedBy()), node.getLastModifiedDate(), node.getType(),
-                node.getProperties(),
-                mapMapValues(node.getReferences(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper)),
-                mapMapValues(node.getReferrers(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper)));
+                mapUserNames ? userIdToDisplayNameMapper.map(node.getCreatedBy()) : null, node.getCreatedDate(),
+                mapUserNames ? userIdToDisplayNameMapper.map(node.getLastModifiedBy()) : null, node.getLastModifiedDate(),
+                node.getType(), node.getProperties(),
+                mapMapValues(node.getReferences(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper, mapUserNames)),
+                mapMapValues(node.getReferrers(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper, mapUserNames)));
     }
 
     private GenericNode userNameToDisplayName(GenericNode node, UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
