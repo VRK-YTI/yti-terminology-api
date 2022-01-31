@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -137,5 +138,31 @@ public final class JsonUtils {
 			e.printStackTrace();
 		}
 		return "";
+	}
+
+	public static JsonNode sortedFromTermedProperties(JsonNode array, String language, String[] languages) {
+		List<String> langsSortedByOrder = Arrays.stream(languages).filter(s -> !s.equals(language)).collect(Collectors.toList());
+		langsSortedByOrder.add(0, language);
+
+		List<JsonNode> nodeArray = StreamSupport.stream(array.spliterator(), false).sorted((t1, t2) -> {
+			var t1prefLabels = localizableFromTermedProperties(t1.get("properties"), "prefLabel");
+			var t2prefLabels = localizableFromTermedProperties(t2.get("properties"), "prefLabel");
+
+			if (t1prefLabels.isEmpty() || t2prefLabels.isEmpty()) {
+				return 0;
+			}
+
+			List<String> t1Label = langsSortedByOrder.stream().map(t1prefLabels::get).findFirst().orElse(null);
+			List<String> t2Label = langsSortedByOrder.stream().map(t2prefLabels::get).findFirst().orElse(null);
+
+			if (t1Label != null && t2Label != null) {
+				return t1Label.get(0).compareTo(t2Label.get(0));
+			} else {
+				return 0;
+			}
+		}).collect(Collectors.toList());
+
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.valueToTree(nodeArray);
 	}
 }

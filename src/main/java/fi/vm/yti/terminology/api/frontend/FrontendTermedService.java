@@ -314,8 +314,6 @@ public class FrontendTermedService {
             language = "fi";
         }
 
-        final String lang = language;
-
         Parameters params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
@@ -326,22 +324,7 @@ public class FrontendTermedService {
         params.add("max", "-1");
 
         var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
-        var sorted = StreamSupport.stream(init.spliterator(), false).sorted((t1, t2) -> {
-            var t1lang = StreamSupport
-                    .stream(t1.path("properties").path("prefLabel").spliterator(), false)
-                    .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", lang)))
-                    .collect(Collectors.toList());
-
-            var t2lang = StreamSupport
-                    .stream(t2.path("properties").path("prefLabel").spliterator(), false)
-                    .filter(x -> x.get("lang").toString().equals(String.format("\"%s\"", lang)))
-                    .collect(Collectors.toList());
-
-            return t1lang.get(0).get("value").toString().compareTo(t2lang.get(0).get("value").toString());
-        }).collect(Collectors.toList());
-
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.valueToTree(sorted);
+        return JsonUtils.sortedFromTermedProperties(init, language, validLanguages);
     }
 
     public void bulkChange(GenericDeleteAndSave deleteAndSave, boolean sync) {
