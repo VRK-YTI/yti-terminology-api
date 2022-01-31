@@ -152,8 +152,12 @@ public final class JsonUtils {
 				return 0;
 			}
 
-			List<String> t1Label = langsSortedByOrder.stream().map(t1prefLabels::get).findFirst().orElse(null);
-			List<String> t2Label = langsSortedByOrder.stream().map(t2prefLabels::get).findFirst().orElse(null);
+			List<String> t1Label = t1prefLabels.get(langsSortedByOrder.stream()
+					.filter(s -> t1prefLabels.get(s) != null)
+					.findFirst().orElse(null));
+			List<String> t2Label = t2prefLabels.get(langsSortedByOrder.stream()
+					.filter(s -> t2prefLabels.get(s) != null)
+					.findFirst().orElse(null));
 
 			if (t1Label != null && t2Label != null) {
 				return t1Label.get(0).compareTo(t2Label.get(0));

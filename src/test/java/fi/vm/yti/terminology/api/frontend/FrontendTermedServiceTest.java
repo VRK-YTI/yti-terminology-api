@@ -66,6 +66,26 @@ class FrontendTermedServiceTest {
             "]}} " +
             "]";
 
+    final String groupsJsonMissingData = "[" +
+            "{\"id\": \"123\"," +
+            "\"properties\": " +
+            "{ \"prefLabel\": [" +
+            "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
+            "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
+            "]}}," +
+            "{\"id\": \"789\"," +
+            "\"properties\": " +
+            "{ \"prefLabel\": [" +
+            "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
+            "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
+            "]}}," +
+            "{\"id\": \"456\"," +
+            "\"properties\": " +
+            "{ \"prefLabel\": [" +
+            "{ \"lang\": \"en\", \"value\": \"Public order\"}" +
+            "]}} " +
+            "]";
+
     final String organizationsJsonData = "[" +
             "{\"id\": \"321\"," +
             "\"properties\": " +
@@ -81,8 +101,24 @@ class FrontendTermedServiceTest {
             "]}}" +
             "]";
 
+    final String organizationsJsonMissingData = "[" +
+            "{\"id\": \"321\"," +
+            "\"properties\": " +
+            "{ \"prefLabel\": [" +
+            "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
+            "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
+            "]}}," +
+            "{\"id\": \"654\"," +
+            "\"properties\": " +
+            "{ \"prefLabel\": [" +
+            "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
+            "]}}" +
+            "]";
+
     final JsonNode initGroupsNode = mapper.readTree(groupsJsonData);
+    final JsonNode initGroupsNodeMissing = mapper.readTree(groupsJsonMissingData);
     final JsonNode initOrgsNode = mapper.readTree(organizationsJsonData);
+    final JsonNode initOrgsNodeMissing = mapper.readTree(organizationsJsonMissingData);
 
     FrontendTermedServiceTest() throws JsonProcessingException {
     }
@@ -181,7 +217,7 @@ class FrontendTermedServiceTest {
     }
 
     @Test
-    public void testReturnsOrganizationsUnorderedInUnknownLanguages() throws JsonProcessingException {
+    public void testReturnsOrganizationsOrderedInFiWhenUnknownLanguages() throws JsonProcessingException {
         String jsonData = "[" +
                 "{\"id\": \"654\"," +
                 "\"properties\": " +
@@ -251,6 +287,60 @@ class FrontendTermedServiceTest {
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
         JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "en");
+
+        assertEquals(expectedNode, gotten);
+    }
+
+    @Test
+    public void testReturnsOrganizationsOrderedWhenMissingLang() throws JsonProcessingException {
+        String jsonData = "[" +
+                "{\"id\": \"321\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
+                "]}}," +
+                "{\"id\": \"654\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
+                "]}}" +
+                "]";
+        JsonNode expectedNode = mapper.readTree(jsonData);
+
+        when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNodeMissing);
+
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "en");
+
+        assertEquals(expectedNode, gotten);
+    }
+
+    @Test
+    public void testReturnsGroupsOrderedWhenMissingLang() throws JsonProcessingException {
+        String jsonData = "[" +
+                "{\"id\": \"789\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
+                "]}}," +
+                "{\"id\": \"123\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
+                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
+                "]}}," +
+                "{\"id\": \"456\"," +
+                "\"properties\": " +
+                "{ \"prefLabel\": [" +
+                "{ \"lang\": \"en\", \"value\": \"Public order\"}" +
+                "]}} " +
+                "]";
+        JsonNode expectedNode = mapper.readTree(jsonData);
+
+        when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNodeMissing);
+
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "fi");
 
         assertEquals(expectedNode, gotten);
     }
