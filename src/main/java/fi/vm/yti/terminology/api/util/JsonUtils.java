@@ -1,6 +1,7 @@
 package fi.vm.yti.terminology.api.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -141,6 +142,7 @@ public final class JsonUtils {
 	}
 
 	public static JsonNode sortedFromTermedProperties(JsonNode array, String language, String[] languages) {
+		ObjectMapper mapper = new ObjectMapper();
 		List<String> langsSortedByOrder = Arrays.stream(languages).filter(s -> !s.equals(language)).collect(Collectors.toList());
 		langsSortedByOrder.add(0, language);
 
@@ -164,9 +166,36 @@ public final class JsonUtils {
 			} else {
 				return 0;
 			}
+		}).map(node -> {
+			var nodePrefLabels = localizableFromTermedProperties(node.get("properties"), "prefLabel");
+
+			for (var lang : langsSortedByOrder) {
+				if (lang.equals(language) && nodePrefLabels.get(language) != null) {
+					String newPrefLabel = "{\"lang\":\"" + language
+										+ "\", \"value\":\"" + nodePrefLabels.get(language).get(0)
+										+ "\", \"regex\":\"(?s)^.*$\"}";
+					try {
+						((ObjectNode)node.get("properties")).replace("prefLabel", mapper.readTree(newPrefLabel));
+						break;
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+					}
+				} else if (nodePrefLabels.get(lang) != null) {
+					String newPrefLabel = "{\"lang\":\"" + lang
+							+ "\", \"value\":\"" + nodePrefLabels.get(lang).get(0) + " (" + lang + ")"
+							+ "\", \"regex\":\"(?s)^.*$\"}";
+					try {
+						((ObjectNode)node.get("properties")).replace("prefLabel", mapper.readTree(newPrefLabel));
+						break;
+					} catch (JsonProcessingException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			return node;
 		}).collect(Collectors.toList());
 
-		ObjectMapper mapper = new ObjectMapper();
 		return mapper.valueToTree(nodeArray);
 	}
 }
