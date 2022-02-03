@@ -128,22 +128,19 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"789\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Asuminen\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"456\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Public order\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Järjestys\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Järjestys\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"123\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
-                "]}} " +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\", \"regex\":\"(?s)^.*$\"}" +
+                "}} " +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -159,22 +156,19 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"789\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Asuminen\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"456\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Public order\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Järjestys\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Järjestys\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"123\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
-                "]}} " +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\", \"regex\":\"(?s)^.*$\"}" +
+                "}} " +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -190,22 +184,19 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"789\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Housing\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"456\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Public order\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Järjestys\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Public order\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"123\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
-                "]}} " +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Services for families\", \"regex\":\"(?s)^.*$\"}" +
+                "}} " +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -221,16 +212,14 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"654\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Test-organization\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"321\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
-                "]}}" +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\", \"regex\":\"(?s)^.*$\"}" +
+                "}}" +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -246,16 +235,14 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"654\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Test-organization\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"321\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
-                "]}}" +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\", \"regex\":\"(?s)^.*$\"}" +
+                "}}" +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -271,16 +258,14 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"321\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"654\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Test-organization\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
-                "]}}" +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Test-organization\", \"regex\":\"(?s)^.*$\"}" +
+                "}}" +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -296,15 +281,14 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"321\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Yhteentoimivuusalustan yllapito\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Interoperability platform developers\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"654\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio\"}" +
-                "]}}" +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Testi-organisaatio (fi)\", \"regex\":\"(?s)^.*$\"}" +
+                "}}" +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
@@ -320,21 +304,19 @@ class FrontendTermedServiceTest {
         String jsonData = "[" +
                 "{\"id\": \"789\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Housing\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Asuminen\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Asuminen\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"123\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Services for families\"}," +
-                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\"}" +
-                "]}}," +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"fi\", \"value\": \"Perheiden palvelut\", \"regex\":\"(?s)^.*$\"}" +
+                "}}," +
                 "{\"id\": \"456\"," +
                 "\"properties\": " +
-                "{ \"prefLabel\": [" +
-                "{ \"lang\": \"en\", \"value\": \"Public order\"}" +
-                "]}} " +
+                "{ \"prefLabel\": " +
+                "{ \"lang\": \"en\", \"value\": \"Public order (en)\", \"regex\":\"(?s)^.*$\"}" +
+                "}} " +
                 "]";
         JsonNode expectedNode = mapper.readTree(jsonData);
 
