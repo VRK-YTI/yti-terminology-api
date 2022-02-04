@@ -146,7 +146,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "random_string");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Group, "random_string");
 
         assertEquals(expectedNode, gotten);
     }
@@ -174,7 +174,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "fi");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Group, "fi");
 
         assertEquals(expectedNode, gotten);
     }
@@ -202,7 +202,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Group, "en");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Group, "en");
 
         assertEquals(expectedNode, gotten);
     }
@@ -225,7 +225,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "random_string");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Organization, "random_string");
 
         assertEquals(expectedNode, gotten);
     }
@@ -248,7 +248,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "fi");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Organization, "fi");
 
         assertEquals(expectedNode, gotten);
     }
@@ -271,7 +271,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNode);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "en");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Organization, "en");
 
         assertEquals(expectedNode, gotten);
     }
@@ -294,7 +294,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initOrgsNodeMissing);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "en");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Organization, "en");
 
         assertEquals(expectedNode, gotten);
     }
@@ -322,7 +322,7 @@ class FrontendTermedServiceTest {
 
         when(termedRequester.exchange(eq("/node-trees"), eq(HttpMethod.GET), any(Parameters.class), eq(JsonNode.class))).thenReturn(initGroupsNodeMissing);
 
-        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrers(NodeType.Organization, "fi");
+        JsonNode gotten = frontEndTermedService.getNodeListWithoutReferencesOrReferrersV2(NodeType.Organization, "fi");
 
         assertEquals(expectedNode, gotten);
     }

@@ -307,7 +307,22 @@ public class FrontendTermedService {
     }
 
     @NotNull
-    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType, String language) {
+    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType) {
+
+        Parameters params = new Parameters();
+        params.add("select", "id");
+        params.add("select", "type");
+        params.add("select", "code");
+        params.add("select", "uri");
+        params.add("select", "properties.*");
+        params.add("where", "type.id:" + nodeType);
+        params.add("max", "-1");
+
+        return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+    }
+
+    @NotNull
+    JsonNode getNodeListWithoutReferencesOrReferrersV2(NodeType nodeType, String language) {
         final String[] validLanguages = {"fi", "en", "sv"};
 
         if (!Arrays.asList(validLanguages).contains(language)) {
