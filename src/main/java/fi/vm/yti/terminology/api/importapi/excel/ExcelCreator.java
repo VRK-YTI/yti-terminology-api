@@ -52,28 +52,26 @@ public class ExcelCreator {
      * All the vocabulary basic details are mapped from JSON to Excel here.
      */
     private void createTerminologyDetailsSheet(@NotNull Workbook workbook) {
-        SheetDTO dto = new SheetDTO();
+        var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(TERMINOLOGICAL_VOCABULARY)) {
             this.updateFilename(terminology);
 
-            dto.disableMultiColumnMode("LANGUAGE");
+            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("NAME", "prefLabel", terminology, builder);
+            this.addProperty("LANGUAGE", "language", terminology, builder, ColumnDTO.MULTI_COLUMN_MODE_DISABLED);
+            this.addPropertyOfReference("INFORMATIONDOMAIN", "inGroup", "prefLabel", terminology, builder);
+            builder.addDataToCurrentRow("VOCABULARYTYPE", terminology.getTypeAsText());
+            this.addProperty("DESCRIPTION", "description", terminology, builder);
+            this.addProperty("STATUS", "status", terminology, builder);
+            this.addPropertyOfReference("CONTRIBUTOR", "contributor", "prefLabel", terminology, builder);
+            this.addProperty("CONTACT", "contact", terminology, builder);
+            this.addCommonProperties(builder, terminology);
 
-            dto.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addProperty("NAME", "prefLabel", terminology, dto);
-            this.addProperty("LANGUAGE", "language", terminology, dto);
-            this.addPropertyOfReference("INFORMATIONDOMAIN", "inGroup", "prefLabel", terminology, dto);
-            dto.addDataToCurrentRow("VOCABULARYTYPE", terminology.getTypeAsText());
-            this.addProperty("DESCRIPTION", "description", terminology, dto);
-            this.addProperty("STATUS", "status", terminology, dto);
-            this.addPropertyOfReference("CONTRIBUTOR", "contributor", "prefLabel", terminology, dto);
-            this.addProperty("CONTACT", "contact", terminology, dto);
-            this.addCommonProperties(dto, terminology);
-
-            dto.nextRow();
+            builder.nextRow();
         }
 
         Sheet sheet = workbook.createSheet("Terminology details");
-        dto.fillSheet(sheet);
+        new ExcelBuilder().renderSheetDTO(sheet, builder.getSheet());
     }
 
     /**
@@ -82,20 +80,20 @@ public class ExcelCreator {
      * It loops over all collections and creates a row for each.
      */
     private void createCollectionsSheet(@NotNull Workbook workbook) {
-        SheetDTO dto = new SheetDTO();
+        var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(COLLECTION)) {
-            dto.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addProperty("NAME", "prefLabel", terminology, dto);
-            this.addProperty("DEFINITION", "definition", terminology, dto);
-            this.addCodeOfReference("COLLECTIONBROADER", "broader", terminology, dto);
-            this.addCodeOfReference("MEMBER", "member", terminology, dto);
-            this.addCommonProperties(dto, terminology);
+            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("NAME", "prefLabel", terminology, builder);
+            this.addProperty("DEFINITION", "definition", terminology, builder);
+            this.addCodeOfReference("COLLECTIONBROADER", "broader", terminology, builder);
+            this.addCodeOfReference("MEMBER", "member", terminology, builder);
+            this.addCommonProperties(builder, terminology);
 
-            dto.nextRow();
+            builder.nextRow();
         }
 
         Sheet sheet = workbook.createSheet("Collections");
-        dto.fillSheet(sheet);
+        new ExcelBuilder().renderSheetDTO(sheet, builder.getSheet());
     }
 
     /**
@@ -104,41 +102,41 @@ public class ExcelCreator {
      * It loops over all concepts and creates a row for each.
      */
     private void createConceptsSheet(@NotNull Workbook workbook) {
-        SheetDTO dto = new SheetDTO();
+        var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(CONCEPT)) {
-            dto.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addCodeOfReference("PREFERREDTERM", "prefLabelXl", terminology, dto);
-            this.addCodeOfReference("SYNONYM", "altLabelXl", terminology, dto);
-            this.addCodeOfReference("NONRECOMMENDEDSYNONYM", "notRecommendedSynonym", terminology, dto);
-            this.addCodeOfReference("HIDDENTERM", "hiddenTerm", terminology, dto);
-            this.addProperty("DEFINITION", "definition", terminology, dto);
-            this.addProperty("NOTE", "note", terminology, dto);
-            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, dto);
-            this.addProperty("EXAMPLE", "example", terminology, dto);
-            this.addProperty("CONCEPTSCOPE", "conceptScope", terminology, dto);
-            this.addProperty("CONCEPTCLASS", "conceptClass", terminology, dto);
-            this.addProperty("WORDCLASS", "wordClass", terminology, dto);
-            this.addProperty("CHANGENOTE", "changeNote", terminology, dto);
-            this.addProperty("HISTORYNOTE", "historyNote", terminology, dto);
-            this.addProperty("STATUS", "status", terminology, dto);
-            this.addProperty("NOTATION", "notation", terminology, dto);
-            this.addProperty("SOURCE", "source", terminology, dto);
-            this.addCodeOfReference("BROADERCONCEPT", "broader", terminology, dto);
-            this.addCodeOfReference("NARROWERCONCEPT", "narrower", terminology, dto);
-            this.addConceptLink("CLOSEMATCHINOTHERVOCABULARY", "closeMatch", terminology, dto);
-            this.addCodeOfReference("RELATEDCONCEPT", "related", terminology, dto);
-            this.addCodeOfReference("ISPARTOFCONCEPT", "isPartOf", terminology, dto);
-            this.addCodeOfReference("HASPARTCONCEPT", "hasPart", terminology, dto);
-            this.addConceptLink("RELATEDCONCEPTINOTHERVOCABULARY", "relatedMatch", terminology, dto);
-            this.addConceptLink("MATCHINGCONCEPTINOTHERVOCABULARY", "exactMatch", terminology, dto);
-            this.addCodeOfReference("SEARCHTERM", "searchTerm", terminology, dto);
-            this.addCommonProperties(dto, terminology);
+            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addCodeOfReference("PREFERREDTERM", "prefLabelXl", terminology, builder);
+            this.addCodeOfReference("SYNONYM", "altLabelXl", terminology, builder);
+            this.addCodeOfReference("NONRECOMMENDEDSYNONYM", "notRecommendedSynonym", terminology, builder);
+            this.addCodeOfReference("HIDDENTERM", "hiddenTerm", terminology, builder);
+            this.addProperty("DEFINITION", "definition", terminology, builder);
+            this.addProperty("NOTE", "note", terminology, builder);
+            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            this.addProperty("EXAMPLE", "example", terminology, builder);
+            this.addProperty("CONCEPTSCOPE", "conceptScope", terminology, builder);
+            this.addProperty("CONCEPTCLASS", "conceptClass", terminology, builder);
+            this.addProperty("WORDCLASS", "wordClass", terminology, builder);
+            this.addProperty("CHANGENOTE", "changeNote", terminology, builder);
+            this.addProperty("HISTORYNOTE", "historyNote", terminology, builder);
+            this.addProperty("STATUS", "status", terminology, builder);
+            this.addProperty("NOTATION", "notation", terminology, builder);
+            this.addProperty("SOURCE", "source", terminology, builder);
+            this.addCodeOfReference("BROADERCONCEPT", "broader", terminology, builder);
+            this.addCodeOfReference("NARROWERCONCEPT", "narrower", terminology, builder);
+            this.addConceptLink("CLOSEMATCHINOTHERVOCABULARY", "closeMatch", terminology, builder);
+            this.addCodeOfReference("RELATEDCONCEPT", "related", terminology, builder);
+            this.addCodeOfReference("ISPARTOFCONCEPT", "isPartOf", terminology, builder);
+            this.addCodeOfReference("HASPARTCONCEPT", "hasPart", terminology, builder);
+            this.addConceptLink("RELATEDCONCEPTINOTHERVOCABULARY", "relatedMatch", terminology, builder);
+            this.addConceptLink("MATCHINGCONCEPTINOTHERVOCABULARY", "exactMatch", terminology, builder);
+            this.addCodeOfReference("SEARCHTERM", "searchTerm", terminology, builder);
+            this.addCommonProperties(builder, terminology);
 
-            dto.nextRow();
+            builder.nextRow();
         }
 
         Sheet sheet = workbook.createSheet("Concepts");
-        dto.fillSheet(sheet);
+        new ExcelBuilder().renderSheetDTO(sheet, builder.getSheet());
     }
 
     /**
@@ -147,41 +145,49 @@ public class ExcelCreator {
      * It loops over all terms and creates a row for each.
      */
     private void createTermsSheet(@NotNull Workbook workbook) {
-        SheetDTO dto = new SheetDTO();
+        var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(TERM)) {
-            dto.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addProperty("TERMLITERALVALUE", "prefLabel", terminology, dto);
-            this.addProperty("SOURCE", "source", terminology, dto);
-            this.addProperty("SCOPE", "scope", terminology, dto);
-            this.addProperty("TERMSTYLE", "termStyle", terminology, dto);
-            this.addProperty("TERMFAMILY", "termFamily", terminology, dto);
-            this.addProperty("TERMCONJUGATION", "termConjugation", terminology, dto);
-            this.addProperty("TERMEQUIVALENCY", "termEquivalency", terminology, dto);
-            this.addProperty("TERMINFO", "termInfo", terminology, dto);
-            this.addProperty("WORDCLASS", "wordClass", terminology, dto);
-            this.addProperty("HOMOGRAPHNUMBER", "termHomographNumber", terminology, dto);
-            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, dto);
-            this.addProperty("DRAFTCOMMENT", "draftComment", terminology, dto);
-            this.addProperty("HISTORYNOTE", "historyNote", terminology, dto);
-            this.addProperty("CHANGENOTE", "changeNote", terminology, dto);
-            this.addProperty("STATUS", "status", terminology, dto);
-            this.addCommonProperties(dto, terminology);
+            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            this.addProperty("TERMLITERALVALUE", "prefLabel", terminology, builder);
+            this.addProperty("SOURCE", "source", terminology, builder);
+            this.addProperty("SCOPE", "scope", terminology, builder);
+            this.addProperty("TERMSTYLE", "termStyle", terminology, builder);
+            this.addProperty("TERMFAMILY", "termFamily", terminology, builder);
+            this.addProperty("TERMCONJUGATION", "termConjugation", terminology, builder);
+            this.addProperty("TERMEQUIVALENCY", "termEquivalency", terminology, builder);
+            this.addProperty("TERMINFO", "termInfo", terminology, builder);
+            this.addProperty("WORDCLASS", "wordClass", terminology, builder);
+            this.addProperty("HOMOGRAPHNUMBER", "termHomographNumber", terminology, builder);
+            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            this.addProperty("DRAFTCOMMENT", "draftComment", terminology, builder);
+            this.addProperty("HISTORYNOTE", "historyNote", terminology, builder);
+            this.addProperty("CHANGENOTE", "changeNote", terminology, builder);
+            this.addProperty("STATUS", "status", terminology, builder);
+            this.addCommonProperties(builder, terminology);
 
-            dto.nextRow();
+            builder.nextRow();
         }
 
         Sheet sheet = workbook.createSheet("Terms");
-        dto.fillSheet(sheet);
+        new ExcelBuilder().renderSheetDTO(sheet, builder.getSheet());
     }
 
     /**
      * Add common details to the given sheet. This could be called last.
      */
-    private void addCommonProperties(@NotNull SheetDTO dto, @NotNull JSONWrapper wrapper) {
-        dto.addDataToCurrentRow("CREATED", wrapper.getCreatedDate());
-        dto.addDataToCurrentRow("MODIFIED", wrapper.getLastModifiedDate());
-        dto.addDataToCurrentRow("URI", wrapper.getURI());
-        dto.addDataToCurrentRow("OPERATION", "");
+    private void addCommonProperties(@NotNull DTOBuilder builder, @NotNull JSONWrapper wrapper) {
+        builder.addDataToCurrentRow("CREATED", wrapper.getCreatedDate());
+        builder.addDataToCurrentRow("MODIFIED", wrapper.getLastModifiedDate());
+        builder.addDataToCurrentRow("URI", wrapper.getURI());
+        builder.addDataToCurrentRow("OPERATION", "");
+    }
+
+    private void addProperty(
+            @NotNull String columnName,
+            @NotNull String propertyName,
+            @NotNull JSONWrapper wrapper,
+            @NotNull DTOBuilder builder) {
+        this.addProperty(columnName, propertyName, wrapper, builder, ColumnDTO.MULTI_COLUMN_MODE_ENABLED);
     }
 
     /**
@@ -191,11 +197,10 @@ public class ExcelCreator {
             @NotNull String columnName,
             @NotNull String propertyName,
             @NotNull JSONWrapper wrapper,
-            @NotNull SheetDTO dto
-    ) {
-        dto.addColumn(columnName);
+            @NotNull DTOBuilder builder,
+            boolean multiColumnModeDisabled) {
         wrapper.getProperty(propertyName).forEach((language, values) -> {
-            dto.addDataToCurrentRow(columnName, language, values);
+            builder.addDataToCurrentRow(columnName, language, values, multiColumnModeDisabled);
         });
     }
 
@@ -207,15 +212,12 @@ public class ExcelCreator {
             @NotNull String referenceName,
             @NotNull String propertyName,
             @NotNull JSONWrapper wrapper,
-            @NotNull SheetDTO dto
-    ) {
-        dto.addColumn(columnName);
-
+            @NotNull DTOBuilder builder) {
         List<String> values = wrapper.getReference(referenceName).stream()
                 .flatMap(group -> Stream.of(group.getFirstPropertyValue(propertyName, "en")))
                 .collect(Collectors.toList());
 
-        dto.addDataToCurrentRow(columnName, values);
+        builder.addDataToCurrentRow(columnName, values);
     }
 
     /**
@@ -225,15 +227,12 @@ public class ExcelCreator {
             @NotNull String columnName,
             @NotNull String referenceName,
             @NotNull JSONWrapper wrapper,
-            @NotNull SheetDTO dto
-    ) {
-        dto.addColumn(columnName);
-
+            @NotNull DTOBuilder builder) {
         List<String> values = wrapper.getReference(referenceName).stream()
                 .flatMap(group -> Stream.of(group.getCode()))
                 .collect(Collectors.toList());
 
-        dto.addDataToCurrentRow(columnName, values);
+        builder.addDataToCurrentRow(columnName, values);
     }
 
     /**
@@ -243,17 +242,14 @@ public class ExcelCreator {
             @NotNull String columnName,
             @NotNull String referenceName,
             @NotNull JSONWrapper wrapper,
-            @NotNull SheetDTO dto
-    ) {
-        dto.addColumn(columnName);
-
+            @NotNull DTOBuilder builder) {
         List<String> values = wrapper.getReference(referenceName).stream()
                 .flatMap(reference -> Stream.ofNullable(reference.getDefinition()))
                 .map(JSONWrapper::getMemo)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        dto.addDataToCurrentRow(columnName, values);
+        builder.addDataToCurrentRow(columnName, values);
     }
 
     /**
