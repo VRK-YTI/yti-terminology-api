@@ -56,14 +56,27 @@ public class ExcelCreator {
         for (JSONWrapper terminology : this.wrappersOfType(TERMINOLOGICAL_VOCABULARY)) {
             this.updateFilename(terminology);
 
-            builder.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addProperty("NAME", "prefLabel", terminology, builder);
+            builder.addDataToCurrentRow("IDENTIFIER", terminology.getCode());
+            this.addProperty("PREFLABEL", "prefLabel", terminology, builder);
             this.addProperty("LANGUAGE", "language", terminology, builder, ColumnDTO.MULTI_COLUMN_MODE_DISABLED);
-            this.addPropertyOfReference("INFORMATIONDOMAIN", "inGroup", "prefLabel", terminology, builder);
+            this.addPropertyOfReference(
+                    "INFORMATIONDOMAIN",
+                    "inGroup",
+                    "notation",
+                    terminology,
+                    builder,
+                    ColumnDTO.MULTI_COLUMN_MODE_DISABLED
+            );
             builder.addDataToCurrentRow("VOCABULARYTYPE", terminology.getTypeAsText());
             this.addProperty("DESCRIPTION", "description", terminology, builder);
             this.addProperty("STATUS", "status", terminology, builder);
-            this.addPropertyOfReference("CONTRIBUTOR", "contributor", "prefLabel", terminology, builder);
+            this.addPropertyOfReference(
+                    "CONTRIBUTOR",
+                    "contributor",
+                    "prefLabel",
+                    terminology,
+                    builder
+            );
             this.addProperty("CONTACT", "contact", terminology, builder);
             this.addCommonProperties(builder, terminology);
 
@@ -82,8 +95,8 @@ public class ExcelCreator {
     private void createCollectionsSheet(@NotNull Workbook workbook) {
         var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(COLLECTION)) {
-            builder.addDataToCurrentRow("CODE", terminology.getCode());
-            this.addProperty("NAME", "prefLabel", terminology, builder);
+            builder.addDataToCurrentRow("IDENTIFIER", terminology.getCode());
+            this.addProperty("PREFLABEL", "prefLabel", terminology, builder);
             this.addProperty("DEFINITION", "definition", terminology, builder);
             this.addCodeOfReference("COLLECTIONBROADER", "broader", terminology, builder);
             this.addCodeOfReference("MEMBER", "member", terminology, builder);
@@ -104,16 +117,16 @@ public class ExcelCreator {
     private void createConceptsSheet(@NotNull Workbook workbook) {
         var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(CONCEPT)) {
-            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            builder.addDataToCurrentRow("IDENTIFIER", terminology.getCode());
             this.addCodeOfReference("PREFERREDTERM", "prefLabelXl", terminology, builder);
             this.addCodeOfReference("SYNONYM", "altLabelXl", terminology, builder);
             this.addCodeOfReference("NONRECOMMENDEDSYNONYM", "notRecommendedSynonym", terminology, builder);
             this.addCodeOfReference("HIDDENTERM", "hiddenTerm", terminology, builder);
             this.addProperty("DEFINITION", "definition", terminology, builder);
             this.addProperty("NOTE", "note", terminology, builder);
-            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            // Todo: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
+//            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
             this.addProperty("EXAMPLE", "example", terminology, builder);
-            this.addProperty("CONCEPTSCOPE", "conceptScope", terminology, builder);
             this.addProperty("CONCEPTCLASS", "conceptClass", terminology, builder);
             this.addProperty("WORDCLASS", "wordClass", terminology, builder);
             this.addProperty("CHANGENOTE", "changeNote", terminology, builder);
@@ -147,7 +160,7 @@ public class ExcelCreator {
     private void createTermsSheet(@NotNull Workbook workbook) {
         var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(TERM)) {
-            builder.addDataToCurrentRow("CODE", terminology.getCode());
+            builder.addDataToCurrentRow("IDENTIFIER", terminology.getCode());
             this.addProperty("TERMLITERALVALUE", "prefLabel", terminology, builder);
             this.addProperty("SOURCE", "source", terminology, builder);
             this.addProperty("SCOPE", "scope", terminology, builder);
@@ -199,9 +212,26 @@ public class ExcelCreator {
             @NotNull JSONWrapper wrapper,
             @NotNull DTOBuilder builder,
             boolean multiColumnModeDisabled) {
+        builder.ensureColumn(columnName, multiColumnModeDisabled);
         wrapper.getProperty(propertyName).forEach((language, values) -> {
             builder.addDataToCurrentRow(columnName, language, values, multiColumnModeDisabled);
         });
+    }
+
+    private void addPropertyOfReference(
+            @NotNull String columnName,
+            @NotNull String referenceName,
+            @NotNull String propertyName,
+            @NotNull JSONWrapper wrapper,
+            @NotNull DTOBuilder builder) {
+        this.addPropertyOfReference(
+                columnName,
+                referenceName,
+                propertyName,
+                wrapper,
+                builder,
+                ColumnDTO.MULTI_COLUMN_MODE_ENABLED
+        );
     }
 
     /**
@@ -212,12 +242,13 @@ public class ExcelCreator {
             @NotNull String referenceName,
             @NotNull String propertyName,
             @NotNull JSONWrapper wrapper,
-            @NotNull DTOBuilder builder) {
+            @NotNull DTOBuilder builder,
+            boolean multiColumnModeDisabled) {
         List<String> values = wrapper.getReference(referenceName).stream()
                 .flatMap(group -> Stream.of(group.getFirstPropertyValue(propertyName, "en")))
                 .collect(Collectors.toList());
 
-        builder.addDataToCurrentRow(columnName, values);
+        builder.addDataToCurrentRow(columnName, "", values, multiColumnModeDisabled);
     }
 
     /**

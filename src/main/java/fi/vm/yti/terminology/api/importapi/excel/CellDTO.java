@@ -9,17 +9,17 @@ import java.util.stream.Collectors;
 
 public class CellDTO {
     @NotNull
-    private final List<StringValueDTO> values;
+    private final List<ValueDTOInterface<?>> values;
 
     public CellDTO() {
         this.values = new ArrayList<>();
     }
 
-    public void addAll(@NotNull Collection<StringValueDTO> values) {
+    public void addAll(@NotNull Collection<ValueDTOInterface<?>> values) {
         this.values.addAll(values);
     }
 
-    public @NotNull List<StringValueDTO> getValues() {
+    public @NotNull List<ValueDTOInterface<?>> getValues() {
         return values;
     }
 
@@ -33,7 +33,7 @@ public class CellDTO {
 
     public @NotNull String joinValues() {
         return this.values.stream()
-                .map(StringValueDTO::getValue)
+                .map(ValueDTOInterface::getValueAsString)
                 .collect(Collectors.joining(";"));
     }
 }

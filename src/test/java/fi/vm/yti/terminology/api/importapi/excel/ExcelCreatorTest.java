@@ -61,10 +61,10 @@ public class ExcelCreatorTest {
         assertEquals("Terms", workbook.getSheetName(3));
 
         // Check only that sheets are not empty
-        Helpers.assertExcelCellHasValue(workbook.getSheet("Terminology details"), 0, 0, "CODE");
-        Helpers.assertExcelCellHasValue(workbook.getSheet("Collections"), 0, 0, "CODE");
-        Helpers.assertExcelCellHasValue(workbook.getSheet("Concepts"), 0, 0, "CODE");
-        Helpers.assertExcelCellHasValue(workbook.getSheet("Terms"), 0, 0, "CODE");
+        Helpers.assertExcelCellHasStringValue(workbook.getSheet("Terminology details"), 0, 0, "CODE");
+        Helpers.assertExcelCellHasStringValue(workbook.getSheet("Collections"), 0, 0, "CODE");
+        Helpers.assertExcelCellHasStringValue(workbook.getSheet("Concepts"), 0, 0, "CODE");
+        Helpers.assertExcelCellHasStringValue(workbook.getSheet("Terms"), 0, 0, "CODE");
 
         // Check filename
         assertEquals("New terminology", creator.getFilename());

@@ -2,15 +2,30 @@ package fi.vm.yti.terminology.api.importapi.excel;
 
 import org.jetbrains.annotations.NotNull;
 
-public class StringValueDTO {
-    @NotNull
-    private final String value;
-
+public class StringValueDTO extends AbstractValueDTO<String> {
     public StringValueDTO(@NotNull String value) {
-        this.value = value;
+        super(value);
     }
 
-    public @NotNull String getValue() {
-        return value;
+    public @NotNull String getValueAsString() {
+        return this.value;
+    }
+
+    public int getValueAsInt() {
+        try {
+            return Integer.parseInt(this.value);
+        } catch(NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    public boolean isInteger() {
+        try {
+            Integer.parseInt(this.value);
+        } catch(NumberFormatException e) {
+            return false;
+        }
+
+        return true;
     }
 }

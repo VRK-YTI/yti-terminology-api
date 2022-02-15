@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -46,32 +44,29 @@ public class JSONWrapper {
         return this.json.get("code").textValue();
     }
 
-    public String getCreatedDate() {
-        return DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault())
-                .format(Instant.parse(this.json.get("createdDate").textValue()));
+    public Instant getCreatedDate() {
+        return Instant.parse(this.json.get("createdDate").textValue());
     }
 
-    public String getLastModifiedDate() {
-        return DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault())
-                .format(Instant.parse(this.json.get("lastModifiedDate").textValue()));
+    public Instant getLastModifiedDate() {
+        return Instant.parse(this.json.get("lastModifiedDate").textValue());
     }
 
     public String getType() {
         return this.json.get("type").get("id").textValue();
     }
 
+    /**
+     * https://koodistot.suomi.fi/codescheme;registryCode=interoperabilityplatform;schemeCode=yterm
+     */
     public String getTypeAsText() {
         String type = this.getType();
 
         if (type.equals("TerminologicalVocabulary")) {
-            return "Terminological Dictionary";
+            return "1";
         }
 
-        return type;
+        return "2";
     }
 
     /**

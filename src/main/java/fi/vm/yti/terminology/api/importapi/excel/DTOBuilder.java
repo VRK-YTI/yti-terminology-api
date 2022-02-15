@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.importapi.excel;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,11 @@ public class DTOBuilder {
         this.addDataToCurrentRow(columnName, "", List.of(value), ColumnDTO.MULTI_COLUMN_MODE_ENABLED);
     }
 
-    public void addDataToCurrentRow(@NotNull String columnName, @NotNull List<String> values) {
+    public void addDataToCurrentRow(@NotNull String columnName, @NotNull Instant value) {
+        this.addDataToCurrentRow(columnName, "", List.of(value), ColumnDTO.MULTI_COLUMN_MODE_ENABLED);
+    }
+
+    public void addDataToCurrentRow(@NotNull String columnName, @NotNull List<?> values) {
         this.addDataToCurrentRow(columnName, "", values, ColumnDTO.MULTI_COLUMN_MODE_ENABLED);
     }
 
@@ -43,12 +48,26 @@ public class DTOBuilder {
     public void addDataToCurrentRow(
             @NotNull String columnName,
             @NotNull String lang,
-            @NotNull List<String> values,
+            @NotNull List<?> values,
             boolean multiColumnModeDisabled) {
         var column = sheet.getOrCreateColumn(columnName, multiColumnModeDisabled);
         var localizedColumn = column.getOrCreateLocalizedColumn(lang);
         var cell = localizedColumn.getOrCreateCell(this.currentRowIndex);
-        var valueDTOs = values.stream().map(StringValueDTO::new).collect(Collectors.toList());
-        cell.addAll(valueDTOs);
+        cell.addAll(values.stream().map(value -> {
+            if (value instanceof String) {
+                return new StringValueDTO((String) value);
+            } else if (value instanceof Instant) {
+                return new InstantValueDTO((Instant) value);
+            } else {
+                throw new UnsupportedOperationException("Only String and Instant are supported");
+            }
+        }).collect(Collectors.toList()));
+    }
+
+    /**
+     * Ensure that column exists. Column are rendered to the Excel in the same order as this is called.
+     */
+    public void ensureColumn(@NotNull String columnName, boolean multiColumnModeDisabled) {
+        sheet.getOrCreateColumn(columnName, multiColumnModeDisabled);
     }
 }

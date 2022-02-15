@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.importapi.excel;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,6 +19,48 @@ public class DTOBuilderTest {
 
         assertTrue(builder.getSheet().getColumns().isEmpty());
         assertTrue(builder.getSheet().getColumnNames().isEmpty());
+    }
+
+    @Test
+    public void testEnsureColumn() {
+        var builder = new DTOBuilder();
+        builder.ensureColumn("Column A", false);
+        builder.ensureColumn("Column A", false);
+        builder.ensureColumn("Column B", false);
+
+        assertEquals(2, builder.getSheet().getColumnNames().size());
+        assertTrue(builder.getSheet().getColumnNames().containsAll(List.of("Column A", "Column B")));
+    }
+
+    @Test
+    public void testAddDataToTheColumnWithStringValue() {
+        var builder = new DTOBuilder();
+        builder.addDataToCurrentRow("Column A", "Value");
+
+        Helpers.assertDTOHasValue(builder.getSheet(), "Column A", "", 0, "Value");
+    }
+
+    @Test
+    public void testAddDataToTheColumnWithInstantValue() {
+        var instant = Instant.now();
+        var builder = new DTOBuilder();
+        builder.addDataToCurrentRow("Column A", instant);
+
+        Helpers.assertDTOHasValue(builder.getSheet(), "Column A", "", 0, instant);
+    }
+
+    @Test
+    public void testAddDataToTheColumnWithUnsupportedValue() {
+        var builder = new DTOBuilder();
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> builder.addDataToCurrentRow(
+                        "Column A",
+                        "",
+                        List.of(Integer.MAX_VALUE),
+                        false
+                )
+        );
     }
 
     @Test

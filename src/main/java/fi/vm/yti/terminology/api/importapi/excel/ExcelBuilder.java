@@ -1,11 +1,14 @@
 package fi.vm.yti.terminology.api.importapi.excel;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 public class ExcelBuilder {
@@ -135,7 +138,14 @@ public class ExcelBuilder {
             var values = dto.getValues();
             for (int i = 0; i < values.size(); i++) {
                 var value = values.get(i);
-                this.renderStringValueDTO(sheet, value, rowIndex, columnIndex + i);
+
+                if (value instanceof StringValueDTO) {
+                    this.renderStringValueDTO(sheet, (StringValueDTO) value, rowIndex, columnIndex + i);
+                } else if (value instanceof InstantValueDTO) {
+                    this.renderInstantValueDTO(sheet, (InstantValueDTO) value, rowIndex, columnIndex + i);
+                } else {
+                    throw new UnsupportedOperationException("Unsupported instance of ValueDTOInterface");
+                }
             }
         }
     }
@@ -148,12 +158,38 @@ public class ExcelBuilder {
             @NotNull StringValueDTO value,
             int rowIndex,
             int columnIndex) {
+        var cell = this.getCell(sheet, rowIndex, columnIndex);
+
+        if (value.isInteger()) {
+            cell.setCellValue(value.getValueAsInt());
+        } else {
+            cell.setCellValue(value.getValue());
+        }
+    }
+
+    /**
+     * Render a single value to the given point of Excel sheet.
+     */
+    private void renderInstantValueDTO(
+            @NotNull Sheet sheet,
+            @NotNull InstantValueDTO value,
+            int rowIndex,
+            int columnIndex) {
+        var creationHelper = sheet.getWorkbook().getCreationHelper();
+        var style = sheet.getWorkbook().createCellStyle();
+        style.setDataFormat(creationHelper.createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
+
+        var cell = this.getCell(sheet, rowIndex, columnIndex);
+        cell.setCellValue(LocalDateTime.ofInstant(value.getValue(), ZoneId.systemDefault()));
+        cell.setCellStyle(style);
+    }
+
+    private Cell getCell(@NotNull Sheet sheet, int rowIndex, int columnIndex) {
         var row = sheet.getRow(rowIndex);
         if (row == null) {
             row = sheet.createRow(rowIndex);
         }
 
-        Cell cell = row.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-        cell.setCellValue(value.getValue());
+        return row.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
     }
 }
