@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.importapi.excel;
 
+import org.apache.poi.ss.formula.functions.Column;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -124,9 +125,11 @@ public class ExcelCreator {
             this.addCodeOfReference("HIDDENTERM", "hiddenTerm", terminology, builder);
             this.addProperty("DEFINITION", "definition", terminology, builder);
             this.addProperty("NOTE", "note", terminology, builder);
-            // Todo: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
+            // TODO: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
 //            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
             this.addProperty("EXAMPLE", "example", terminology, builder);
+            // TODO: Add data to SUBJECTAREA when implemented. Currently only placeholder column is added.
+            builder.ensureColumn("SUBJECTAREA", ColumnDTO.MULTI_COLUMN_MODE_ENABLED);
             this.addProperty("CONCEPTCLASS", "conceptClass", terminology, builder);
             this.addProperty("WORDCLASS", "wordClass", terminology, builder);
             this.addProperty("CHANGENOTE", "changeNote", terminology, builder);
