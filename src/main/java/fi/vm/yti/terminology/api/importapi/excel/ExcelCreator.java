@@ -174,7 +174,8 @@ public class ExcelCreator {
             this.addProperty("TERMINFO", "termInfo", terminology, builder);
             this.addProperty("WORDCLASS", "wordClass", terminology, builder);
             this.addProperty("HOMOGRAPHNUMBER", "termHomographNumber", terminology, builder);
-            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            // TODO: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
+//            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
             this.addProperty("DRAFTCOMMENT", "draftComment", terminology, builder);
             this.addProperty("HISTORYNOTE", "historyNote", terminology, builder);
             this.addProperty("CHANGENOTE", "changeNote", terminology, builder);
