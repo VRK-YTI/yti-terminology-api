@@ -333,8 +333,11 @@ public class FrontendController {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "List counts of concepts and vocabularies grouped by different search results")
     @ApiResponse(responseCode = "200", description = "Counts response container object as JSON")
     @RequestMapping(value = "/counts", method = GET, produces = APPLICATION_JSON_VALUE)
-    CountSearchResponse getCounts() {
-        logger.info("GET /counts requested");
+    CountSearchResponse getCounts(@RequestParam(required = false) boolean vocabularies) {
+        logger.info("GET /counts requested with vocabulary: " + vocabularies);
+        if (vocabularies) {
+            return elasticSearchService.getVocabularyCounts();
+        }
         return elasticSearchService.getCounts();
     }
 

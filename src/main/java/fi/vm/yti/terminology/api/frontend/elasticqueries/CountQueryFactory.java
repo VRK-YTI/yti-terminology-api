@@ -47,6 +47,19 @@ public class CountQueryFactory {
         return sr;
     }
 
+    public SearchRequest createVocabularyCountQuery() {
+        QueryBuilder withIncompleteHandling = QueryBuilders.boolQuery()
+                .mustNot(QueryBuilders.matchQuery("properties.status.value", "INCOMPLETE"));
+
+        return new SearchRequest("vocabularies")
+                .source(new SearchSourceBuilder()
+                        .size(0)
+                        .query(withIncompleteHandling)
+                        .aggregation(this.createStatusAggregation())
+                        .aggregation(this.createGroupAggregation())
+                        .aggregation(this.createIndexAggregation()));
+    }
+
     public SearchRequest createConceptCountQuery(UUID vocabularyId) {
 
         QueryBuilder query = QueryBuilders.boolQuery()
