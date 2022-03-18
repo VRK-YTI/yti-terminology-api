@@ -31,6 +31,17 @@ public class CountQueryFactoryTest {
     }
 
     @Test
+    public void testVocabularyOnlyCounts() throws Exception {
+        String expected = EsUtils.getJsonString("/es/request/vocabulary_only_count_request.json");
+
+        SearchRequest request = factory.createVocabularyCountQuery();
+
+        JSONAssert.assertEquals(expected, request.source().toString(), JSONCompareMode.LENIENT);
+        assertEquals(request.indices().length, 1);
+        assertEquals(request.indices()[0], "vocabularies");
+    }
+
+    @Test
     public void testConceptCounts() throws Exception {
         String expected = EsUtils.getJsonString("/es/request/concept_count_request.json");
 
@@ -56,5 +67,31 @@ public class CountQueryFactoryTest {
         assertEquals(2, statuses.keySet().size());
         assertEquals(7, statuses.get("DRAFT"));
         assertEquals(1, statuses.get("VALID"));
+    }
+
+    @Test
+    public void testParseVocabularyOnlyResponse() throws Exception {
+        SearchResponse response = EsUtils.getMockResponse("/es/response/vocabulary_only_count_response.json");
+
+        CountSearchResponse countSearchResponse = factory.parseResponse(response);
+
+        assertEquals(8, countSearchResponse.getTotalHitCount());
+        Map<String, Long> groups = countSearchResponse.getCounts().getGroups();
+        Map<String, Long> statuses = countSearchResponse.getCounts().getStatuses();
+        Map<String, Long> categories = countSearchResponse.getCounts().getCategories();
+
+        assertEquals(2, groups.keySet().size());
+        assertEquals(groups.get("6f505105-5cc8-3293-aff6-64a58114bbe8"), 1L);
+        assertEquals(groups.get("9f69e282-b4d9-3cc0-a0d2-e7ccd861266a"), 1L);
+
+        assertEquals(2, statuses.keySet().size());
+        assertEquals(7, statuses.get("DRAFT"));
+        assertEquals(1, statuses.get("VALID"));
+
+        assertEquals(2, categories.get("TerminologicalVocabulary"));
+        assertEquals(0, categories.get("Concept"));
+        assertEquals(0, categories.get("OtherVocabulary"));
+        assertEquals(0, categories.get("Collection"));
+
     }
 }
