@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import fi.vm.yti.terminology.api.util.IndexUtil;
 import org.jetbrains.annotations.NotNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import fi.vm.yti.terminology.api.util.JsonUtils;
+
+import static fi.vm.yti.terminology.api.util.JsonUtils.localizableToJson;
 
 public final class Vocabulary {
 
@@ -74,6 +77,7 @@ public final class Vocabulary {
         output.put("id", graphId.toString());
         output.put("uri", uri);
         output.put("status", status);
+        output.set("sortByLabel", localizableToJson(objectMapper, IndexUtil.createSortLabels(label)));
 
         return output;
     }

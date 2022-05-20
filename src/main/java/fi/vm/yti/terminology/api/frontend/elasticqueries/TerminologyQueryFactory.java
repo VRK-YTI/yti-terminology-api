@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import fi.vm.yti.terminology.api.exception.InvalidQueryException;
+import fi.vm.yti.terminology.api.frontend.Status;
 import fi.vm.yti.terminology.api.frontend.TerminologyType;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -186,7 +187,18 @@ public class TerminologyQueryFactory {
             ((BoolQueryBuilder) shouldQuery).minimumShouldMatch(1);
         }
 
-        sourceBuilder.query(shouldQuery != null ? shouldQuery : mustQuery);
+        if (statuses == null || statuses.length == 0) {
+            QueryBuilder boostingQuery = QueryBuilders.boostingQuery(
+                    shouldQuery != null ? shouldQuery : mustQuery,
+                    QueryBuilders
+                            .boolQuery()
+                            .must(QueryBuilders.matchQuery("properties.status.value", Status.SUPERSEDED.name()))
+            ).negativeBoost(0.1f);
+
+            sourceBuilder.query(boostingQuery);
+        } else {
+            sourceBuilder.query(shouldQuery != null ? shouldQuery : mustQuery);
+        }
 
         SearchRequest sr = new SearchRequest("vocabularies")
             .source(sourceBuilder);

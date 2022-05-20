@@ -3,10 +3,9 @@ package fi.vm.yti.terminology.api.index;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fi.vm.yti.terminology.api.util.IndexUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import fi.vm.yti.terminology.api.util.JsonUtils;
 
 import java.util.*;
 
@@ -189,21 +188,6 @@ final class Concept {
         return narrowerIds;
     }
 
-    private @NotNull Map<String, List<String>> getSingleLabelAsLower() {
-
-        Map<String, List<String>> result = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<String>> entry : label.entrySet()) {
-
-            String language = entry.getKey();
-            List<String> singleLocalizationAsLower = entry.getValue().stream().limit(1).map(String::toLowerCase).collect(toList());
-
-            result.put(language, singleLocalizationAsLower);
-        }
-
-        return result;
-    }
-
     @NotNull JsonNode toElasticSearchDocument(ObjectMapper mapper) {
 
         ObjectNode output = mapper.createObjectNode();
@@ -214,7 +198,7 @@ final class Concept {
         output.set("definition", localizableToJson(mapper, definition));
         output.set("label", localizableToJson(mapper, label));
         output.set("altLabel", localizableToJson(mapper, altLabel));
-        output.set("sortByLabel", localizableToJson(mapper, getSingleLabelAsLower()));
+        output.set("sortByLabel", localizableToJson(mapper, IndexUtil.createSortLabels(label)));
 
         if (createdDate != null) {
             output.put("created", createdDate);

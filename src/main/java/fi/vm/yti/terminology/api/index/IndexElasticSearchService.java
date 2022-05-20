@@ -149,16 +149,12 @@ public class IndexElasticSearchService {
         ObjectMapper mapper = new ObjectMapper();
         List<String> indexLines = new ArrayList<>();
         vocabularies.forEach(o -> {
-            try {
-                String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
-                        + o.get("id") + "}}\n" + mapper.writeValueAsString(o) + "\n";
-                indexLines.add(line);
-                if (log.isDebugEnabled()) {
-                    log.debug("reindex line:" + line);
-                }
-            } catch (JsonProcessingException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            Vocabulary voc = Vocabulary.createFromExtJson(o);
+            String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
+                    + o.get("id") + "}}\n" + voc.toElasticSearchObject(mapper) + "\n";
+            indexLines.add(line);
+            if (log.isDebugEnabled()) {
+                log.debug("reindex line:" + line);
             }
         });
         String index = indexLines.stream().collect(Collectors.joining("\n"));
