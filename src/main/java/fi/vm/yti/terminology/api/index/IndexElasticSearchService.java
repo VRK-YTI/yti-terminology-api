@@ -3,12 +3,10 @@ package fi.vm.yti.terminology.api.index;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import fi.vm.yti.terminology.api.exception.ElasticEndpointException;
 import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapper;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.action.search.SearchRequest;
@@ -16,7 +14,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RequestOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,9 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import fi.vm.yti.terminology.api.util.JsonUtils;
 import fi.vm.yti.terminology.api.util.Parameters;
-import fi.vm.yti.terminology.api.model.termed.*;
 
 import static fi.vm.yti.terminology.api.util.ElasticRequestUtils.responseContentAsJson;
 import static fi.vm.yti.terminology.api.util.ElasticRequestUtils.responseContentAsString;
@@ -149,12 +144,16 @@ public class IndexElasticSearchService {
         ObjectMapper mapper = new ObjectMapper();
         List<String> indexLines = new ArrayList<>();
         vocabularies.forEach(o -> {
-            Vocabulary voc = Vocabulary.createFromExtJson(o);
-            String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
-                    + o.get("id") + "}}\n" + voc.toElasticSearchObject(mapper) + "\n";
-            indexLines.add(line);
-            if (log.isDebugEnabled()) {
-                log.debug("reindex line:" + line);
+            try {
+                String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
+                          + o.get("id") + "}}\n" + Vocabulary.toElasticSearchVocabularyIndexObject(mapper, o) + "\n";
+                indexLines.add(line);
+                if (log.isDebugEnabled()) {
+                    log.debug("reindex line:" + line);
+                }
+            } catch (JsonProcessingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         });
         String index = indexLines.stream().collect(Collectors.joining("\n"));
@@ -196,7 +195,7 @@ public class IndexElasticSearchService {
         ObjectMapper mapper = new ObjectMapper();
         try {
             String index = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"" + "vocabulary" + "\", \"_id\":"
-                    + jn.get("id") + "}}\n" + mapper.writeValueAsString(jn) + "\n";
+                    + jn.get("id") + "}}\n" + Vocabulary.toElasticSearchVocabularyIndexObject(mapper, jn) + "\n";
             String delete = "";
             // CHANGED CONTENT TYPE FOR ELASTIC 6.X
             HttpEntity entity = new NStringEntity(index + delete,
