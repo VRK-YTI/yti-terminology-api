@@ -105,8 +105,9 @@ public class TerminologyQueryFactory {
         if (statuses != null && statuses.length > 0) {
             mustQueries.add(ElasticRequestUtils.buildStatusQuery(
                     statuses, "properties.status.value"));
-        } else {
+        } else if (statuses != null && statuses.length == 0) {
             // By default, do not show RETIRED and SUPERSEDED statuses
+            // for old application (statuses == null) show all statuses
             mustQueries.add(ElasticRequestUtils.buildStatusQuery(
                     new String[] {
                             Status.DRAFT.name(),

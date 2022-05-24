@@ -98,8 +98,9 @@ public class ConceptQueryFactory {
         if (request.getStatus() != null && request.getStatus().length > 0) {
             QueryBuilder statusQuery = QueryBuilders.termsQuery("status", request.getStatus());
             mustParts.add(statusQuery);
-        } else {
+        } else if (request.getStatus() != null && request.getStatus().length == 0) {
             // By default, do not show RETIRED and SUPERSEDED statuses
+            // for old application (request.getStatus() == null) show all statuses
             mustParts.add(QueryBuilders.termsQuery("status",
                     Status.DRAFT.name(),
                     Status.VALID.name(),
