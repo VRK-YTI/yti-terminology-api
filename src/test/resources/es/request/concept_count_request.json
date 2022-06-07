@@ -1,0 +1,35 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "vocabulary.id": {
+              "query": "bab3aa74-a2c2-4750-ad5b-4fd7f007edca"
+            }
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "status": {
+              "query": "INCOMPLETE"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggregations": {
+    "statusagg": {
+      "terms": {
+        "script": {
+          "source": "doc.containsKey('status') ? doc.status : params._source.properties.status[0].value",
+          "lang": "painless"
+        }
+      }
+    }
+  }
+}

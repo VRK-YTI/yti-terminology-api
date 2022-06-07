@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <RECORD numb="c100" stat="VALID" type="aputermi">
+        <LANG value="fi">
+            <TE stat="VALID">
+                <TERM>suositettava termi 1</TERM>
+            </TE>
+        </LANG>
+    </RECORD>
+
+    <RECORD numb="c200" stat="VALID" type="vanhentunut">
+        <LANG value="fi">
+            <TE>
+                <TERM>suositettava termi 2</TERM>
+            </TE>
+        </LANG>
+    </RECORD>
+</VOCABULARY>

@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.TermedRequester;
+import fi.vm.yti.terminology.api.exception.NamespaceInUseException;
 import fi.vm.yti.terminology.api.exception.NodeNotFoundException;
 import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
-import fi.vm.yti.terminology.api.integration.IntegrationService;
+import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionDTO;
+import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionResponse;
 import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.security.AuthorizationManager;
 import fi.vm.yti.terminology.api.util.JsonUtils;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static fi.vm.yti.security.AuthorizationException.check;
 import static fi.vm.yti.terminology.api.model.termed.VocabularyNodeType.TerminologicalVocabulary;
@@ -66,7 +70,7 @@ public class FrontendTermedService {
         this.namespaceRoot = namespaceRoot;
     }
 
-    boolean isNamespaceInUse(String prefix) {
+    public boolean isNamespaceInUse(String prefix) {
 
         String namespace = formatNamespace(prefix);
 
@@ -105,7 +109,8 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
@@ -166,7 +171,7 @@ public class FrontendTermedService {
         return requireNonNull(mapper.convertValue(nodes,JsonNode.class));
     }
 
-    void createVocabulary(UUID templateGraphId, String prefix, GenericNode vocabularyNode, UUID graphId, boolean sync) {
+    public void createVocabulary(UUID templateGraphId, String prefix, GenericNode vocabularyNode, UUID graphId, boolean sync) {
 
         check(authorizationManager.canCreateVocabulary(vocabularyNode));
 
@@ -223,7 +228,8 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, conceptId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
@@ -253,7 +259,8 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, collectionId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper());
+            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+                    authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
 
@@ -267,7 +274,10 @@ public class FrontendTermedService {
         params.add("select", "uri");
         params.add("select", "properties.prefLabel");
         params.add("select", "properties.status");
+        params.add("select", "properties.definition");
         params.add("select", "lastModifiedDate");
+        params.add("select", "references.*");
+        params.add("select", "references.prefLabelXl:2");
         params.add("where", "graph.id:" + graphId);
         params.add("where", "type.id:" + "Collection");
         params.add("max", "-1");
@@ -299,7 +309,7 @@ public class FrontendTermedService {
     }
 
     @NotNull
-    JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType) {
+    public JsonNode getNodeListWithoutReferencesOrReferrers(NodeType nodeType) {
 
         Parameters params = new Parameters();
         params.add("select", "id");
@@ -313,6 +323,27 @@ public class FrontendTermedService {
         return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
     }
 
+    @NotNull
+    JsonNode getNodeListWithoutReferencesOrReferrersV2(NodeType nodeType, String language) {
+        final String[] validLanguages = {"fi", "en", "sv"};
+
+        if (!Arrays.asList(validLanguages).contains(language)) {
+            language = "fi";
+        }
+
+        Parameters params = new Parameters();
+        params.add("select", "id");
+        params.add("select", "type");
+        params.add("select", "code");
+        params.add("select", "uri");
+        params.add("select", "properties.*");
+        params.add("where", "type.id:" + nodeType);
+        params.add("max", "-1");
+
+        var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        return JsonUtils.sortedFromTermedProperties(init, language, validLanguages);
+    }
+
     public void bulkChange(GenericDeleteAndSave deleteAndSave, boolean sync) {
 
         check(authorizationManager.canModifyNodes(deleteAndSave.getSave()));
@@ -323,6 +354,60 @@ public class FrontendTermedService {
 
     public void bulkChangeWithoutAuthorization(GenericDeleteAndSave deleteAndSave, boolean sync, UUID externalUserId) {
         updateAndDeleteInternalNodes(deleteAndSave, sync, externalUserId);
+    }
+
+    public void modifyStatuses(UUID graphId,
+                             Set<String> types,
+                             String oldStatus,
+                             String newStatus) {
+        check(authorizationManager.canModifyAllGraphs(singletonList(graphId)));
+
+        Set<String> validTypes = Stream
+                .of("Concept", "Term")
+                .collect(Collectors.toSet());
+
+        if (types.isEmpty() || !validTypes.containsAll(types)) {
+            throw new IllegalArgumentException("Invalid types: " + String.join(", ", types));
+        }
+
+        Set<String> validStatuses = Stream
+                .of("INCOMPLETE", "DRAFT", "VALID", "RETIRED", "SUPERSEDED")
+                .collect(Collectors.toSet());
+
+        if (!validStatuses.contains(oldStatus)) {
+            throw new IllegalArgumentException("Invalid oldStatus: " + oldStatus);
+        }
+        if (!validStatuses.contains(newStatus)) {
+            throw new IllegalArgumentException("Invalid newStatus: " + newStatus);
+        }
+
+        Parameters params = new Parameters();
+        params.add("append", "false");
+
+        // filter nodes to modify
+        params.add("where", "properties.status:" + oldStatus);
+
+        // specify new status with property values
+        var properties = singletonMap(
+                "properties",
+                singletonMap(
+                        "status",
+                        singletonList(singletonMap(
+                                "value",
+                                newStatus
+                        ))
+                )
+        );
+
+        // need to make separate calls for each type
+        for (var type : types) {
+            termedRequester.exchange(
+                    "/graphs/" + graphId + "/types/" + type + "/nodes",
+                    HttpMethod.PATCH,
+                    params,
+                    String.class,
+                    properties);
+        }
     }
 
     void removeNodes(boolean sync, boolean disconnect, List<Identifier> identifiers) {
@@ -364,6 +449,119 @@ public class FrontendTermedService {
 
     public @NotNull Graph getGraph(UUID graphId) {
         return requireNonNull(termedRequester.exchange("/graphs/" + graphId, GET, Parameters.empty(), Graph.class));
+    }
+
+    public CreateVersionResponse createVersion(CreateVersionDTO createVersionDTO) throws Exception {
+        logger.info("Creating new version from vocabulary {}. New prefix {}",
+                createVersionDTO.getGraphId(), createVersionDTO.getNewCode());
+
+        check(authorizationManager.canCreateNewVersion(createVersionDTO.getGraphId()));
+
+        if (this.isNamespaceInUse(createVersionDTO.getNewCode())) {
+            throw new NamespaceInUseException();
+        }
+
+        Dump dump = termedRequester.exchange("/graphs/" + createVersionDTO.getGraphId() + "/dump",
+                GET, Parameters.empty(), Dump.class);
+
+        if (dump == null || dump.getGraphs().isEmpty()) {
+            throw new VocabularyNotFoundException(createVersionDTO.getGraphId());
+        }
+
+        Graph oldGraph = dump.getGraphs().get(0);
+        UUID newGraphId = UUID.randomUUID();
+
+        Graph graph = new Graph(newGraphId,
+                createVersionDTO.getNewCode(),
+                formatNamespace(createVersionDTO.getNewCode()),
+                oldGraph.getRoles(),
+                oldGraph.getPermissions(),
+                oldGraph.getProperties());
+
+        List<MetaNode> metaNodes = dump.getTypes().stream().map(t -> new MetaNode(
+                t.getId(),
+                t.getUri(),
+                t.getIndex(),
+                t.getGraph(),
+                t.getPermissions(),
+                t.getProperties(),
+                t.getTextAttributes(),
+                t.getReferenceAttributes())
+            .copyToGraph(newGraphId)
+        ).collect(Collectors.toList());
+
+        // Create id map for saving references
+        Map<UUID, UUID> nodeIdMap = new HashMap<>();
+        dump.getNodes().stream().forEach(n -> nodeIdMap.put(n.getId(), UUID.randomUUID()));
+
+        List<GenericNode> nodes = dump.getNodes().stream().map(n -> new GenericNode(
+                nodeIdMap.get(n.getId()),
+                n.getCode(),
+                String.format("%s%s/",
+                        formatNamespace(createVersionDTO.getNewCode()), n.getCode()),
+                n.getNumber(),
+                n.getCreatedBy(),
+                n.getCreatedDate(),
+                n.getLastModifiedBy(),
+                n.getLastModifiedDate(),
+                n.getType(),
+                getNewVersionProperties(n),
+                n.getReferences(),
+                n.getReferrers())
+            .copyAllToGraph(newGraphId, nodeIdMap)
+        ).collect(Collectors.toList());
+
+        Dump newVersion = new Dump(asList(graph), metaNodes, nodes);
+
+        try {
+            UUID username = ensureTermedUser(null);
+            termedRequester.exchange("/dump", POST, Parameters.empty(), String.class,
+                    newVersion, username.toString(), USER_PASSWORD);
+        } catch (Exception e) {
+            logger.error("Error creating new version", e);
+            throw e;
+        }
+
+        return new CreateVersionResponse(newGraphId, formatNamespace(createVersionDTO.getNewCode()));
+    }
+
+    private Map<String, List<Attribute>> getNewVersionProperties(GenericNode node) {
+        Map<String, List<Attribute>> properties = new HashMap<>();
+        var originalProperties = node.getProperties();
+
+        originalProperties.keySet().stream().forEach(key -> {
+
+            var originalAttributes = originalProperties.get(key);
+
+            // change all statuses to DRAFT
+            if ("status".equals(key)) {
+                var newAttributes = originalAttributes.stream().map(att ->
+                   new Attribute(att.getLang(), "DRAFT", null)
+                ).collect(Collectors.toList());
+
+                properties.put(key, newAttributes);
+            } else if ("prefLabel".equals(key) && isVocabulary(node)) {
+                var newAttributes = originalAttributes.stream().map(att ->
+                        new Attribute(att.getLang(), att.getValue() + " (Copy)", null)
+                ).collect(Collectors.toList());
+
+                properties.put(key, newAttributes);
+            } else {
+                properties.put(key, originalAttributes);
+            }
+        });
+
+        // store origin of new version
+        if (isVocabulary(node)) {
+            properties.put("origin", asList(new Attribute("", node.getUri())));
+        }
+
+        return properties;
+    }
+
+    private boolean isVocabulary(Node node) {
+        return asList(NodeType.TerminologicalVocabulary, NodeType.Vocabulary)
+                .contains(node.getType().getId());
     }
 
     private @NotNull List<Identifier> getAllNodeIdentifiers(UUID graphId) {
@@ -467,14 +665,14 @@ public class FrontendTermedService {
     }
 
     private GenericNodeInlined userNameToDisplayName(GenericNodeInlined node,
-            UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
-
+                                                     UserIdToDisplayNameMapper userIdToDisplayNameMapper,
+                                                     boolean mapUserNames) {
         return new GenericNodeInlined(node.getId(), node.getCode(), node.getUri(), node.getNumber(),
-                userIdToDisplayNameMapper.map(node.getCreatedBy()), node.getCreatedDate(),
-                userIdToDisplayNameMapper.map(node.getLastModifiedBy()), node.getLastModifiedDate(), node.getType(),
-                node.getProperties(),
-                mapMapValues(node.getReferences(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper)),
-                mapMapValues(node.getReferrers(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper)));
+                mapUserNames ? userIdToDisplayNameMapper.map(node.getCreatedBy()) : null, node.getCreatedDate(),
+                mapUserNames ? userIdToDisplayNameMapper.map(node.getLastModifiedBy()) : null, node.getLastModifiedDate(),
+                node.getType(), node.getProperties(),
+                mapMapValues(node.getReferences(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper, mapUserNames)),
+                mapMapValues(node.getReferrers(), x -> userNameToDisplayName(x, userIdToDisplayNameMapper, mapUserNames)));
     }
 
     private GenericNode userNameToDisplayName(GenericNode node, UserIdToDisplayNameMapper userIdToDisplayNameMapper) {
@@ -517,4 +715,5 @@ public class FrontendTermedService {
             }
         }
     }
+
 }

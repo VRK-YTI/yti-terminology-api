@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import fi.vm.yti.terminology.api.frontend.Status;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -97,6 +98,15 @@ public class ConceptQueryFactory {
         if (request.getStatus() != null && request.getStatus().length > 0) {
             QueryBuilder statusQuery = QueryBuilders.termsQuery("status", request.getStatus());
             mustParts.add(statusQuery);
+        } else if (request.getStatus() != null && request.getStatus().length == 0) {
+            // By default, do not show RETIRED and SUPERSEDED statuses
+            // for old application (request.getStatus() == null) show all statuses
+            mustParts.add(QueryBuilders.termsQuery("status",
+                    Status.DRAFT.name(),
+                    Status.VALID.name(),
+                    Status.INCOMPLETE.name(),
+                    Status.SUGGESTED.name())
+            );
         }
 
         // Checks regarding data in INCOMPLETE state. Basic idea is to show INCOMPLETE things only to the contributors. But.

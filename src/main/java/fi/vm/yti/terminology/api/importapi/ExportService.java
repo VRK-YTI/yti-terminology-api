@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.importapi.excel.ExcelCreator;
 import fi.vm.yti.terminology.api.importapi.excel.JSONWrapper;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -39,10 +40,12 @@ public class ExportService {
 
     private final TermedRequester termedRequester;
     private static final Logger logger = LoggerFactory.getLogger(ExportService.class);
+    private AuthenticatedUserProvider userProvider;
 
     @Autowired
-    public ExportService(TermedRequester termedRequester) {
+    public ExportService(TermedRequester termedRequester, AuthenticatedUserProvider userProvider) {
         this.termedRequester = termedRequester;
+        this.userProvider = userProvider;
     }
 
     private Parameters constructFullVocabularyQuery() {
@@ -249,9 +252,16 @@ public class ExportService {
     /**
      * Create excel and send it as a response.
      */
-    ResponseEntity<InputStreamResource> getXLSX(UUID vocabularyId) {
+    ResponseEntity<InputStreamResource> getXLSX(UUID vocabularyId, List<String> placeholderLanguages) {
         ExcelCreator creator = getFullVocabularyXLSX(vocabularyId);
-        Workbook workbook = creator.createExcel();
+
+        Workbook workbook;
+        if (userProvider.getUser().isSuperuser()) {
+            workbook = creator.createExcel(placeholderLanguages);
+        } else {
+            workbook = creator.createExcel();
+        }
+
         String filename = String.format(
                 "%s_export_%s",
                 creator.getFilename(),

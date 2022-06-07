@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <!-- Käsite -->
+    <RECORD numb="c100" stat="VALID">
+        <LANG value="fi">
+            <!-- Termit -->
+            <TE stat="VALID">
+                <TERM>suositettava termi</TERM>
+            </TE>
+            <SY>
+                <TERM>testi synonyymi</TERM>
+            </SY>
+            <DTE stat="FOO">
+                <TERM>Ei suositettava synonyymi</TERM>
+            </DTE>
+
+            <!-- määritelmä -->
+            <DEF>
+                testimääritelmä
+                <RCON href="#c1574">linkkiteksti</RCON>
+            </DEF>
+
+            <!-- huomautus -->
+            <NOTE>Testihuomautus</NOTE>
+        </LANG>
+    </RECORD>
+</VOCABULARY>

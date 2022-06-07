@@ -55,11 +55,27 @@ public class AuthorizationManager {
         return canModifyAllOrganizations(organizationIds);
     }
 
-    private boolean canModifyAllGraphs(Collection<UUID> graphIds) {
+    public boolean isUserPartOfOrganization(UUID graphId) {
+        YtiUser user = userProvider.getUser();
+        Optional<UUID> userOrganization = termedService.getOrganizationIds(graphId)
+                .stream()
+                .filter(uuid -> user.isInOrganization(uuid))
+                .findAny();
+
+        return user.isSuperuser() || userOrganization.isPresent();
+    }
+
+    public boolean canModifyAllGraphs(Collection<UUID> graphIds) {
 
         Set<UUID> organizationIds = graphIds.stream()
                 .flatMap(graphId -> termedService.getOrganizationIds(graphId).stream())
                 .collect(toSet());
+
+        return canModifyAllOrganizations(organizationIds);
+    }
+
+    public boolean canCreateNewVersion(UUID graphId) {
+        Set<UUID> organizationIds = termedService.getOrganizationIds(graphId);
 
         return canModifyAllOrganizations(organizationIds);
     }

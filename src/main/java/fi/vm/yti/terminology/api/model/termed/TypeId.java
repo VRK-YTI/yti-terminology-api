@@ -2,9 +2,10 @@ package fi.vm.yti.terminology.api.model.termed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public final class TypeId {
+public final class TypeId implements Serializable {
 
     private final NodeType id;
     private final GraphId graph;

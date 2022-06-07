@@ -174,6 +174,7 @@
             <xs:attribute name="numb" use="required" type="xs:ID"/>
             <xs:attribute name="stat"/>
             <xs:attribute name="upda"/>
+            <xs:attribute name="type"/>
         </xs:complexType>
     </xs:element>
     <!-- Each DEVREC element contains development version of the parent concept -->
@@ -248,15 +249,55 @@
         </xs:sequence>
     </xs:complexType>
     <!-- Primary term(s) in each language. Normally there should be only one TE field for each language in each record. -->
-    <xs:element name="TE" type="termcontent"/>
+    <xs:element name="TE">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!-- Synonym term : Term designating the concept, but not regarded as the primary term. There may be one or more SY fields only if there is a TE field in the same language. -->
-    <xs:element name="SY" type="termcontent"/>
+    <xs:element name="SY">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!-- Deprecated term : Term designating the concept, but which for some reason should not be used. The reason should preferably be given in a TYPT or a ADD field -->
-    <xs:element name="DTE" type="termcontent"/>
+    <xs:element name="DTE">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!-- Deprecated term : Loose DTE field, used in TSK to designate terms that are not good, but can be used if necessary, "rather than". Can't be used in conjunction with DTE field. -->
-    <xs:element name="DTEA" type="termcontent"/>
+    <xs:element name="DTEA">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!-- Deprecated term : Strict DTE field, used in TSK to only to designate terms that should not be used in any case, "not". Can't be used in conjunction with DTE field. -->
-    <xs:element name="DTEB" type="termcontent"/>
+    <xs:element name="DTEB">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!-- Excerpted term : Contextual term which is not yet evaluated as primary term, synonym or deprecated term. -->
     <xs:element name="EXTE" type="termcontent"/>
     <!-- Designation : Designation of the concept which is not regarded as a term, and which normally will be language independent. -->
@@ -264,7 +305,15 @@
     <!-- acronym : Acronym, in particular for a name. -->
     <xs:element name="ACRO" type="termcontent"/>
     <!-- search term, look-up term : Term not designating the concept, but which may be useful for search or reference purposes. -->
-    <xs:element name="STE" type="termcontent"/>
+    <xs:element name="STE">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="termcontent">
+                    <xs:attribute name="stat"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
     <!--  auxciliary subordinate concept, used in TSK only for graphml diagrams to indicate auxciliary subordinate term -->
     <xs:element name="ASTE" type="termcontent"/>
     <!-- TERM element contains the actual term string. GRAM element shows grammatical data for a certain word in the term -->
@@ -917,3 +966,4 @@
 </xs:schema>
 <!-- TSK specific attributes -->
 <!-- Lang attribute is for the header -->
+<!-- TODO: is it possible to add stat attribute to Termcontent entity? -->

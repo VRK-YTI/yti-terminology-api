@@ -1,6 +1,7 @@
 package fi.vm.yti.terminology.api.importapi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -85,7 +86,7 @@ public class ExportController {
             } else if (format.equalsIgnoreCase("rdf")) {
                 re = exportService.getRDF(id);
             } else if (format.equalsIgnoreCase("xlsx")) {
-                re = exportService.getXLSX(id);
+                re = exportService.getXLSX(id, List.of());
             } else {
                 re = exportService.getTXT(id);
             }
@@ -93,6 +94,19 @@ public class ExportController {
             re = new ResponseEntity<>("{}", HttpStatus.NOT_FOUND);
         }
         return re;
+    }
+
+    @Operation(summary = "Export a terminology", description = "Export requested terminology Excel format with placeholder terms for language versions")
+    @ApiResponse(responseCode = "200", description = "Requested terminology exported in Excel format")
+    @GetMapping(path = "/excel/{terminologyID}", produces = {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    })
+    ResponseEntity<?> exportTerminologyExcelWithPlaceholderTerms(
+            @Parameter(description = "Terminology identifier (UUID)") @PathVariable("terminologyID") String terminologyId,
+            @Parameter(description = "List of languages for generating placeholder terms") @RequestParam() String[] placeHolderLanguages) {
+        UUID id = UUID.fromString(terminologyId);
+        List<String> languages = Arrays.asList(placeHolderLanguages);
+        return exportService.getXLSX(id, languages);
     }
 
     @Operation(summary = "Export certain node types", description = "Export requested node types in stated format from a terminology")

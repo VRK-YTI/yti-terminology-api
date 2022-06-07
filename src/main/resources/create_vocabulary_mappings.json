@@ -77,6 +77,9 @@
     "type.id": {
       "type": "keyword"
     },
+    "terminologyType": {
+      "type": "keyword"
+    },
     "references.contributor.id": {
       "type": "keyword"
     },

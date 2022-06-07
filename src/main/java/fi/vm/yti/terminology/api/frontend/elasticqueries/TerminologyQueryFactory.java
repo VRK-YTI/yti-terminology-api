@@ -2,20 +2,20 @@ package fi.vm.yti.terminology.api.frontend.elasticqueries;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.exception.InvalidQueryException;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
-import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
+import fi.vm.yti.terminology.api.frontend.Status;
+import fi.vm.yti.terminology.api.frontend.TerminologyType;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,8 @@ public class TerminologyQueryFactory {
                 pageSize(request),
                 pageFrom(request),
                 superUser,
-                privilegedOrganizations);
+                privilegedOrganizations,
+                request.getPrefLang());
     }
 
     private SearchRequest createQuery(String query,
@@ -79,7 +80,8 @@ public class TerminologyQueryFactory {
                                       int pageSize,
                                       int pageFrom,
                                       boolean superUser,
-                                      Set<String> privilegedOrganizations) {
+                                      Set<String> privilegedOrganizations,
+                                      String prefLang) {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
             .from(pageFrom)
             .size(pageSize);
@@ -103,6 +105,17 @@ public class TerminologyQueryFactory {
         if (statuses != null && statuses.length > 0) {
             mustQueries.add(ElasticRequestUtils.buildStatusQuery(
                     statuses, "properties.status.value"));
+        } else if (statuses != null && statuses.length == 0) {
+            // By default, do not show RETIRED and SUPERSEDED statuses
+            // for old application (statuses == null) show all statuses
+            mustQueries.add(ElasticRequestUtils.buildStatusQuery(
+                    new String[] {
+                            Status.DRAFT.name(),
+                            Status.VALID.name(),
+                            Status.INCOMPLETE.name(),
+                            Status.SUGGESTED.name()
+                    }, "properties.status.value")
+            );
         }
 
         if (groupIds != null && groupIds.length > 0)  {
@@ -131,14 +144,17 @@ public class TerminologyQueryFactory {
 
         QueryBuilder typeQuery = null;
         if (types != null && types.length > 0)  {
-            final var validTypes = new String[] { "TerminologicalVocabulary", "OtherVocabulary" };
+            final var validTypes = new String[] {
+                    TerminologyType.TERMINOLOGICAL_VOCABULARY.name(),
+                    TerminologyType.OTHER_VOCABULARY.name()
+            };
             if (!Arrays.asList(validTypes).containsAll(Arrays.asList(types))) {
                 log.error("One or more vocabulary types were invalid");
                 throw new InvalidQueryException("One or more vocabulary types were invalid");
             }
             // vocabulary type query must also be applied later when
             // filtering by additionalTerminologyIds
-            typeQuery = QueryBuilders.termsQuery("type.id", types);
+            typeQuery = QueryBuilders.termsQuery("terminologyType", types);
             mustQueries.add(typeQuery);
         }
 
@@ -186,11 +202,16 @@ public class TerminologyQueryFactory {
             ((BoolQueryBuilder) shouldQuery).minimumShouldMatch(1);
         }
 
-        sourceBuilder.query(shouldQuery != null ? shouldQuery : mustQuery);
+        String sortLanguage = prefLang != null ? prefLang : "fi";
+        sourceBuilder
+                .query(shouldQuery != null ? shouldQuery : mustQuery)
+                .sort(SortBuilders
+                        .fieldSort("sortByLabel." + sortLanguage)
+                        .order(SortOrder.ASC));
 
         SearchRequest sr = new SearchRequest("vocabularies")
             .source(sourceBuilder);
-        //log.debug("Terminology Query request: " + sr.toString());
+        log.debug("Terminology Query request: " + sr.toString());
         return sr;
     }
 

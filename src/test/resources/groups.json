@@ -1,0 +1,124 @@
+[
+  {
+    "id": "fa57fa33-4f13-384f-9273-5e4e9b3b7837",
+    "code": "v1167",
+    "uri": "http://urn.fi/URN:NBN:fi:au:ptvl/v1167",
+    "type": {
+      "id": "Group",
+      "graph": {
+        "id": "7f4cb68f-31f6-4bf9-b699-9d72dd110c4c"
+      }
+    },
+    "properties": {
+      "notation": [
+        {
+          "lang": "",
+          "value": "P20",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "definition": [
+        {
+          "lang": "fi",
+          "value": "Tässä luokassa käsitellään yhteiskuntajärjestyksen ja turvallisuuden ylläpitoa normaalioloissa. Luokkaan kuuluvat ensi sijassa poliisin ja muiden järjestyksen valvonnasta vastuussa olevien palvelut.",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "en",
+          "value": "This class contains the maintenance of public order, safety and security in normal conditions. Primarily, the class includes the services of the police and other parties responsible for maintaining order.",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "sv",
+          "value": "I denna grupp behandlas upprätthållande av samhällsordningen och säkerheten under normala förhållanden. Gruppen omfattar främst tjänster som tillhandahålls av polisen och andra parter som ansvarar för övervakningen av ordningen.",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "order": [
+        {
+          "lang": "",
+          "value": "2000",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "prefLabel": [
+        {
+          "lang": "en",
+          "value": "Public order",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "sv",
+          "value": "Ordning",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "fi",
+          "value": "Järjestys",
+          "regex": "(?s)^.*$"
+        }
+      ]
+    }
+  },
+  {
+    "id": "7cee3fcc-8e00-309f-983f-5a3f16d294d2",
+    "code": "v1206",
+    "uri": "http://urn.fi/URN:NBN:fi:au:ptvl/v1206",
+    "type": {
+      "id": "Group",
+      "graph": {
+        "id": "7f4cb68f-31f6-4bf9-b699-9d72dd110c4c"
+      }
+    },
+    "properties": {
+      "notation": [
+        {
+          "lang": "",
+          "value": "P26",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "definition": [
+        {
+          "lang": "fi",
+          "value": "Tässä palveluluokassa käsitellään viestintää joukkoviestinnän ja sähköisen viestinnän (YLE, operaattorit, JSN, sananvapaus, yksityisyys, verkkotunnukset, postipalvelut) säädösten ja peruspalvelujen kannalta. Luokkaan kuuluvat mm. Yleisradio, julkisen sanan neuvosto, tele- ja internetoperaattorit sekä viestinnän säädökset.",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "sv",
+          "value": "I denna servicegrupp behandlas kommunikation utifrån masskommunikation och elektronisk kommunikation, och den omfattar YLE, operatörer, opinionsnämnden för massmedier, yttrandefrihet, integritet, domännamn och posttjänster med tanke på författningar och primärservice. Gruppen omfattar bland annat Rundradion, opinionsnämnden för massmedier, tele- och internetoperatörer samt författningar om kommunikation.",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "en",
+          "value": "This service class contains communications from the perspective of mass communication and electronic communication, freedom of speech, privacy, domain names, and postal services from the viewpoint of regulations and basic services. The class includes the Finnish Broadcasting Company, the Council for Mass Media, telecommunications and internet operators and statutes on communication.",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "order": [
+        {
+          "lang": "",
+          "value": "2600",
+          "regex": "(?s)^.*$"
+        }
+      ],
+      "prefLabel": [
+        {
+          "lang": "en",
+          "value": "Communications",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "fi",
+          "value": "Viestintä",
+          "regex": "(?s)^.*$"
+        },
+        {
+          "lang": "sv",
+          "value": "Kommunikation",
+          "regex": "(?s)^.*$"
+        }
+      ]
+    }
+  }
+]

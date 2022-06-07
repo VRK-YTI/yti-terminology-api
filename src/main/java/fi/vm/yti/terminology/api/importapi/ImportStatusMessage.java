@@ -19,7 +19,7 @@ public class ImportStatusMessage implements Serializable
     private static ObjectMapper mapper = new ObjectMapper();
 
     public enum Level {
-        WARNING,ERROR
+        INFO,WARNING,ERROR
     };
 
     /**

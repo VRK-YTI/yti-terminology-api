@@ -1,0 +1,183 @@
+{
+  "took" : 23,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 1,
+    "max_score" : 4.3136578,
+    "hits" : [
+      {
+        "_index" : "vocabularies",
+        "_type" : "vocabulary",
+        "_id" : "6164a79e-56c4-43d4-8248-06dcfc70a170",
+        "_score" : 4.3136578,
+        "_source" : {
+          "id" : "6164a79e-56c4-43d4-8248-06dcfc70a170",
+          "code" : "terminological-vocabulary-0",
+          "uri" : "http://uri.suomi.fi/terminology/kela_test/terminological-vocabulary-0",
+          "number" : 0,
+          "createdBy" : "e368498c-63c7-44fe-964e-ce714d077976",
+          "createdDate" : "2019-04-14T08:46:02Z",
+          "lastModifiedBy" : "e368498c-63c7-44fe-964e-ce714d077976",
+          "lastModifiedDate" : "2019-04-14T08:46:02Z",
+          "type" : {
+            "id" : "TerminologicalVocabulary",
+            "graph" : {
+              "id" : "ee9af176-984b-407c-86fe-9e75effbec3e"
+            }
+          },
+          "properties" : {
+            "prefLabel" : [
+              {
+                "lang" : "fi",
+                "value" : "mock terminology for unit tests",
+                "regex" : "(?s)^.*$"
+              }
+            ],
+            "language" : [
+              {
+                "lang" : "",
+                "value" : "fi",
+                "regex" : "(?s)^.*$"
+              },
+              {
+                "lang" : "",
+                "value" : "en",
+                "regex" : "(?s)^.*$"
+              },
+              {
+                "lang" : "",
+                "value" : "sv",
+                "regex" : "(?s)^.*$"
+              }
+            ],
+            "status" : [
+              {
+                "lang" : "",
+                "value" : "DRAFT",
+                "regex" : "(?s)^.*$"
+              }
+            ]
+          },
+          "references" : {
+            "contributor" : [
+              {
+                "id" : "17792fd8-ac0d-487d-9966-4b14a3d2114a",
+                "code" : "",
+                "uri" : "",
+                "number" : 1234,
+                "createdBy" : "admin",
+                "createdDate" : "2019-11-10T09:47:08Z",
+                "lastModifiedBy" : "admin",
+                "lastModifiedDate" : "2021-03-11T08:55:00Z",
+                "type" : {
+                  "id" : "Organization",
+                  "graph" : {
+                    "id" : "a262b6f1-1c27-46da-9a17-1494f51f395a"
+                  }
+                },
+                "properties" : {
+                  "prefLabel" : [
+                    {
+                      "lang" : "en",
+                      "value" : "Test contributor",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "fi",
+                      "value" : "Test contributor",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "sv",
+                      "value" : "Test contributor",
+                      "regex" : "(?s)^.*$"
+                    }
+                  ]
+                },
+                "references" : { },
+                "referrers" : { }
+              }
+            ],
+            "inGroup" : [
+              {
+                "id" : "6e7aa4e3-827a-4d88-90bd-5afea7a2bed9",
+                "code" : "v1234",
+                "uri" : "http://urn.fi/URN:NBN:fi:au:foo/v1234",
+                "number" : 110,
+                "createdBy" : "admin",
+                "createdDate" : "2018-03-04T11:17:34Z",
+                "lastModifiedBy" : "admin",
+                "lastModifiedDate" : "2020-01-19T09:03:25Z",
+                "type" : {
+                  "id" : "Group",
+                  "graph" : {
+                    "id" : "04a28907-014b-485d-bc7b-becd05786717"
+                  }
+                },
+                "properties" : {
+                  "notation" : [
+                    {
+                      "lang" : "",
+                      "value" : "P10",
+                      "regex" : "(?s)^.*$"
+                    }
+                  ],
+                  "definition" : [
+                    {
+                      "lang" : "fi",
+                      "value" : "Testipalveluluokka definition",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "sv",
+                      "value" : "Test servicegrupp definition",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "en",
+                      "value" : "Test service group definition",
+                      "regex" : "(?s)^.*$"
+                    }
+                  ],
+                  "order" : [
+                    {
+                      "lang" : "",
+                      "value" : "1000",
+                      "regex" : "(?s)^.*$"
+                    }
+                  ],
+                  "prefLabel" : [
+                    {
+                      "lang" : "fi",
+                      "value" : "Testipalveluluokka label",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "sv",
+                      "value" : "Test servicegrupp label",
+                      "regex" : "(?s)^.*$"
+                    },
+                    {
+                      "lang" : "en",
+                      "value" : "Test service group label",
+                      "regex" : "(?s)^.*$"
+                    }
+                  ]
+                },
+                "references" : { },
+                "referrers" : { }
+              }
+            ]
+          },
+          "referrers" : { }
+        }
+      }
+    ]
+  }
+}

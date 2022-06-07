@@ -1,6 +1,8 @@
 package fi.vm.yti.terminology.api.model.termed;
 
-public final class Attribute {
+import java.io.Serializable;
+
+public final class Attribute implements Serializable {
 
     private final String lang;
     private final String value;

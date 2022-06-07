@@ -1,10 +1,11 @@
 package fi.vm.yti.terminology.api.model.termed;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
 
-public final class GraphId {
+public final class GraphId implements Serializable {
 
     private final UUID id;
 

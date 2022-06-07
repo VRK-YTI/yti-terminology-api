@@ -1,6 +1,8 @@
 package fi.vm.yti.terminology.api.model.termed;
 
-public enum NodeType {
+import java.io.Serializable;
+
+public enum NodeType implements Serializable {
 
     Vocabulary,
     TerminologicalVocabulary,

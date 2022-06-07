@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,7 +60,7 @@ public class FrontendGroupManagementService {
         return restTemplate.exchange(url, GET, null, new ParameterizedTypeReference<List<GroupManagementUserRequest>>() {}).getBody();
     }
 
-    void sendRequest(final UUID organizationId) {
+    public void sendRequest(final UUID organizationId, final String[] roles) {
 
         YtiUser user = userProvider.getUser();
 
@@ -69,7 +70,14 @@ public class FrontendGroupManagementService {
 
         Parameters parameters = new Parameters();
         parameters.add("userId", user.getId().toString());
-        parameters.add("role", Role.TERMINOLOGY_EDITOR.toString());
+
+        // If no roles specified, add TERMINOLOGY_EDITOR role (backwards compatibility)
+        if (roles == null) {
+            parameters.add("role", Role.TERMINOLOGY_EDITOR.toString());
+        } else {
+            Arrays.stream(roles).forEach(r -> parameters.add("role", r));
+        }
+
         parameters.add("organizationId", organizationId.toString());
 
         String url = groupManagementUrl + "/private-api/request" + parameters;

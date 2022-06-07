@@ -1,10 +1,11 @@
 package fi.vm.yti.terminology.api.model.termed;
 
+import java.io.Serializable;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
 
-public final class GenericDeleteAndSave implements DeleteAndSave {
+public final class GenericDeleteAndSave implements DeleteAndSave, Serializable {
 
     private final List<Identifier> delete;
     private final List<GenericNode> save;

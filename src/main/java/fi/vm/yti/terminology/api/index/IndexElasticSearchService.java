@@ -3,11 +3,10 @@ package fi.vm.yti.terminology.api.index;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import fi.vm.yti.terminology.api.exception.ElasticEndpointException;
+import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapper;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.action.search.SearchRequest;
@@ -15,7 +14,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RequestOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,9 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import fi.vm.yti.terminology.api.util.JsonUtils;
 import fi.vm.yti.terminology.api.util.Parameters;
-import fi.vm.yti.terminology.api.model.termed.*;
 
 import static fi.vm.yti.terminology.api.util.ElasticRequestUtils.responseContentAsJson;
 import static fi.vm.yti.terminology.api.util.ElasticRequestUtils.responseContentAsString;
@@ -50,7 +46,7 @@ public class IndexElasticSearchService {
     private static final Logger log = LoggerFactory.getLogger(IndexElasticSearchService.class);
 
     private final RestClient esRestClient;
-    private final RestHighLevelClient esHiLvClient;
+    private final RestHighLevelClientWrapper esHiLvClient;
 
     private final String createIndexFilename;
     private final String createMappingsFilename;
@@ -71,7 +67,9 @@ public class IndexElasticSearchService {
             @Value("${search.index.name}") String indexName,
             @Value("${search.index.mapping.type}") String indexMappingType,
             @Value("${search.index.deleteIndexOnAppRestart}") boolean deleteIndexOnAppRestart,
-            IndexTermedService termedApiService, ObjectMapper objectMapper, final RestHighLevelClient esHiLvClient) {
+            IndexTermedService termedApiService,
+            ObjectMapper objectMapper,
+            final RestHighLevelClientWrapper esHiLvClient) {
         this.createIndexFilename = createIndexFilename;
         this.createMappingsFilename = createMappingsFilename;
         this.indexName = indexName;
@@ -79,7 +77,7 @@ public class IndexElasticSearchService {
         this.deleteIndexOnAppRestart = deleteIndexOnAppRestart;
         this.termedApiService = termedApiService;
         this.objectMapper = objectMapper;
-        this.esRestClient = RestClient.builder(new HttpHost(searchHostUrl, searchHostPort, searchHostScheme)).build();
+        this.esRestClient = esHiLvClient.getLowLevelClient();
         this.esHiLvClient = esHiLvClient; // Use that for resource api
     }
 
@@ -148,7 +146,7 @@ public class IndexElasticSearchService {
         vocabularies.forEach(o -> {
             try {
                 String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
-                        + o.get("id") + "}}\n" + mapper.writeValueAsString(o) + "\n";
+                          + o.get("id") + "}}\n" + Vocabulary.toElasticSearchVocabularyIndexObject(mapper, o) + "\n";
                 indexLines.add(line);
                 if (log.isDebugEnabled()) {
                     log.debug("reindex line:" + line);
@@ -197,7 +195,7 @@ public class IndexElasticSearchService {
         ObjectMapper mapper = new ObjectMapper();
         try {
             String index = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"" + "vocabulary" + "\", \"_id\":"
-                    + jn.get("id") + "}}\n" + mapper.writeValueAsString(jn) + "\n";
+                    + jn.get("id") + "}}\n" + Vocabulary.toElasticSearchVocabularyIndexObject(mapper, jn) + "\n";
             String delete = "";
             // CHANGED CONTENT TYPE FOR ELASTIC 6.X
             HttpEntity entity = new NStringEntity(index + delete,

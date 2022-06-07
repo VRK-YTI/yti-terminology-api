@@ -2,13 +2,14 @@ package fi.vm.yti.terminology.api.model.termed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
 
 @JsonIgnoreProperties(value = { "properties", "references", "referrers" })
-public final class Identifier {
+public final class Identifier implements Serializable {
 
     private final UUID id;
     private final TypeId type;

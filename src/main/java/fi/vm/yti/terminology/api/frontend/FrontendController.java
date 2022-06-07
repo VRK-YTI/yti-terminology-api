@@ -1,14 +1,16 @@
 package fi.vm.yti.terminology.api.frontend;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
+import fi.vm.yti.terminology.api.exception.NamespaceInUseException;
+import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
 import fi.vm.yti.terminology.api.frontend.searchdto.*;
+import fi.vm.yti.terminology.api.validation.ValidVocabularyNode;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +35,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import javax.validation.constraints.Size;
+
 import static fi.vm.yti.terminology.api.model.termed.NodeType.Group;
 import static fi.vm.yti.terminology.api.model.termed.NodeType.Organization;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -42,6 +47,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 @RestController
 @RequestMapping("/api/v1/frontend")
 @Tag(name = "Frontend")
+@Validated
 public class FrontendController {
 
     private final FrontendTermedService termedService;
@@ -131,9 +137,11 @@ public class FrontendController {
     @ApiResponse(responseCode = "200", description = "Request submitted successfully")
     @ApiResponse(responseCode = "401", description = "If the caller is not not authenticated user")
     @PostMapping(path = "/request", produces = APPLICATION_JSON_VALUE)
-    void sendRequest(@Parameter(description = "UUID for the organization") @RequestParam UUID organizationId) {
+    void sendRequest(
+            @Parameter(description = "UUID for the organization") @RequestParam UUID organizationId,
+            @Parameter(description = "Comma separated list of roles for organisation") @RequestParam(required = false) String[] roles) {
         logger.info("POST /request requested with organizationID: " + organizationId.toString());
-        groupManagementService.sendRequest(organizationId);
+        groupManagementService.sendRequest(organizationId, roles);
     }
 
     @Operation(summary = "Get terminology basic info as JSON")
@@ -160,26 +168,102 @@ public class FrontendController {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "The JSON data for the new terminology node")
     @ApiResponse(responseCode = "200", description = "The ID for the newly created terminology")
     @PostMapping(path = "/vocabulary", produces = APPLICATION_JSON_VALUE, consumes = APPLICATION_JSON_VALUE)
-    UUID createVocabulary(@Parameter(description = "The meta model graph for the new terminology") @RequestParam UUID templateGraphId,
-                          @Parameter(description = "The prefix, i.e., freely selectable part of terminology namespace") @RequestParam String prefix,
-                          @Parameter(description = "If given, tries to use the ID for the terminology") @RequestParam(required = false) @Nullable UUID graphId,
-                          @Parameter(description = "Whether to do synchronous creation, i.e., wait for the result. This is recommended.") @RequestParam(required = false, defaultValue = "true") boolean sync,
-                          @RequestBody GenericNode vocabularyNode) {
+    UUID createVocabulary(
+            @Parameter(description = "The meta model graph for the new terminology")
+            @RequestParam UUID templateGraphId,
+
+            @Size(min = 3, message = "Prefix must be minimum of 3 characters")
+            @Parameter(description = "The prefix, i.e., freely selectable part of terminology namespace")
+            @RequestParam String prefix,
+
+            @Parameter(description = "If given, tries to use the ID for the terminology")
+            @RequestParam(required = false) @Nullable UUID graphId,
+
+            @Parameter(description = "Whether to do synchronous creation, i.e., wait for the result. This is recommended.")
+            @RequestParam(required = false, defaultValue = "true") boolean sync,
+
+            @RequestBody GenericNode vocabularyNode) {
 
         try {
             logger.info("POST /vocabulary requested with params: templateGraphId: " +
                 templateGraphId.toString() + ", prefix: " + prefix + ", vocabularyNode.id: " + vocabularyNode.getId().toString());
 
             UUID predefinedOrGeneratedGraphId = graphId != null ? graphId : UUID.randomUUID();
+
             termedService.createVocabulary(templateGraphId, prefix, vocabularyNode, predefinedOrGeneratedGraphId, sync);
             logger.debug("Vocabulary with prefix \"" + prefix + "\" created");
+
             return predefinedOrGeneratedGraphId;
         } catch (RuntimeException | Error e) {
-            logger.error("createVocabuluary failed", e);
+            logger.error("createVocabulary failed", e);
             throw e;
         } finally {
             logger.debug("Vocabulary creation finished");
         }
+    }
+
+    @Operation(summary = "Create a new terminology")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "The JSON data for the new terminology node")
+    @ApiResponse(responseCode = "200", description = "The ID for the newly created terminology")
+    @PostMapping(path = "/validatedVocabulary", produces = APPLICATION_JSON_VALUE, consumes = APPLICATION_JSON_VALUE)
+    UUID createValidatedVocabulary(
+            @Parameter(description = "The meta model graph for the new terminology")
+            @RequestParam UUID templateGraphId,
+
+            @Size(min = 3, message = "Prefix must be minimum of 3 characters")
+            @Parameter(description = "The prefix, i.e., freely selectable part of terminology namespace")
+            @RequestParam String prefix,
+
+            @Parameter(description = "If given, tries to use the ID for the terminology")
+            @RequestParam(required = false) @Nullable UUID graphId,
+
+            @Parameter(description = "Whether to do synchronous creation, i.e., wait for the result. This is recommended.")
+            @RequestParam(required = false, defaultValue = "true") boolean sync,
+
+            @ValidVocabularyNode
+            @RequestBody GenericNode vocabularyNode) {
+
+        try {
+            logger.info("POST /validatedVocabulary requested with params: templateGraphId: " +
+                    templateGraphId.toString() + ", prefix: " + prefix + ", vocabularyNode.id: " + vocabularyNode.getId().toString());
+
+            UUID predefinedOrGeneratedGraphId = graphId != null ? graphId : UUID.randomUUID();
+
+            termedService.createVocabulary(templateGraphId, prefix, vocabularyNode, predefinedOrGeneratedGraphId, sync);
+            logger.debug("Vocabulary with prefix \"" + prefix + "\" created");
+
+            return predefinedOrGeneratedGraphId;
+        } catch (RuntimeException | Error e) {
+            logger.error("createVocabulary failed", e);
+            throw e;
+        } finally {
+            logger.debug("Vocabulary creation finished");
+        }
+    }
+
+    @Operation(summary = "Validate a terminology node")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "The JSON data for the terminology node to validate")
+    @ApiResponse(responseCode = "200", description = "OK on success")
+    @PostMapping(path = "/vocabulary/validate", produces = APPLICATION_JSON_VALUE, consumes = APPLICATION_JSON_VALUE)
+    String validateVocabulary(
+            @Parameter(description = "The meta model graph for the new terminology")
+            @RequestParam UUID templateGraphId,
+
+            @Size(min = 3, message = "Prefix must be minimum of 3 characters")
+            @Parameter(description = "The prefix, i.e., freely selectable part of terminology namespace")
+            @RequestParam String prefix,
+
+            @Parameter(description = "If given, tries to use the ID for the terminology")
+            @RequestParam(required = false) @Nullable UUID graphId,
+
+            @ValidVocabularyNode
+            @RequestBody GenericNode vocabularyNode) {
+
+        logger.info("POST /vocabulary/validate requested with params: templateGraphId: " +
+                templateGraphId.toString() + ", prefix: " +
+                prefix + ", vocabularyNode.id: " + vocabularyNode.getId().toString());
+        // if we got this far, the validation was successful
+        return "OK";
     }
 
     @Operation(summary = "Delete a terminology")
@@ -232,6 +316,22 @@ public class FrontendController {
         return termedService.getNodeListWithoutReferencesOrReferrers(Group);
     }
 
+    @Operation(summary = "Get organization list for v2", description = "Get organizations available at YTI Group Management Service")
+    @ApiResponse(responseCode = "200", description = "The basic info for organizations in unprocessed Termed JSON format")
+    @GetMapping(path = "/v2/organizations", produces = APPLICATION_JSON_VALUE)
+    JsonNode getOrganizationListV2(@RequestParam(required = false, defaultValue = "fi") String language) {
+        logger.info("GET /organizations requested");
+        return termedService.getNodeListWithoutReferencesOrReferrersV2(Organization, language);
+    }
+
+    @Operation(summary = "Get information domain list for v2")
+    @ApiResponse(responseCode = "200", description = "Information domain list in unprocessed Termed JSON format")
+    @GetMapping(path = "/v2/groups", produces = APPLICATION_JSON_VALUE)
+    JsonNode getGroupListV2(@RequestParam(required = false, defaultValue = "fi") String language) {
+        logger.info("GET /groups requested");
+        return termedService.getNodeListWithoutReferencesOrReferrersV2(Group, language);
+    }
+
     @Operation(summary = "Make a bulk modification request", description = "Update and/or delete several nodes")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "JSON for the bulk request containing nodes to be updated or deleted")
     @ApiResponse(responseCode = "200", description = "The operation was successful (valid if synchronous)")
@@ -264,6 +364,30 @@ public class FrontendController {
             logger.info(ident.getId().toString());
         }
         termedService.removeNodes(sync, disconnect, identifiers);
+    }
+
+    @Operation(
+            summary = "Update statuses",
+            description = "Update statuses of several terms or concepts at once")
+    @ApiResponse(
+            responseCode = "200",
+            description = "The operation was successful")
+    @PostMapping(
+            path = "/modifyStatuses",
+            consumes = APPLICATION_JSON_VALUE,
+            produces = APPLICATION_JSON_VALUE)
+    void updateStatuses(
+            @Parameter(description = "Graph to update") @RequestParam UUID graphId,
+            @Parameter(description = "Modify nodes matching this status") @RequestParam String oldStatus,
+            @Parameter(description = "New status to assign to all matched nodes") @RequestParam String newStatus,
+            @Parameter(description = "Modify nodes matching these types (Concept, Term)") @RequestParam Set<String> types) {
+        logger.debug(
+                "POST /modifyStatuses requested with graphId: {}, oldStatus: {}, newState: {}, types: {}",
+                graphId.toString(),
+                oldStatus,
+                newStatus,
+                String.join(",", types));
+        termedService.modifyStatuses(graphId, types, oldStatus, newStatus);
     }
 
     @Operation(summary = "Get meta model")
@@ -316,8 +440,44 @@ public class FrontendController {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "List counts of concepts and vocabularies grouped by different search results")
     @ApiResponse(responseCode = "200", description = "Counts response container object as JSON")
     @RequestMapping(value = "/counts", method = GET, produces = APPLICATION_JSON_VALUE)
-    CountSearchResponse getCounts() {
-        logger.info("GET /counts requested");
+    CountSearchResponse getCounts(@RequestParam(required = false) boolean vocabularies) {
+        logger.info("GET /counts requested with vocabulary: " + vocabularies);
+        if (vocabularies) {
+            return elasticSearchService.getVocabularyCounts();
+        }
         return elasticSearchService.getCounts();
+    }
+
+    @Operation(summary = "Get concept and collection counts", description = "List counts of concepts and collections")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "List counts of concepts and collections in particular vocabulary")
+    @ApiResponse(responseCode = "200", description = "Counts response container object as JSON")
+    @RequestMapping(value = "/conceptCounts", method = GET, produces = APPLICATION_JSON_VALUE)
+    CountSearchResponse getCounts(@RequestParam UUID graphId) {
+        logger.info("GET /conceptCounts requested");
+
+        // fetch collections separately and add the count to dto because collections are not stored in elastic search
+        JsonNode collectionList = termedService.getCollectionList(graphId);
+        CountSearchResponse conceptCounts = elasticSearchService.getConceptCounts(graphId);
+        conceptCounts.getCounts().getCategories().put(CountDTO.Category.COLLECTION.getName(), Long.valueOf(collectionList.size()));
+        return conceptCounts;
+    }
+
+    @Operation(summary = "New version", description = "Creates new version of the terminology")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Terminology's uri and new prefix")
+    @ApiResponse(responseCode = "200", description = "")
+    @RequestMapping(value = "/createVersion", method = POST, produces = APPLICATION_JSON_VALUE)
+    CreateVersionResponse createTerminologyVersion(@RequestBody CreateVersionDTO createVersionDTO) {
+
+        logger.info("POST /createVersion requested");
+
+        try {
+            return termedService.createVersion(createVersionDTO);
+        } catch (NamespaceInUseException | VocabularyNotFoundException e) {
+            logger.error("Error creating new version", e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unhandled error occurred while creating new version", e);
+            throw new RuntimeException(e);
+        }
     }
 }

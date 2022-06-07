@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import fi.vm.yti.terminology.api.util.IndexUtil;
 import org.jetbrains.annotations.NotNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import fi.vm.yti.terminology.api.util.JsonUtils;
+
+import static fi.vm.yti.terminology.api.util.JsonUtils.localizableToJson;
 
 public final class Vocabulary {
 
@@ -76,5 +80,11 @@ public final class Vocabulary {
         output.put("status", status);
 
         return output;
+    }
+
+    static @NotNull String toElasticSearchVocabularyIndexObject(ObjectMapper mapper, JsonNode jsonNode) throws JsonProcessingException {
+        Map<String, List<String>> prefLabel = JsonUtils.localizableFromTermedProperties(jsonNode.get("properties"), "prefLabel");
+        ((ObjectNode)jsonNode).set("sortByLabel", localizableToJson(mapper, IndexUtil.createSortLabels(prefLabel)));
+        return mapper.writeValueAsString(jsonNode);
     }
 }

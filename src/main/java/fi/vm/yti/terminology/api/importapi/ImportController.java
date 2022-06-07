@@ -1,7 +1,10 @@
 package fi.vm.yti.terminology.api.importapi;
 
+import java.io.IOException;
 import java.util.UUID;
 
+import fi.vm.yti.terminology.api.exception.ExcelParseException;
+import fi.vm.yti.terminology.api.importapi.excel.ExcelImportResponseDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +48,31 @@ public class ImportController {
                                        @Parameter(required = true, description = "The NTRF (XML) document containing the concepts to be imported", style = ParameterStyle.FORM)
                                        @RequestPart(value = "file") MultipartFile file) {
         return importService.handleNtrfDocumentAsync("ntrf", terminologyId, file);
+    }
+
+    @Operation(summary = "Initiate Excel import job", description = "Start the procedure to import concepts from Excel file")
+    @ApiResponse(
+            responseCode = "200",
+            description = "If import process started successfully then job token is returned as JSON",
+            content = { @Content(mediaType = APPLICATION_JSON_VALUE, schema = @Schema(implementation = ImportService.ImportResponse.class)) })
+    @PostMapping(path = "excel", consumes = MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ExcelImportResponseDTO> importExcel(@RequestPart(value = "file") MultipartFile file)  {
+
+        try {
+            UUID jobToken = importService.handleExcelImport(file.getInputStream());
+            return ResponseEntity.ok(new ExcelImportResponseDTO(jobToken, "SUCCESS"));
+        } catch (ExcelParseException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                        new ExcelImportResponseDTO(
+                            null,
+                            e.getReason(),
+                            new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                        ));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Operation(summary = "Poll status of import job", description = "Get the current status of previously initiated import job")

@@ -1,23 +1,22 @@
 package fi.vm.yti.terminology.api.importapi;
 
 import fi.vm.yti.security.AuthenticatedUserProvider;
+import fi.vm.yti.terminology.api.model.termed.GenericDeleteAndSave;
+import fi.vm.yti.terminology.api.model.termed.GenericNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.BrowserCallback;
 import org.springframework.jms.core.JmsMessagingTemplate;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Service;
-
 
 import javax.jms.*;
 
@@ -33,20 +32,19 @@ public class YtiMQService {
 
     private static final Logger logger = LoggerFactory.getLogger(YtiMQService.class);
 
-    public static final String[] SET_VALUES = new String[] { "Vocabulary", "Test", "CodeList" };
+    public static final String[] SET_VALUES = new String[] { "Vocabulary", "Test", "CodeList", "VocabularyExcel" };
     public static final Set<String> SUPPORTED_SYSTEMS = new HashSet<>(Arrays.asList(SET_VALUES));
 
     // JMS-client
     private JmsMessagingTemplate jmsMessagingTemplate;
-
-    private YtiMQListener listener;
-
+    
     // Define public status values
     public final static int STATUS_PREPROCESSING = 1;
     public final static int STATUS_PROCESSING = 2;
     public final static int STATUS_READY = 3;
+    public final static int STATUS_FAILED = 4;
 
-    private Map<String,Message> currentStatus = new HashMap<>();
+    private Map<String, Message> currentStatus = new HashMap<>();
 
     private JmsTemplate jmsTemplate;
 
@@ -54,39 +52,35 @@ public class YtiMQService {
     public YtiMQService(AuthenticatedUserProvider userProvider,
                         JmsMessagingTemplate jmsMessagingTemplate,
                         JmsTemplate jmsTemplate,
-                        YtiMQListener listener,
                         @Value("${mq.active.subsystem}") String subSystem) {
         this.userProvider = userProvider;
         this.jmsMessagingTemplate = jmsMessagingTemplate;
         this.jmsTemplate = jmsTemplate;
         this.subSystem = subSystem;
-        this.listener=listener;
     }
 
     public HttpStatus getStatus(UUID jobtoken){
 
-        System.out.println("IncomingQueue!");
+        logger.info("IncomingQueue!");
         browseQueue(subSystem+"Incoming");
-        System.out.println("StatusQueue!");
+        logger.info("StatusQueue!");
         browseQueue(subSystem+"Status");
-        System.out.println("ProcessingQueue!");
+        logger.info("ProcessingQueue!");
         browseQueue(subSystem+"Processing");
-        System.out.println("ReadyQueue!");
+        logger.info("ReadyQueue!");
         browseQueue(subSystem+"Ready");
+        browseQueue(subSystem + "ExcelImport");
         // Status not_found/running/errors
         Message mess = currentStatus.get(jobtoken.toString());
-        if(mess!=null) {
-            int status=(int)mess.getHeaders().get("status");
+        if (mess != null) {
+            int status = (int)mess.getHeaders().get("status");
             switch(status){
                 case YtiMQService.STATUS_READY:{
-                    System.out.println("Ready found:");
-                    if(logger.isDebugEnabled())
-                        logger.debug("Import done for "+jobtoken);
+                    logger.debug("Import done for {}", jobtoken);
                     return HttpStatus.OK;
                 }
                 case YtiMQService.STATUS_PROCESSING:{
-                    if(logger.isDebugEnabled())
-                        logger.debug("Processing "+jobtoken);
+                    logger.debug("Processing {}", jobtoken);
                     long expirationtime=System.currentTimeMillis() - (long)mess.getHeaders().get("timestamp");
                     if( expirationtime > 60 * 1000) {
                         return HttpStatus.OK;
@@ -97,28 +91,28 @@ public class YtiMQService {
                     logger.warn("Import operation already started for "+jobtoken);
                     return  HttpStatus.NOT_ACCEPTABLE;
                 }
+                case YtiMQService.STATUS_FAILED: {
+                    logger.error("Import failed {}", jobtoken);
+                    return HttpStatus.INTERNAL_SERVER_ERROR;
+                }
             }
         }
-        else
-            System.out.println("CurrentStatus = null");
+
         // Query status information from ActiveMQ
         if(getJobState(jobtoken, subSystem+"Ready")){
-            System.out.println("Ready found:");
-            if(logger.isDebugEnabled())
-                logger.debug("Import done for "+jobtoken);
+            logger.debug("Import done for {}", jobtoken);
             return HttpStatus.OK;
         } else if (getJobState(jobtoken, subSystem+"Incoming")){
-            logger.warn("Import operation already started for "+jobtoken);
+            logger.warn("Import operation already started for {}", jobtoken);
             return  HttpStatus.NOT_ACCEPTABLE;
         } else if (getJobState(jobtoken, subSystem+"Status")){
-            if(logger.isDebugEnabled())
-                logger.debug("Processing "+jobtoken);
+            logger.debug("Processing {}", jobtoken);
             return HttpStatus.PROCESSING;
         } else if (getJobState(jobtoken, subSystem+"Processing")){
-            logger.debug("Processing "+jobtoken);
+            logger.debug("Processing {}", jobtoken);
             return HttpStatus.PROCESSING;
         }
-        return  HttpStatus.NO_CONTENT;
+        return HttpStatus.NO_CONTENT;
     }
 
     public HttpStatus getStatus(UUID jobtoken, StringBuffer payload){
@@ -126,55 +120,53 @@ public class YtiMQService {
         // Query status information from ActiveMQ
         browseQueue("VocabularyStatus");
         Message mess = currentStatus.get(jobtoken.toString());
-        if(mess!=null) {
+        if (mess != null) {
             // return also payload
             payload.append(mess.getPayload());
-            int status=(int)mess.getHeaders().get("status");
-            switch(status){
-                case YtiMQService.STATUS_READY:{
-                    System.out.println("Ready found:");
-                    if(logger.isDebugEnabled())
-                        logger.debug("Import done for "+jobtoken);
+            int status = (int)mess.getHeaders().get("status");
+            switch (status){
+                case YtiMQService.STATUS_READY: {
+                    logger.debug("Import done for {}", jobtoken);
                     return HttpStatus.OK;
                 }
-                case YtiMQService.STATUS_PROCESSING:{
-                    if(logger.isDebugEnabled())
-                        logger.debug("Processing "+jobtoken);
-                    System.out.println("Timestamp="+(long)mess.getHeaders().get("timestamp"));
-                    long expirationtime=System.currentTimeMillis() - (long)mess.getHeaders().get("timestamp");
-                    System.out.println("current_time-stamp="+expirationtime);
+                case YtiMQService.STATUS_PROCESSING: {
+                    logger.debug("Processing {}", jobtoken);
+                    logger.debug("Timestamp={}", mess.getHeaders().get("timestamp"));
+                    long expirationtime = System.currentTimeMillis() - (long)mess.getHeaders().get("timestamp");
+                    logger.debug("current_time-stamp={}", expirationtime);
                     if( expirationtime > 60 * 1000) {
                         return HttpStatus.OK;
-                    } else
+                    } else {
                         return HttpStatus.PROCESSING;
+                    }
                 }
-                case YtiMQService.STATUS_PREPROCESSING:{
-                    logger.warn("Import operation already started for "+jobtoken);
-                    return  HttpStatus.NOT_ACCEPTABLE;
+                case YtiMQService.STATUS_PREPROCESSING: {
+                    logger.warn("Import operation already started for {}", jobtoken);
+                    return HttpStatus.NOT_ACCEPTABLE;
+                }
+                case YtiMQService.STATUS_FAILED: {
+                    return HttpStatus.INTERNAL_SERVER_ERROR;
                 }
             }
         }
 
-         if(getJobState(jobtoken, subSystem+"Ready")){
-            System.out.println("Ready found:");
-            if(logger.isDebugEnabled())
-                logger.debug("Import done for "+jobtoken);
-            payload.append(getJobPayload(jobtoken,subSystem+"Ready"));
-            System.out.println(" Payload="+payload);
+        logger.debug("Processing {}", jobtoken);
+
+        if (getJobState(jobtoken, subSystem+"Ready")) {
+            logger.debug("Import done for {}", jobtoken);
+            payload.append(getJobPayload(jobtoken, subSystem+"Ready"));
+            logger.debug("Payload={}", payload);
             return HttpStatus.OK;
-        } else if (getJobState(jobtoken, subSystem+"Incoming")){
+        } else if (getJobState(jobtoken, subSystem+"Incoming")) {
             logger.warn("Import operation already started for "+jobtoken);
             return  HttpStatus.NOT_ACCEPTABLE;
-        } else if (getJobState(jobtoken, subSystem+"Status")){
-            if(logger.isDebugEnabled())
-                logger.debug("Processing "+jobtoken);
-            payload.append( getJobPayload(jobtoken,subSystem+"Status"));
-            System.out.println(" Status Payload="+payload);
+        } else if (getJobState(jobtoken, subSystem+"Status")) {
+            payload.append(getJobPayload(jobtoken, subSystem+"Status"));
+            logger.debug("Status Payload={}", payload);
             return HttpStatus.PROCESSING;
         } else if (getJobState(jobtoken, subSystem+"Processing")){
-            logger.debug("Processing "+jobtoken);
             payload.append(getJobPayload(jobtoken,subSystem+"Processing"));
-            System.out.println(" processing Payload="+payload);
+            logger.debug("Processing Payload="+payload);
             return HttpStatus.PROCESSING;
         }
         return  HttpStatus.NO_CONTENT;
@@ -182,13 +174,12 @@ public class YtiMQService {
 
     private boolean getJobState(UUID jobtoken,String queueName) {
         return
-//         jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'",new BrowserCallback<Boolean>() {
-            jmsTemplate.browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'",new BrowserCallback<Boolean>() {
+            jmsTemplate.browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'", new BrowserCallback<Boolean>() {
                 @Override
-            public Boolean doInJms(Session session, QueueBrowser browser) throws JMSException {
-                Enumeration messages = browser.getEnumeration();
-                return  messages.hasMoreElements();
-            }
+                public Boolean doInJms(Session session, QueueBrowser browser) throws JMSException {
+                    Enumeration messages = browser.getEnumeration();
+                    return  messages.hasMoreElements();
+                }
         });
     }
 
@@ -197,18 +188,16 @@ public class YtiMQService {
         Boolean rv = false;
         // Check cached status first running if not ready
         Message mess = currentStatus.get(uri);
-        if(mess!=null){
+        if (mess != null){
             int status = (int)mess.getHeaders().get("status");
-            System.out.println("YtiMQService checkIfImportIsRunning using cached state:"+status+"\n"+mess);
+            logger.debug("YtiMQService checkIfImportIsRunning using cached state:{} \n {}", status, mess);
             if(status == YtiMQService.STATUS_PROCESSING || status == YtiMQService.STATUS_PREPROCESSING) {
-                System.out.println("Timestamp="+(long)mess.getHeaders().get("timestamp"));
+                logger.debug("Timestamp="+(long)mess.getHeaders().get("timestamp"));
                 long expirationtime=System.currentTimeMillis() - (long)mess.getHeaders().get("timestamp");
-                System.out.println("current_time-stamp="+expirationtime);
+                logger.debug("current_time-stamp="+expirationtime);
                 rv =true;
-                if( expirationtime > 60 * 1000) {
+                if (expirationtime > 60 * 1000) {
                     logger.info("Status Expired for job:"+(String)mess.getHeaders().get("jobtoken"));
-                    // Hardcoded expiration time 60 sec
-//                    rv = true;
                     // cached item expired, clean it
                     currentStatus.remove(uri);
                     currentStatus.remove((String)mess.getHeaders().get("jobtoken"));
@@ -218,25 +207,24 @@ public class YtiMQService {
             // Cache found, use it
             return rv;
         }
-        else
-            System.out.println("Not cached item found for "+uri);
+        else {
+            logger.debug("Not cached item found for "+uri);
+        }
+
         // Check queues
         if (checkUriStatus(uri, subSystem+"Processing")) {
-                rv = true;
-        } //else if (checkUriStatus(uri, subSystem+"Status")) {
-//            rv = true;
-//        } else
+            rv = true;
+        }
         return rv;
     }
 
     public boolean checkUriStatus(String uri, String queueName) {
         // selector uri='url' AND
-//        return jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, "uri='"+uri+"'",new BrowserCallback<Boolean>() {
         return jmsTemplate.browseSelected(queueName, "uri='"+uri+"'",new BrowserCallback<Boolean>() {
-                @Override
+            @Override
             public Boolean doInJms(Session session, QueueBrowser browser) throws JMSException {
                 Enumeration messages = browser.getEnumeration();
-                System.out.println("checkUriStatus "+uri+" Queue:"+queueName+" status="+messages.hasMoreElements());
+                logger.debug("checkUriStatus "+uri+" Queue:"+queueName+" status="+messages.hasMoreElements());
                 return  messages.hasMoreElements();
             }
         });
@@ -244,17 +232,16 @@ public class YtiMQService {
 
     private List<String> getJobJMSId(UUID jobtoken,String queueName) {
         String messageSelector = "jobtoken='"+jobtoken.toString()+"'";
-        System.out.println(" MessageSelector for browse:"+messageSelector);
+        logger.debug("MessageSelector for browse: {} ", messageSelector);
         return jmsTemplate.browseSelected(queueName, messageSelector,new BrowserCallback<List<String>>() {
-//            return jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, messageSelector,new BrowserCallback<List<String>>() {
-                @Override
+            @Override
             public List<String> doInJms(Session session, QueueBrowser browser) throws JMSException {
                 List<String> rv = new ArrayList<>();
                 Enumeration messages = browser.getEnumeration();
                 if(messages.hasMoreElements()){
                     javax.jms.Message m = (javax.jms.Message)messages.nextElement();
                     rv.add(m.getJMSMessageID());
-                    System.out.println("  "+m.getStringProperty("jobtoken")+"  adding "+m.getJMSMessageID());
+                    logger.debug("{} adding {}", m.getStringProperty("jobtoken"), m.getJMSMessageID());
                 }
                 return  rv;
             }
@@ -269,7 +256,7 @@ public class YtiMQService {
                 javax.jms.Message m = (javax.jms.Message)messages.nextElement();
                 if (m instanceof TextMessage) {
                     TextMessage message = (TextMessage) m;
-                    System.out.println(" browse message="+message);
+                    logger.info(" browse message = {}", message);
                 }
                 total++;
             }
@@ -279,10 +266,9 @@ public class YtiMQService {
 
     private String getJobPayload(UUID jobtoken,String queueName) {
         String messageSelector = "jobtoken='"+jobtoken.toString()+"'";
-        System.out.println(" getJobPayload MessageSelector for browse:"+messageSelector + " queue="+queueName);
-        return jmsTemplate.browseSelected(queueName, messageSelector,new BrowserCallback<String>() {
-//            return jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, messageSelector,new BrowserCallback<String>() {
-                @Override
+        logger.debug(" getJobPayload MessageSelector for browse:"+messageSelector + " queue="+queueName);
+        return jmsTemplate.browseSelected(queueName, messageSelector, new BrowserCallback<String>() {
+            @Override
             public String doInJms(Session session, QueueBrowser browser) throws JMSException {
                 String rv= null;
                 Enumeration messages = browser.getEnumeration();
@@ -292,7 +278,7 @@ public class YtiMQService {
                         TextMessage message = (TextMessage) m;
                         rv = message.getText();
                     }
-                    System.out.println("  getPayload="+rv);
+                    logger.debug("getPayload={}", rv);
                 }
                 return  rv;
             }
@@ -301,8 +287,6 @@ public class YtiMQService {
 
     public boolean deleteJmsStatusMessage(String jobtoken){
         boolean rv = false;
-//        JmsTemplate client=jmsMessagingTemplate.getJmsTemplate();
-//        ConnectionFactory cf = client.getConnectionFactory();
         ConnectionFactory cf = jmsTemplate.getConnectionFactory();
 
         if(getStatus(UUID.fromString(jobtoken)) != HttpStatus.NO_CONTENT) {
@@ -314,10 +298,8 @@ public class YtiMQService {
                 Destination destination = session.createQueue(subSystem + "Status");
                 String selector = "jobtoken = '" + jobtoken + "'";
                 javax.jms.Message message = jmsTemplate.receiveSelected(destination, selector);
-//                javax.jms.Message message = client.receiveSelected(destination, selector);
                 if (message != null) {
-                    System.out.println(" delete message with selector:" + selector + " message=" + message);
-//                    System.out.println("Message:"+ jobtoken + " consumed.");
+                    logger.debug(" delete message with selector: {} message={}", selector, message);
                     rv = true;
                 }
 
@@ -332,50 +314,32 @@ public class YtiMQService {
                 } catch (Exception e) { /* NOP */ }
             }
         } else {
-            System.out.println("Can't find status  message to delete");
+            logger.debug("Can't find status message to delete");
         }
         return rv;
     }
 
     public int handleImportAsync(UUID jobtoken, MessageHeaderAccessor headers, String subsystem, String uri, String payload) {
 
-        System.out.println("handleImportAsync subsystem:"+subsystem+" Uri:"+uri);
+        logger.debug("handleImportAsync subsystem: {} Uri: {}", subsystem, uri);
         if (!SUPPORTED_SYSTEMS.contains(subsystem)) {
-            logger.error("Unsupported subsystem:<" + subsystem + "> (Currently supported subsystems: "+SET_VALUES);
+            logger.error("Unsupported subsystem:<{}> (Currently supported subsystems: {})", subsystem, SET_VALUES);
             return  HttpStatus.NOT_ACCEPTABLE.value();
         }
 
-        // Check uri
-        /*
-        if(checkIfImportIsRunning(uri)){
-            logger.error("Import running for URI:<" + uri + ">");
-            return  HttpStatus.CONFLICT.value();
-        }
-*/
         // If jobtoken is not set, create new one
-        if(jobtoken == null)
+        if(jobtoken == null) {
             jobtoken=UUID.randomUUID();
-        MessageHeaderAccessor accessor = new MessageHeaderAccessor();
-        if (headers != null) {
-            // Add application specific headers
-            accessor.copyHeaders(headers.toMap());
         }
-        // Authenticated user
-        accessor.setHeader("userId",  userProvider.getUser().getId().toString());
-        // Token which is used when querying status
-        accessor.setHeader("jobtoken", jobtoken.toString());
-        // Target identification data
-        accessor.setHeader("system", subsystem);
-        accessor.setHeader("uri", uri);
-        // Use jobtoken as correlationID
-        accessor.setHeader("JMSCorrelationID",jobtoken.toString());
+        MessageHeaderAccessor accessor = getMessageHeaderAccessor(headers, jobtoken, subsystem, uri);
 
         Message mess = MessageBuilder
                     .withPayload(payload)
                     .setHeaders(accessor)
                     .build();
-            // send item for processing
-        System.out.println("Send job:"+jobtoken+" to the processing queue:"+subsystem+"Incoming");
+
+        // send item for processing
+        logger.debug("Send job: {} to the processing queue: {}Incoming", jobtoken, subsystem);
         jmsMessagingTemplate.send(subsystem+"Incoming", mess);
 
         StatusTest(mess);        
@@ -386,25 +350,14 @@ public class YtiMQService {
     public Message StatusTest(Message mess){
         return mess;
     }
-    public void setReady(String jobtoken) {
-        int deletecount=countMessageByJobtoken(UUID.fromString(jobtoken), subSystem+"Status");
-        System.out.println("SetReady - Consume Processed item from:"+subSystem+"Status" + " count="+deletecount);
-        // Consume all existing
-        for(int x=0;x<deletecount; x++){
-            if (deleteJmsStatusMessage(jobtoken)) {
-                System.out.println("Delete done");
-            }
-        }
-    }
 
     private javax.jms.Message getMessageByJobtoken(UUID jobtoken, String queueName) {
-        return jmsTemplate.browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'",new BrowserCallback<javax.jms.Message>() {
-//            return jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'",new BrowserCallback<javax.jms.Message>() {
-                @Override
+        return jmsTemplate.browseSelected(queueName, "jobtoken='"+jobtoken.toString()+"'", new BrowserCallback<javax.jms.Message>() {
+            @Override
             public javax.jms.Message doInJms(Session session, QueueBrowser browser) throws JMSException {
                 javax.jms.Message mess = null;
                 Enumeration messages = browser.getEnumeration();
-                System.out.println("getMessagesByJobToken "+messages.hasMoreElements());
+                logger.debug("getMessagesByJobToken {}", messages.hasMoreElements());
                 if(messages.hasMoreElements()){
                     mess = (javax.jms.Message)messages.nextElement();
                 }
@@ -413,85 +366,8 @@ public class YtiMQService {
         });
     }
 
-    private int countMessageByJobtoken(UUID jobtoken, String queueName) {
-        return jmsTemplate.browseSelected(queueName, "JMSCorrelationID='"+jobtoken.toString()+"'",new BrowserCallback<Integer>() {
-//            return jmsMessagingTemplate.getJmsTemplate().browseSelected(queueName, "JMSCorrelationID='"+jobtoken.toString()+"'",new BrowserCallback<Integer>() {
-                @Override
-            public Integer doInJms(Session session, QueueBrowser browser) throws JMSException {
-                int count =0;
-                Enumeration messages = browser.getEnumeration();
-                count=Collections.list(messages).size();
-                System.out.println("countMessagesByJobToken "+count);
-                return  count;
-            }
-        });
-    }
-
-    public void setStatusDelete(boolean ready, String jobtoken, String uri,  String payload) {
-        System.out.println(jobtoken+"  Set status to Processed item from:"+subSystem+"Status"+ " Value="+payload);
-        try {
-            Message mess=null;
-            // Get previous status and copy headers
-            javax.jms.Message m = getMessageByJobtoken(UUID.fromString(jobtoken), subSystem+"Status");
-            if(m != null) {
-                // Copy headers
-                Enumeration en = m.getPropertyNames();
-                MessageHeaderAccessor accessor = new MessageHeaderAccessor();
-                while (en.hasMoreElements()) {
-                    String name = (String) en.nextElement();
-                    System.out.println("Header:" + name + "=" + m.getStringProperty(name));
-                    if (!name.equalsIgnoreCase("timestamp") && !name.equalsIgnoreCase("__AMQ_CID"))
-                        accessor.setHeader(name, m.getStringProperty(name));
-                }
-                // Consume existing
-                if(deleteJmsStatusMessage(jobtoken)) {
-                    System.out.println("Delete done");
-                }
-                System.out.println("Send new statusMessage");
-                // Replace it with new one
-                mess = MessageBuilder
-                        .withPayload(payload)
-                        .setHeaders(accessor)
-                        .build();
-            } else {
-                System.out.println("SetStatus, create new one");
-                // Add application specific headers
-                MessageHeaderAccessor accessor = new MessageHeaderAccessor();
-                // Authenticated user
-                if(userProvider!= null && userProvider.getUser() != null && userProvider.getUser().getId()!=null)
-                    accessor.setHeader("userId",  userProvider.getUser().getId().toString());
-                // Token which is used when querying status
-                accessor.setHeader("jobtoken", jobtoken.toString());
-                //  Use  jobtoken as correlation id
-                accessor.setHeader("JMSCorrelationID",jobtoken.toString());
-                // Target identification data
-                accessor.setHeader("system", subSystem);
-                accessor.setHeader("uri", uri);
-                mess = MessageBuilder
-                        .withPayload(payload)
-                        .setHeaders(accessor)
-                        .build();
-            }
-            // send new replacing iten to Status-queue
-            if(mess != null) {
-                jmsMessagingTemplate.send(subSystem + "Status", mess);
-                // Update status cache
-                currentStatus.put(jobtoken, mess);
-                currentStatus.put(uri, mess);
-            }
-        } catch (JMSException jex) {
-            jex.printStackTrace();
-        }
-    }
-
-
     @SendTo("${mq.active.subsystem}Status")
     public Message setStatus(int status, String jobtoken, String userId, String uri,  String payload) {
-
-        // Consume previous
-//        if(deleteJmsStatusMessage(jobtoken)){
-//            System.out.println("    setStatus previous deleted.");
-//        }
 
         // Add application specific headers
         MessageHeaderAccessor accessor = new MessageHeaderAccessor();
@@ -513,17 +389,70 @@ public class YtiMQService {
                 .build();
         // send new  item to Status-queue
         if(mess != null) {
-            System.out.println("Send status message to queue:");
+            logger.debug("Send status message to queue:");
             jmsMessagingTemplate.send(subSystem + "Status", mess);
             jmsTemplate.convertAndSend(subSystem + "Status", mess);
             // Update internal cache
             currentStatus.put(jobtoken, mess);
             currentStatus.put(uri, mess);
 
-            System.out.println("SEND STATUS:"+mess);
+            logger.debug("SEND STATUS: {}", mess);
         }
-        System.out.println("Send Status to QUEUE "+ mess);
+        logger.debug("Send Status to QUEUE {}", mess);
 
         return mess;
+    }
+
+    /**
+     * Send batches to queue
+     *
+     * @See fi.vm.yti.terminology.api.importapi.ExcelImportJmsListener
+     */
+    public void handleExcelImportAsync(UUID jobToken, MessageHeaderAccessor headers,
+                                      String uri, List<List<GenericNode>> batches) {
+
+        MessageHeaderAccessor accessor = getMessageHeaderAccessor(headers, jobToken, subSystem, uri);
+
+        // Set initial status
+        ImportStatusResponse response = new ImportStatusResponse();
+        response.setStatus(ImportStatusResponse.ImportStatus.PROCESSING);
+        response.setProcessingProgress(0);
+        response.setProcessingTotal(batches.size());
+
+        setStatus(STATUS_PROCESSING, jobToken.toString(),
+                accessor.getHeader("userId").toString(),
+                accessor.getHeader("uri").toString(),
+                response.toString());
+
+        int count = 1;
+
+        for(List<GenericNode> patch : batches) {
+            accessor.setHeader("currentBatch", count++);
+            accessor.setHeader("totalBatchCount", batches.size());
+
+            Message<GenericDeleteAndSave> message = MessageBuilder
+                    .withPayload(new GenericDeleteAndSave(Collections.emptyList(), patch))
+                    .setHeaders(accessor)
+                    .build();
+            jmsMessagingTemplate.send(subSystem + "ExcelImport", message);
+        }
+    }
+
+    private MessageHeaderAccessor getMessageHeaderAccessor(MessageHeaderAccessor headers, UUID jobToken, String subsystem, String uri) {
+        MessageHeaderAccessor accessor = new MessageHeaderAccessor();
+        if (headers != null) {
+            // Add application specific headers
+            accessor.copyHeaders(headers.toMap());
+        }
+        // Authenticated user
+        accessor.setHeader("userId", userProvider.getUser().getId().toString());
+        // Token which is used when querying status
+        accessor.setHeader("jobtoken", jobToken.toString());
+        // Target identification data
+        accessor.setHeader("system", subsystem);
+        accessor.setHeader("uri", uri);
+        // Use jobtoken as correlationID
+        accessor.setHeader("JMSCorrelationID", jobToken.toString());
+        return accessor;
     }
 }

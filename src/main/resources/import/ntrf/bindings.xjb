@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jaxb:bindings
+		xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		jaxb:version="2.0">
+	<jaxb:bindings schemaLocation="NTRF.xsd">
+		<jaxb:bindings node="//xs:schema//xs:element[@name='NUMB']">
+			<jaxb:property name="numbelem"/>
+		</jaxb:bindings>
+		<jaxb:bindings node="//xs:schema//xs:element[@name='UPDA']">
+			<jaxb:property name="updaelem"/>
+		</jaxb:bindings>
+		<jaxb:bindings node="//xs:schema//xs:element[@name='STAT']">
+			<jaxb:property name="statelem"/>
+		</jaxb:bindings>
+	</jaxb:bindings>
+</jaxb:bindings>

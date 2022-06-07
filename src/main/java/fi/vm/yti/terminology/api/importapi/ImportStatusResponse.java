@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +25,10 @@ import java.util.List;
 })
 public class ImportStatusResponse implements Serializable
 {
+    private static final Logger logger = LoggerFactory.getLogger(ImportStatusResponse.class);
+
     // Enum states for status
-    public enum Status {
+    public enum ImportStatus {
         QUEUED, PREPROCESSING, PROCESSING, POSTPROCESSING, SUCCESS, SUCCESS_WITH_ERRORS, FAILURE, NOT_FOUND
     };
 
@@ -33,7 +37,7 @@ public class ImportStatusResponse implements Serializable
      * required to end up in either SUCCESS or FAILURE.
      */
     @JsonProperty("status")
-    private Status status;
+    private ImportStatus status;
     /**
      * For phase PROCESSING the total goal. May change during processing. Must be
      * given if processingProgress is given. Unspecified for other phases.
@@ -91,7 +95,7 @@ public class ImportStatusResponse implements Serializable
      * @param processingTotal
      * @param statusMessage
      */
-    public ImportStatusResponse(Status status, Integer processingTotal, Integer processingProgress, Integer resultsCreated, Integer resultsWarning, Integer resultsError, List<ImportStatusMessage> statusMessage) {
+    public ImportStatusResponse(ImportStatus status, Integer processingTotal, Integer processingProgress, Integer resultsCreated, Integer resultsWarning, Integer resultsError, List<ImportStatusMessage> statusMessage) {
         super();
         this.status = status;
         this.processingTotal = processingTotal;
@@ -103,12 +107,12 @@ public class ImportStatusResponse implements Serializable
     }
 
     @JsonProperty("status")
-    public Status getStatus() {
+    public ImportStatus getStatus() {
         return status;
     }
 
     @JsonProperty("status")
-    public void setStatus(Status status) {
+    public void setStatus(ImportStatus status) {
         this.status = status;
     }
 
@@ -187,8 +191,8 @@ public class ImportStatusResponse implements Serializable
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(this);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            logger.error(e.getMessage(), e);
         }
         return "";
     }
@@ -197,8 +201,8 @@ public class ImportStatusResponse implements Serializable
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(objStr, ImportStatusResponse.class);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            logger.error(e.getMessage(), e);
         }
         return null;
     }

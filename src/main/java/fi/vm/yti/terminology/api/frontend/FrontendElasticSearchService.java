@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.frontend.elasticqueries.CountQueryFactory;
 import fi.vm.yti.terminology.api.frontend.searchdto.*;
+import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapper;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -37,7 +38,7 @@ public class FrontendElasticSearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(FrontendElasticSearchService.class);
 
-    private final RestHighLevelClient esRestClient;
+    private RestHighLevelClientWrapper esRestClient;
 
     private final String indexName;
     private final String indexMappingType;
@@ -50,18 +51,15 @@ public class FrontendElasticSearchService {
     private final ConceptQueryFactory conceptQueryFactory;
 
     @Autowired
-    public FrontendElasticSearchService(@Value("${search.host.url}") String searchHostUrl,
-                                        @Value("${search.host.port}") int searchHostPort,
-                                        @Value("${search.host.scheme}") String searchHostScheme,
-                                        @Value("${search.index.name}") String indexName,
+    public FrontendElasticSearchService(@Value("${search.index.name}") String indexName,
                                         @Value("${search.index.mapping.type}") String indexMappingType,
                                         @Value("${namespace.root}") String namespaceRoot,
+                                        RestHighLevelClientWrapper esRestClient,
                                         ObjectMapper objectMapper,
                                         AuthenticatedUserProvider userProvider) {
         this.indexName = indexName;
         this.indexMappingType = indexMappingType;
-        this.esRestClient = new RestHighLevelClient(RestClient.builder(new HttpHost(searchHostUrl, searchHostPort, searchHostScheme)));
-
+        this.esRestClient = esRestClient;
         this.objectMapper = objectMapper;
         this.userProvider = userProvider;
         this.terminologyQueryFactory = new TerminologyQueryFactory(objectMapper);
@@ -137,6 +135,28 @@ public class FrontendElasticSearchService {
         }
     }
 
+    CountSearchResponse getVocabularyCounts() {
+        SearchRequest query = countQueryFactory.createVocabularyCountQuery();
+        try {
+            SearchResponse response = esRestClient.search(query, RequestOptions.DEFAULT);
+            return countQueryFactory.parseResponse(response);
+        } catch (IOException e) {
+            logger.error("Error fetching vocabulary counts", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    CountSearchResponse getConceptCounts(UUID vocabularyId)  {
+        SearchRequest request = countQueryFactory.createConceptCountQuery(vocabularyId);
+        try {
+            SearchResponse response = esRestClient.search(request, RequestOptions.DEFAULT);
+            return countQueryFactory.parseResponse(response);
+        } catch (IOException e) {
+            logger.error("Error fetching concept counts", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     private boolean superUser() {
         return userProvider.getUser().isSuperuser();
     }
@@ -156,6 +176,7 @@ public class FrontendElasticSearchService {
                 return Collections.emptySet();
             }
             SearchRequest sr = terminologyQueryFactory.createMatchingTerminologiesQuery(privilegedOrganizations, limitToThese);
+            logger.debug("terminologiesMatchingOrganizations query: " + sr.toString());
             SearchResponse response = esRestClient.search(sr, RequestOptions.DEFAULT);
             return terminologyQueryFactory.parseMatchingTerminologiesResponse(response);
         } catch (Exception e) {

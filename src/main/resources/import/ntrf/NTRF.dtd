@@ -225,7 +225,8 @@ part of the NTRF standard
 
 <!ATTLIST RECORD numb ID #REQUIRED
                  stat CDATA #IMPLIED
-                 upda CDATA #IMPLIED >
+                 upda CDATA #IMPLIED
+                 type CDATA #IMPLIED>
 
 <!ATTLIST LANG  value %languages; #REQUIRED>
 
@@ -297,3 +298,10 @@ part of the NTRF standard
                heightcm    CDATA   #IMPLIED
                scale       CDATA   #IMPLIED
                lock         (true|false) "false">
+
+<!ATTLIST TE stat CDATA #IMPLIED >
+<!ATTLIST SY stat CDATA #IMPLIED >
+<!ATTLIST STE stat CDATA #IMPLIED >
+<!ATTLIST DTE stat CDATA #IMPLIED >
+<!ATTLIST DTEA stat CDATA #IMPLIED >
+<!ATTLIST DTEB stat CDATA #IMPLIED >

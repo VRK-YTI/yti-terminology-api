@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,15 +49,13 @@ public class JSONWrapperTest {
     @Test
     public void testGetCreatedDate() {
         JSONWrapper wrapper = new JSONWrapper(json.get(0), new ArrayList<>());
-        // note: expected is in Europe/Helsinki timezone.
-        assertEquals("2021-11-08 15:06:31", wrapper.getCreatedDate());
+        assertEquals(Instant.parse("2021-11-08T13:06:31Z"), wrapper.getCreatedDate());
     }
 
     @Test
     public void testGetLastModifiedDate() {
         JSONWrapper wrapper = new JSONWrapper(json.get(0), new ArrayList<>());
-        // note: expected is in Europe/Helsinki timezone.
-        assertEquals("2021-11-09 12:48:54", wrapper.getLastModifiedDate());
+        assertEquals(Instant.parse("2021-11-09T10:48:54Z"), wrapper.getLastModifiedDate());
     }
 
     @Test
@@ -68,13 +67,13 @@ public class JSONWrapperTest {
     @Test
     public void testGetTypeAsText() {
         JSONWrapper wrapper = new JSONWrapper(json.get(0), new ArrayList<>());
-        assertEquals("Collection", wrapper.getTypeAsText());
+        assertEquals("2", wrapper.getTypeAsText());
     }
 
     @Test
     public void testGetTypeAsTextOfTerminologicalVocabulary() {
         JSONWrapper wrapper = new JSONWrapper(json.get(4), new ArrayList<>());
-        assertEquals("Terminological Dictionary", wrapper.getTypeAsText());
+        assertEquals("1", wrapper.getTypeAsText());
     }
 
     @Test

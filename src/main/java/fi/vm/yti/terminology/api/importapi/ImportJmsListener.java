@@ -14,9 +14,9 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsMessagingTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -28,11 +28,14 @@ import fi.vm.yti.terminology.api.model.ntrf.VOCABULARY;
 
 @Component
 public class ImportJmsListener {
-	@Autowired
-	NtrfMapper ntrfMapper;
-    // JMS-client
-    @Autowired
-    private JmsMessagingTemplate jmsMessagingTemplate;
+
+    private static final Logger logger = LoggerFactory.getLogger(ImportJmsListener.class);
+
+    private final NtrfMapper ntrfMapper;
+
+    public ImportJmsListener(NtrfMapper ntrfMapper) {
+        this.ntrfMapper = ntrfMapper;
+    }
 
     /**
      * Implements actual import operation.
@@ -40,56 +43,37 @@ public class ImportJmsListener {
      * @param session
      * @param jobtoken
      * @param userId
-     * @param system
      * @param vocabularyId
-     * @param uri
      * @return
      * @throws JMSException
      */
     @JmsListener(id="NtrfProcessor", destination = "${mq.active.subsystem}Processing")
 	@SendTo("${mq.active.subsystem}Ready")
-	public Message<String> processMessage(final Message<String> message,Session session,
-                                 @Header String jobtoken,
-                                 @Header String userId,
-                                 @Header String system,
-                                 @Header String vocabularyId,
-                                 @Header String uri) throws JMSException {
+	public Message<String> processMessage(final Message<String> message,
+                                          Session session,
+                                          @Header String jobtoken,
+                                          @Header String userId,
+                                          @Header String vocabularyId) throws JMSException {
 	    // Consume incoming
-        System.out.println("Process message "+ message.getHeaders());
-        System.out.println("session= "+ session);
-        System.out.println("UserId="+userId);
-        String payload ="{}";
-        if(jmsMessagingTemplate == null){
-            System.out.println("MessagingTemplate not initialized!!!!!");
-        }
+        logger.info("Process message {}, session {}, user id {}", message.getHeaders(), session, userId);
+
+        String payload = "{}";
+
         // Process ntrf item
         try {
-            JAXBContext jc = JAXBContext.newInstance(VOCABULARY.class);
-            // Disable DOCTYPE-directive from incoming file.
-            XMLInputFactory xif = XMLInputFactory.newFactory();
-            xif.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-            xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-            // Unmarshall XMl with JAXB
-            Reader inReader = new StringReader((String)message.getPayload());
-            XMLStreamReader xsr = xif.createXMLStreamReader(inReader);
-            Unmarshaller unmarshaller = jc.createUnmarshaller();
-            Marshaller marshaller = jc.createMarshaller();
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-            // At last, resolve ntrf-POJO's
-            VOCABULARY voc = (VOCABULARY) unmarshaller.unmarshal(xsr);
-            payload=ntrfMapper.mapNtrfDocument( jobtoken, UUID.fromString(vocabularyId), voc,UUID.fromString(userId));
+            VOCABULARY voc = NtrfUtil.unmarshallXmlDocument(message.getPayload());
+            payload = ntrfMapper.mapNtrfDocument(jobtoken, UUID.fromString(vocabularyId), voc, UUID.fromString(userId));
         } catch (XMLStreamException se) {
-            System.out.println("Incoming transform error=" + se);
-        } catch(JAXBException je){
-            System.out.println("Incoming transform error=" + je);
+            logger.error(se.getMessage(), se);
+        } catch(JAXBException je) {
+            logger.error(je.getMessage(), je);
         }
 
-        // Set import as handled. IE. consume processed message
-//        ytiMQService.setReady(jobtoken);
-        System.out.println("Import handled:" + payload);
+        logger.info("Import handled: {}", payload);
 
         MessageHeaderAccessor accessor = new MessageHeaderAccessor();
         accessor.copyHeaders(message.getHeaders());
+
         // Set result as a payload and move it to ready-queue1
         Message<String> mess = MessageBuilder
                 .withPayload(payload)

@@ -1,0 +1,42 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "query_string": {
+            "query": "test test* *test"
+          }
+        },
+        {
+          "match": {
+            "status": {
+              "query": "DRAFT"
+            }
+          }
+        },
+        {
+          "bool": {
+            "should": [
+              {
+                "bool": {
+                  "must_not": [
+                    {
+                      "term": {
+                        "status": { "value": "INCOMPLETE" }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "vocabulary.id": ["e447089c-dd4e-4744-8b22-4aa97cf6c354"]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

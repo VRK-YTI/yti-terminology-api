@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Wrapper component with helper functions that allow to extract data from JSON.
@@ -46,32 +47,43 @@ public class JSONWrapper {
         return this.json.get("code").textValue();
     }
 
-    public String getCreatedDate() {
-        return DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault())
-                .format(Instant.parse(this.json.get("createdDate").textValue()));
+    public Instant getCreatedDate() {
+        return OffsetDateTime.parse(this.json.get("createdDate").textValue()).toInstant();
     }
 
-    public String getLastModifiedDate() {
-        return DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault())
-                .format(Instant.parse(this.json.get("lastModifiedDate").textValue()));
+    public Instant getLastModifiedDate() {
+        return OffsetDateTime.parse(this.json.get("lastModifiedDate").textValue()).toInstant();
     }
 
     public String getType() {
         return this.json.get("type").get("id").textValue();
     }
 
+    public String getGraphId() {
+        return this.json.get("type").get("graph").get("id").textValue();
+    }
+
+    public String getNamespace() {
+        String uri = this.json.get("uri").textValue();
+        Pattern p = Pattern.compile("uri.suomi.fi/terminology/(\\w+)/");
+        Matcher m = p.matcher(uri);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return "";
+    }
+
+    /**
+     * https://koodistot.suomi.fi/codescheme;registryCode=interoperabilityplatform;schemeCode=yterm
+     */
     public String getTypeAsText() {
         String type = this.getType();
 
         if (type.equals("TerminologicalVocabulary")) {
-            return "Terminological Dictionary";
+            return "1";
         }
 
-        return type;
+        return "2";
     }
 
     /**
@@ -156,5 +168,11 @@ public class JSONWrapper {
 
     public void setMemo(String memo) {
         this.memo = memo;
+    }
+
+    public List<String> getReferrerTypes() {
+        List<String> fieldNames = new ArrayList<>();
+        this.json.get("referrers").fieldNames().forEachRemaining(name -> fieldNames.add(name));
+        return fieldNames;
     }
 }

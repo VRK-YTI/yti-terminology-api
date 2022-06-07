@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.migration;
 
+import fi.vm.yti.terminology.api.frontend.TerminologyType;
 import fi.vm.yti.terminology.api.model.termed.AttributeMeta;
 import fi.vm.yti.terminology.api.model.termed.TypeId;
 import org.jetbrains.annotations.NotNull;
@@ -577,6 +578,96 @@ public final class AttributeIndex {
                                 "Contact"
                         ),
                         type("string:single,area")
+                )
+        );
+    }
+
+    @NotNull
+    public static AttributeMeta origin(TypeId domain, long index) {
+        return new AttributeMeta(
+                "origin",
+                "http://uri.suomi.fi/datamodel/ns/st#origin",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        PropertyUtil.prefLabel(
+                                "Kopioitu sanastosta",
+                                "Copied from"
+                        ),
+                        type("string:single")
+                )
+        );
+    }
+
+    @NotNull
+    public static AttributeMeta terminologyType(TypeId domain, long index) {
+        return new AttributeMeta(
+                "terminologyType",
+                "http://uri.suomi.fi/datamodel/ns/term/#terminologyType",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        PropertyUtil.prefLabel(
+                                "Sanaston tyyppi",
+                                "Terminology type"
+                        ),
+                        type("string:single")
+                )
+        );
+    }
+
+    @NotNull
+    public static AttributeMeta externalLink(TypeId domain, long index) {
+        return new AttributeMeta(
+                "externalLink",
+                "http://uri.suomi.fi/datamodel/ns/term#ExternalLink",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        PropertyUtil.prefLabel(
+                                "Ulkoinen linkki",
+                                "External link"
+                        ),
+                        type("string:single")
+                )
+        );
+    }
+
+    @NotNull
+    public static AttributeMeta subjectArea(TypeId domain, long index) {
+        return new AttributeMeta(
+                "subjectArea",
+                "http://uri.suomi.fi/datamodel/ns/term#subjectArea",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        PropertyUtil.prefLabel(
+                                "Aihealue",
+                                "Subject area"
+                        ),
+                        type("string:single")
+                )
+        );
+    }
+
+    @NotNull
+    public static AttributeMeta termEquivalencyRelation(TypeId domain, long index) {
+        return new AttributeMeta(
+                "termEquivalencyRelation",
+                "http://uri.suomi.fi/datamodel/ns/term#termEquivalencyRelation",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        PropertyUtil.prefLabel(
+                                "Termi, johon vastaavuus liittyy",
+                                "Term equivalency is related to"
+                        ),
+                        type("string:single")
                 )
         );
     }

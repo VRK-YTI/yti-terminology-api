@@ -32,7 +32,7 @@ public class ImportStatusResponseTest {
         ImportStatusResponse status = new ImportStatusResponse();
         status.setProcessingTotal(10);
         status.setProcessingProgress(8);
-        status.setStatus(ImportStatusResponse.Status.PROCESSING);
+        status.setStatus(ImportStatusResponse.ImportStatus.PROCESSING);
         status.addStatusMessage(new ImportStatusMessage("codeID1", "warning! some problems"));
         status.addStatusMessage(new ImportStatusMessage("codeID1", "warning! some problems count 2"));
         status.addStatusMessage(new ImportStatusMessage("codeID2", "warning! 2"));
@@ -55,7 +55,7 @@ public class ImportStatusResponseTest {
 
             ImportStatusResponse resp = mapper.readValue(jsonString, ImportStatusResponse.class);
             assertNotNull(resp);
-            assertEquals(ImportStatusResponse.Status.SUCCESS_WITH_ERRORS, resp.getStatus());
+            assertEquals(ImportStatusResponse.ImportStatus.SUCCESS_WITH_ERRORS, resp.getStatus());
             assertEquals((int) 910, (int) resp.getProcessingTotal());
 
         } catch (JsonMappingException jme) {

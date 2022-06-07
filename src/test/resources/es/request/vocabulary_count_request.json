@@ -1,0 +1,42 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "match": {
+            "properties.status.value": {
+              "query": "INCOMPLETE"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggregations": {
+    "statusagg": {
+      "terms": {
+        "script": {
+          "source": "doc.containsKey('status') ? doc.status : params._source.properties.status[0].value",
+          "lang": "painless"
+        }
+      }
+    },
+    "groupagg": {
+      "terms": {
+        "script": {
+          "source": "if (!params._source.containsKey('references')) {\n    return null;\n}\n   return params._source.references.inGroup\n       .stream()\n       .map(x -> x.id)\n       .collect(Collectors.toList())",
+          "lang": "painless"
+        }
+      }
+    },
+    "catagg": {
+      "terms": {
+        "script": {
+          "source": "doc['_index'].value == 'concepts' ? 'Concept' : params._source.type.id",
+          "lang": "painless"
+        }
+      }
+    }
+  }
+}
