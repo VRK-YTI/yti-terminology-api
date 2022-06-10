@@ -3,6 +3,8 @@ package fi.vm.yti.terminology.api.frontend;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.TermedRequester;
@@ -26,6 +28,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,15 +62,23 @@ public class FrontendTermedService {
     private final AuthorizationManager authorizationManager;
     private final String namespaceRoot;
 
+    private final Cache<String, JsonNode> nodeListCache;
+
     @Autowired
     public FrontendTermedService(TermedRequester termedRequester, FrontendGroupManagementService groupManagementService,
             AuthenticatedUserProvider userProvider, AuthorizationManager authorizationManager,
-            @Value("${namespace.root}") String namespaceRoot) {
+            @Value("${namespace.root}") String namespaceRoot,
+            @Value("${termed.cache.expiration:1800}") Long cacheExpireTime) {
         this.termedRequester = termedRequester;
         this.groupManagementService = groupManagementService;
         this.userProvider = userProvider;
         this.authorizationManager = authorizationManager;
         this.namespaceRoot = namespaceRoot;
+
+        this.nodeListCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(cacheExpireTime, TimeUnit.SECONDS)
+                .maximumSize(1000)
+                .build();
     }
 
     public boolean isNamespaceInUse(String prefix) {
@@ -331,6 +342,14 @@ public class FrontendTermedService {
             language = "fi";
         }
 
+        String key = nodeType.name() + language;
+
+        JsonNode result = nodeListCache.getIfPresent(key);
+
+        if (result != null) {
+            return result;
+        }
+
         Parameters params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
@@ -341,7 +360,11 @@ public class FrontendTermedService {
         params.add("max", "-1");
 
         var init = requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
-        return JsonUtils.sortedFromTermedProperties(init, language, validLanguages);
+
+        result = JsonUtils.sortedFromTermedProperties(init, language, validLanguages);
+        nodeListCache.put(key, result);
+
+        return result;
     }
 
     public void bulkChange(GenericDeleteAndSave deleteAndSave, boolean sync) {
@@ -523,6 +546,11 @@ public class FrontendTermedService {
         }
 
         return new CreateVersionResponse(newGraphId, formatNamespace(createVersionDTO.getNewCode()));
+    }
+
+    public void flushCache() {
+        // for now only for unit tests
+        nodeListCache.invalidateAll();
     }
 
     private Map<String, List<Attribute>> getNewVersionProperties(GenericNode node) {

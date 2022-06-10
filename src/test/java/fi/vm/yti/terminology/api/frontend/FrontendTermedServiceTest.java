@@ -14,6 +14,7 @@ import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.security.AuthorizationManager;
 import fi.vm.yti.terminology.api.util.Parameters;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -151,6 +152,11 @@ class FrontendTermedServiceTest {
     final JsonNode initOrgsNodeMissing = mapper.readTree(organizationsJsonMissingData);
 
     FrontendTermedServiceTest() throws JsonProcessingException {
+    }
+
+    @BeforeEach
+    public void setUp() {
+        frontEndTermedService.flushCache();
     }
 
     @Test
