@@ -351,37 +351,6 @@ public class FrontendControllerTest {
         return properties;
     }
 
-    private static HashMap<String, List<Attribute>> constructPropertiesInvalidLength() {
-        // prepare vocabularyNode for creating a new vocabulary
-        var properties = new HashMap<String, List<Attribute>>();
-        properties.put(
-                "prefLabel",
-                Arrays.asList(
-                        new Attribute("en", "test label")
-                ));
-        properties.put("description", new ArrayList());
-        properties.put(
-                "language",
-                singletonList(new Attribute("", "en")));
-        properties.put(
-                "terminologyType",
-                singletonList(new Attribute("", "TERMINOLOGICAL_VOCABULARY")));
-        properties.put(
-                "status",
-                singletonList(new Attribute("", "DRAFT")));
-        properties.put(
-                "priority",
-                singletonList(new Attribute("", "")));
-        properties.put(
-                "contact",
-                singletonList(new Attribute("", "")));
-        properties.put(
-                "origin",
-                singletonList(new Attribute("", "")));
-
-        return properties;
-    }
-
     private static HashMap<String, List<Identifier>> constructReferences() {
         var references = new HashMap<String, List<Identifier>>();
 
