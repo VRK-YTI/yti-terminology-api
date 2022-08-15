@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.ExceptionHandlerAdvice;
 import fi.vm.yti.terminology.api.model.termed.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,11 +24,13 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.*;
 import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @TestPropertySource(properties = {
@@ -149,16 +152,37 @@ public class FrontendControllerTest {
     @ParameterizedTest
     @MethodSource("provideVocabularyNodesWithMissingData")
     public void shouldFailOnMissingData(GenericNode vocabularyNode) throws Exception {
-
-        // templateGraph UUID, predefined in database
-
-
         this.mvc
                 .perform(post("/api/v1/frontend/vocabulary/validate")
                         .param("prefix", "test1")
                         .param("templateGraphId", TEMPLATE_GRAPH_ID)
                         .contentType("application/json")
                         .content(convertObjectToJsonString(vocabularyNode)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.message").value("Object validation failed"))
+                .andExpect(jsonPath("$.details").exists());
+
+        verify(this.termedService, times(0))
+                .createVocabulary(
+                        any(UUID.class),
+                        any(String.class),
+                        any(GenericNode.class),
+                        any(UUID.class),
+                        eq(true));
+        verifyNoMoreInteractions(this.termedService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideVocabularyNodesWithTooLongData")
+    public void shouldFailOnTooLongData(GenericNode vocabularyNode) throws Exception {
+        this.mvc
+                .perform(post("/api/v1/frontend/vocabulary/validate")
+                        .param("prefix", "test1")
+                        .param("templateGraphId", TEMPLATE_GRAPH_ID)
+                        .contentType("application/json")
+                        .content(convertObjectToJsonString(vocabularyNode)))
+                .andDo(log())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.message").value("Object validation failed"))
@@ -198,10 +222,6 @@ public class FrontendControllerTest {
 
     @Test
     public void shouldFailOnLanguageMismatch() throws Exception {
-
-        // templateGraph UUID, predefined in database
-
-
         var properties = constructProperties();
 
         properties.remove("language");
@@ -272,10 +292,66 @@ public class FrontendControllerTest {
         args.add(constructVocabularyNode(
                 constructProperties(), references, constructReferrers()));
 
-        return args.stream().map(a -> Arguments.of(a));
+        return args.stream().map(Arguments::of);
+    }
+
+    private static Stream<Arguments> provideVocabularyNodesWithTooLongData(){
+        var args = new ArrayList<GenericNode>();
+
+        final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
+        final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
+        final var emailMaxPlus = EMAIL_MAX_LENGTH + 20;
+
+        var properties = constructProperties();
+        properties.replace("prefLabel", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
+        args.add(constructVocabularyNode(
+                properties, constructReferences(), constructReferrers()));
+
+        properties = constructProperties();
+        properties.replace("description", List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
+        args.add(constructVocabularyNode(
+                properties, constructReferences(), constructReferrers()));
+
+        properties = constructProperties();
+        properties.replace("contact", List.of(new Attribute("en", RandomStringUtils.random(emailMaxPlus))));
+        args.add(constructVocabularyNode(
+                properties, constructReferences(), constructReferrers()));
+
+        return args.stream().map(Arguments::of);
     }
 
     private static HashMap<String, List<Attribute>> constructProperties() {
+        // prepare vocabularyNode for creating a new vocabulary
+        var properties = new HashMap<String, List<Attribute>>();
+        properties.put(
+                "prefLabel",
+                Arrays.asList(
+                        new Attribute("en", "test label")
+                ));
+        properties.put("description", new ArrayList());
+        properties.put(
+                "language",
+                singletonList(new Attribute("", "en")));
+        properties.put(
+                "terminologyType",
+                singletonList(new Attribute("", "TERMINOLOGICAL_VOCABULARY")));
+        properties.put(
+                "status",
+                singletonList(new Attribute("", "DRAFT")));
+        properties.put(
+                "priority",
+                singletonList(new Attribute("", "")));
+        properties.put(
+                "contact",
+                singletonList(new Attribute("", "")));
+        properties.put(
+                "origin",
+                singletonList(new Attribute("", "")));
+
+        return properties;
+    }
+
+    private static HashMap<String, List<Attribute>> constructPropertiesInvalidLength() {
         // prepare vocabularyNode for creating a new vocabulary
         var properties = new HashMap<String, List<Attribute>>();
         properties.put(

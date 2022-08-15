@@ -1,20 +1,32 @@
 package fi.vm.yti.terminology.api.validation;
 
 import fi.vm.yti.terminology.api.frontend.Status;
+import fi.vm.yti.terminology.api.model.termed.Attribute;
 import fi.vm.yti.terminology.api.model.termed.GenericDeleteAndSave;
 import fi.vm.yti.terminology.api.model.termed.GenericNode;
 import fi.vm.yti.terminology.api.model.termed.NodeType;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.*;
 
 public class GenericDeleteAndSaveValidator extends BaseValidator implements
         ConstraintValidator<ValidGenericDeleteAndSave, GenericDeleteAndSave> {
 
+    /**
+     * Checks if GenericSaveAndDelete object is valid
+     * Either structural or content validation
+     * @param deleteAndSave Generic delete and save object
+     * @param context Constraint validator context
+     * @return true if valid
+     */
     @Override
     public boolean isValid(GenericDeleteAndSave deleteAndSave, ConstraintValidatorContext context) {
         setConstraintViolationAdded(false);
@@ -22,6 +34,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             //These checks are split into smaller functions to improve readability and documentation
             checkPropertiesAndPrefLabel(node, context);
             checkNodeType(node, context);
+            checkLengths(node, context);
         });
 
 
@@ -70,6 +83,49 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
     }
 
     /**
+     * Check that properties of nodes are valid lengths
+     * @param node Node to chekc
+     * @param context Constraint validator context
+     */
+    private void checkLengths(GenericNode node, ConstraintValidatorContext context){
+        var nodeType = node.getType().getId();
+        if(nodeType != null){
+            List<String> textFieldProperties = new ArrayList<>();
+            List<String> textAreaProperties = new ArrayList<>();
+            if(nodeType.equals(NodeType.Concept)){
+                textFieldProperties = List.of("subjectArea", "conceptClass");
+                textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
+            }else if(nodeType.equals(NodeType.Term)){
+                textFieldProperties = List.of("prefLabel");
+                textAreaProperties = List.of("termInfo", "changeNote", "scope", "source", "historyNote", "editorialNote");
+            }else if(nodeType.equals(NodeType.Collection)){
+                textFieldProperties = List.of("prefLabel");
+                textAreaProperties = List.of("definition");
+            }
+            checkTextLength(textFieldProperties, TEXT_FIELD_MAX_LENGTH, node.getProperties(), context);
+            checkTextLength(textAreaProperties, TEXT_AREA_MAX_LENGTH, node.getProperties(), context);
+        }
+    }
+
+    /**
+     * Checks the length of the values in for given properties
+     * Serves as a helper function for {@link #checkLengths(GenericNode, ConstraintValidatorContext)}
+     * @param textProperties Text properties to check
+     * @param maxLength max length
+     * @param properties node properties
+     * @param context Constraint validator context
+     */
+    private void checkTextLength(List<String> textProperties, int maxLength, Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        textProperties.forEach(property -> {
+            if(properties.containsKey(property) && !properties.get(property).isEmpty()
+                    && properties.get(property).stream()
+                    .anyMatch(val -> val.getValue().length() > maxLength)){
+                addConstraintViolation(context, INVALID_VALUE, property);
+            }
+        });
+    }
+
+    /**
      * Check that status exists and not empty,
      * Status must also be one of {@link Status}
      * @param node Node to check
@@ -86,10 +142,15 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
         } else {
             // status must be one of Status enum
             if (status.size() != 1 || !getStatusNames().contains(status.get(0).getValue())) {
-                addConstraintViolation(context, "Invalid value", statusProperty);
+                addConstraintViolation(context, INVALID_VALUE, statusProperty);
             }
         }
     }
+
+    /**
+     * Get Status enum names as list of strings
+     * @return List of status names
+     */
     private static List<String> getStatusNames() {
         return Arrays.stream(Status.class.getEnumConstants())
                 .map(Enum::name)

@@ -5,8 +5,6 @@ import java.lang.annotation.Annotation;
 
 public abstract class BaseValidator implements Annotation{
 
-    static final String MISSING_VALUE = "Missing value";
-
     private boolean constraintViolationAdded;
 
     @Override

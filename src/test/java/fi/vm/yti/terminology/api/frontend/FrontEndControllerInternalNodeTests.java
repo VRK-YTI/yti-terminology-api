@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.ExceptionHandlerAdvice;
 import fi.vm.yti.terminology.api.model.termed.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,10 +21,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_AREA_MAX_LENGTH;
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_FIELD_MAX_LENGTH;
 import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @TestPropertySource(properties = {
@@ -33,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class FrontEndControllerInternalNodeTests {
 
 
-    public static final String TEMPLATE_GRAPH_ID = "61cf6bde-46e6-40bb-b465-9b2c66bf4ad8";
+    private static final String TEMPLATE_GRAPH_ID = "61cf6bde-46e6-40bb-b465-9b2c66bf4ad8";
 
     @Autowired
     private MockMvc mvc;
@@ -93,6 +97,20 @@ public class FrontEndControllerInternalNodeTests {
         verifyNoMoreInteractions(termedService);
     }
 
+    @ParameterizedTest
+    @MethodSource("provideTooLongData")
+    public void shouldFailOnTooLongData(GenericDeleteAndSave node) throws Exception {
+        mvc.perform(post("/api/v1/frontend/validate")
+                        .contentType("application/json")
+                        .content(convertObjectToJsonString(node)))
+                .andDo(log())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.message").value("Object validation failed"))
+                .andExpect(jsonPath("$.details").exists());
+        verifyNoMoreInteractions(termedService);
+    }
+
     private static HashMap<String, List<Attribute>> constructTermProperties() {
         var properties = new HashMap<String, List<Attribute>>();
         properties.put("prefLabel", List.of(new Attribute("en", "test label")));
@@ -126,6 +144,7 @@ public class FrontEndControllerInternalNodeTests {
         properties.put("wordClass", singletonList(new Attribute("", "")));
         properties.put("changeNote", singletonList(new Attribute("", "")));
         properties.put("historyNote", singletonList(new Attribute("", "")));
+        properties.put("example", singletonList(new Attribute("", "")));
         properties.put("status", singletonList(new Attribute("", "DRAFT")));
         properties.put("notation", singletonList(new Attribute("", "")));
         properties.put("source", Collections.emptyList());
@@ -183,6 +202,46 @@ public class FrontEndControllerInternalNodeTests {
         references.remove("prefLabelXl");
         genericNode = constructNodeWithType(NodeType.Concept, constructConceptProperties(), references);
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        return args.stream().map(Arguments::of);
+    }
+
+    private static Stream<Arguments> provideTooLongData(){
+        var args = new ArrayList<GenericDeleteAndSave>();
+
+        final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
+        final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
+
+        var properties = constructTermProperties();
+        properties.replace("prefLabel", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
+        var genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        var textAreaProperties = List.of("termInfo", "changeNote", "scope", "source", "historyNote", "editorialNote");
+        for(String property : textAreaProperties){
+            properties = constructTermProperties();
+            properties.replace(property, List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
+            genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+            args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+        }
+
+        properties = constructConceptProperties();
+        properties.replace("subjectArea", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        properties = constructConceptProperties();
+        properties.replace("conceptClass", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
+        for(String property : textAreaProperties){
+            properties = constructConceptProperties();
+            properties.replace(property, List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
+            genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+            args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+        }
 
         return args.stream().map(Arguments::of);
     }

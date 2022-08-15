@@ -1,0 +1,15 @@
+package fi.vm.yti.terminology.api.validation;
+
+public class ValidationConstants {
+
+    private ValidationConstants(){
+        //Hide constructor as this class has only constants
+    }
+
+    public static final String MISSING_VALUE = "Missing value";
+    public static final String INVALID_VALUE = "Invalid value";
+
+    public static final int TEXT_FIELD_MAX_LENGTH = 150;
+    public static final int TEXT_AREA_MAX_LENGTH = 1500;
+    public static final int EMAIL_MAX_LENGTH = 320;
+}
