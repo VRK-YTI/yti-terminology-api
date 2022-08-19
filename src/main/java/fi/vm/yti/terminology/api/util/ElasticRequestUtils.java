@@ -33,7 +33,7 @@ public final class ElasticRequestUtils {
 
     public static final Pattern LANGUAGE_CODE_PATTERN = Pattern.compile("[a-z]+(?:-[a-zA-Z0-9-]+)?");
     public static final Pattern QUERY_SPLITTER_PATTERN = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-    private static final String LUCENE_PLAIN_QUERY_PATTERN_STRING = "^(?:(?!(?:\\s++|^)(?:AND|OR|TO)(?:\\s|$))(?:\\w++|\\s++|(?<=\\w)-++))+$";
+    private static final String LUCENE_PLAIN_QUERY_PATTERN_STRING = "^(?:(?!(?:\\s++|^)(?:AND|OR|TO)(?:\\s|$))(?:[\\w\\W]++|\\s++|(?<=[\\w\\W])-++))+$";
     private static final String LUCENE_ASTERISK_QUERY_PATTERN_STRING = "^(?:(?!(?:\\s++|^)(?:AND|OR|TO)(?:\\s|$))(?:\\w++|\\s++|(?<=[\\w*])-++|(?<!\\*)\\*(?=[\\w-])|(?<=[\\w-])\\*(?!\\*)))+$";
     private static final Pattern LUCENE_PLAIN_QUERY_PATTERN = Pattern.compile(LUCENE_PLAIN_QUERY_PATTERN_STRING, Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern LUCENE_GIVEN_QUERY_PATTERN = Pattern.compile(LUCENE_ASTERISK_QUERY_PATTERN_STRING, Pattern.UNICODE_CHARACTER_CLASS);
@@ -45,31 +45,33 @@ public final class ElasticRequestUtils {
     public static QueryStringQueryBuilder buildPrefixSuffixQuery(final String searchTerm) {
         if (searchTerm != null) {
             final String trimmed = searchTerm.trim().toLowerCase();
+            final String sanitized = sanitize(trimmed);
             if (!searchTerm.isEmpty()) {
                 String parsedQuery = null;
-                if (LUCENE_PLAIN_QUERY_PATTERN.matcher(trimmed).matches()) {
-                    final String[] splitQuery = QUERY_SPLITTER_PATTERN.split(trimmed);
+                if (LUCENE_PLAIN_QUERY_PATTERN.matcher(sanitized).matches()) {
+                    final String[] splitQuery = QUERY_SPLITTER_PATTERN.split(sanitized);
                     if (splitQuery.length == 1) {
-                        parsedQuery = trimmed + " OR " + trimmed + "* OR *" + trimmed;
+                        parsedQuery = sanitized + " OR " + sanitized + "* OR *" + sanitized;
                     } else if (splitQuery.length > 1) {
                         parsedQuery = Arrays.stream(splitQuery).map(q -> "(" + q + " OR " + q + "* OR *" + q + ")").collect(Collectors.joining(" AND "));
                     }
-                } else if (LUCENE_GIVEN_QUERY_PATTERN.matcher(trimmed).matches()) {
-                    parsedQuery = trimmed;
+                } else if (LUCENE_GIVEN_QUERY_PATTERN.matcher(sanitized).matches()) {
+                    parsedQuery = sanitized;
                 }
                 if (parsedQuery != null) {
                     final StandardQueryParser parser = new StandardQueryParser();
                     try {
                         parser.setAllowLeadingWildcard(true);
-                        LOG.debug("Using Lucene query: '" + parsedQuery + "'");
-                        return QueryBuilders.queryStringQuery(parser.parse(parsedQuery, "").toString());
+                        LOG.debug("Using Lucene query: '{}'", parsedQuery);
+                        parsedQuery = parser.parse(parsedQuery, "").toString();
+                        return QueryBuilders.queryStringQuery(parsedQuery);
                     } catch (final QueryNodeException e) {
                         // nop
                     }
                 }
             }
         }
-        LOG.warn("Search term string disqualified: '" + searchTerm + "'");
+        LOG.warn("Search term string disqualified: '{}'", searchTerm);
         throw new InvalidQueryException();
     }
     public static MatchQueryBuilder buildStatusQuery(final String[] statuses, final String field) {
@@ -86,9 +88,9 @@ public final class ElasticRequestUtils {
     }
 
     public static MatchQueryBuilder buildStatusQuery(final String[] statuses, String field, final String[] validStatuses) {
-        var invalid = Arrays.stream(statuses)
+        var invalid = (Long) Arrays.stream(statuses)
                 .filter(el -> Arrays.stream(validStatuses).noneMatch(el::equals))
-                .collect(Collectors.counting());
+                .count();
         if (invalid > 0) {
             throw new InvalidQueryException();
         }
@@ -100,13 +102,12 @@ public final class ElasticRequestUtils {
         final StandardQueryParser parser = new StandardQueryParser();
         try {
             parser.setAllowLeadingWildcard(true);
-            LOG.debug("Using Lucene query: '" + filteredStatusQuery + "'");
-            var statusQuery = QueryBuilders.matchQuery(
+            LOG.debug("Using Lucene query: '{}'", filteredStatusQuery);
+            return QueryBuilders.matchQuery(
                     field,
                     parser.parse(filteredStatusQuery, "").toString());
-            return statusQuery;
         } catch (final QueryNodeException e) {
-            LOG.warn("status filter disqualified: '" + String.join(", ", statuses) + "'");
+            LOG.warn("status filter disqualified: '{}'", String.join(", ", statuses));
             throw new InvalidQueryException();
         }
     }
@@ -169,7 +170,7 @@ public final class ElasticRequestUtils {
 
     public static Pattern createHighlightPattern(String queryString) {
         if (queryString != null) {
-            String patternString = QUERY_SPLITTER_PATTERN.splitAsStream(queryString)
+            var patternString = QUERY_SPLITTER_PATTERN.splitAsStream(queryString)
                 .filter(part -> !part.isEmpty())
                 .sorted((a, b) -> {
                     int diff = b.length() - a.length();
@@ -192,5 +193,30 @@ public final class ElasticRequestUtils {
                 entry.setValue(highlightPattern.matcher(entry.getValue()).replaceAll("<b>$0</b>"));
             }
         }
+    }
+
+    /**
+     * Sanitize input by adding escape marks to reserved characters
+     * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_reserved_characters">...</a>
+     * @param s Query to sanitize
+     * @return Sanitized query
+     */
+    public static String sanitize(String s) {
+        var sb = new StringBuilder();
+        for (var i = 0; i < s.length(); i++) {
+            var c = s.charAt(i);
+            // These characters are part of the query syntax and must be escaped
+            //This has to be a custom implementation as lucene QueryParserUtil does not escape for json format
+            // and leaves out '"' mark that needs to be escaped for elasticsearch
+            //https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_reserved_characters
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')'
+                    || c == ':' || c == '^' || c == '[' || c == ']' || c == '\"'
+                    || c == '{' || c == '}' || c == '~' || c == '*' || c == '?'
+                    || c == '|' || c == '&' || c == '/' || c == '=') {
+                sb.append("\\\\\\");
+            }
+            sb.append(c);
+        }
+        return sb.toString();
     }
 }
