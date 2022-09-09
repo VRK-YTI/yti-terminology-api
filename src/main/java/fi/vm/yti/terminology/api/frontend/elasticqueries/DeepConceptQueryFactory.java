@@ -77,7 +77,9 @@ public class DeepConceptQueryFactory {
         // is in some visible state.
         if (!superUser) {
             var incompleteQuery = QueryBuilders.boolQuery()
-                    .should(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("status", "INCOMPLETE")))
+                    .should(QueryBuilders.boolQuery()
+                            .mustNot(QueryBuilders.termQuery("status", "INCOMPLETE"))
+                            .mustNot(QueryBuilders.termQuery("vocabulary.status", "INCOMPLETE")))
                     .should(QueryBuilders.termsQuery("vocabulary.id", incompleteFromTerminologies))
                     .minimumShouldMatch(1);
             mustQueries.add(incompleteQuery);

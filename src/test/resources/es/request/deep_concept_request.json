@@ -31,6 +31,14 @@
                       "term": {
                         "status": { "value": "INCOMPLETE" }
                       }
+                    },
+                    {
+                      "terms": {
+                        "vocabulary.status": [
+                          "INCOMPLETE"
+                        ],
+                        "boost": 1.0
+                      }
                     }
                   ]
                 }
