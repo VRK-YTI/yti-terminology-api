@@ -33,11 +33,10 @@
                       }
                     },
                     {
-                      "terms": {
-                        "vocabulary.status": [
-                          "INCOMPLETE"
-                        ],
-                        "boost": 1.0
+                      "term": {
+                        "vocabulary.status": {
+                          "value": "INCOMPLETE"
+                        }
                       }
                     }
                   ]
