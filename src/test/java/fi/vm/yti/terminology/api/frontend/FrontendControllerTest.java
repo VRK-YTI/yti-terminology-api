@@ -145,7 +145,8 @@ public class FrontendControllerTest {
         return Stream.of(
                 Arguments.of("tes", true),
                 Arguments.of("te", false),
-                Arguments.of("", false)
+                Arguments.of("", false),
+                Arguments.of("<invalid characters>", false)
         );
     }
 

@@ -1,17 +1,11 @@
 package fi.vm.yti.terminology.api.validation;
 
 import fi.vm.yti.terminology.api.frontend.Status;
-import fi.vm.yti.terminology.api.model.termed.Attribute;
-import fi.vm.yti.terminology.api.model.termed.GenericDeleteAndSave;
-import fi.vm.yti.terminology.api.model.termed.GenericNode;
-import fi.vm.yti.terminology.api.model.termed.NodeType;
+import fi.vm.yti.terminology.api.model.termed.*;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,6 +13,10 @@ import static fi.vm.yti.terminology.api.validation.ValidationConstants.*;
 
 public class GenericDeleteAndSaveValidator extends BaseValidator implements
         ConstraintValidator<ValidGenericDeleteAndSave, GenericDeleteAndSave> {
+
+    private static final List<String> STATUS_NAMES = Arrays.stream(Status.class.getEnumConstants())
+                                                        .map(Enum::name)
+                                                        .collect(Collectors.toList());
 
     /**
      * Checks if GenericSaveAndDelete object is valid
@@ -74,11 +72,23 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
         } else if (nodeType.equals(NodeType.Concept) || nodeType.equals(NodeType.Term)) {
             checkStatus(node, context);
             if (nodeType.equals(NodeType.Concept)) {
+                checkConceptWordClass(node.getProperties(), context);
+                checkRelationships(node.getReferences(), context);
+                checkConceptLanguageFields(node.getProperties(), context);
                 final var prefLabelXl = node.getReferences().get("prefLabelXl");
                 if (prefLabelXl == null || prefLabelXl.size() == 0) {
                     addConstraintViolation(context, MISSING_VALUE, "prefLabelXl");
                 }
+            }else{
+                checkHomographNumber(node.getProperties(), context);
+                checkTermStyle(node.getProperties(), context);
+                checkTermFamily(node.getProperties(), context);
+                checkTermWordClass(node.getProperties(), context);
+                checkTermConjugation(node.getProperties(), context);
+                checkTermConjugation(node.getProperties(), context);
             }
+        }else if(nodeType.equals(NodeType.Collection)){
+            checkCollectionPairCount(node.getProperties(), context);
         }
     }
 
@@ -102,8 +112,13 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 textFieldProperties = List.of("prefLabel");
                 textAreaProperties = List.of("definition");
             }
-            checkTextLength(textFieldProperties, TEXT_FIELD_MAX_LENGTH, node.getProperties(), context);
-            checkTextLength(textAreaProperties, TEXT_AREA_MAX_LENGTH, node.getProperties(), context);
+            //Skip checking if empty
+            if(!textFieldProperties.isEmpty()){
+                checkTextLength(textFieldProperties, TEXT_FIELD_MAX_LENGTH, node.getProperties(), context);
+            }
+            if(!textAreaProperties.isEmpty()){
+                checkTextLength(textAreaProperties, TEXT_AREA_MAX_LENGTH, node.getProperties(), context);
+            }
         }
     }
 
@@ -120,7 +135,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             if(properties.containsKey(property) && !properties.get(property).isEmpty()
                     && properties.get(property).stream()
                     .anyMatch(val -> val.getValue().length() > maxLength)){
-                addConstraintViolation(context, INVALID_VALUE, property);
+                addConstraintViolation(context, TOO_LONG_VALUE, property);
             }
         });
     }
@@ -141,19 +156,156 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                     statusProperty);
         } else {
             // status must be one of Status enum
-            if (status.size() != 1 || !getStatusNames().contains(status.get(0).getValue())) {
+            if (status.size() != 1 || !STATUS_NAMES.contains(status.get(0).getValue())) {
                 addConstraintViolation(context, INVALID_VALUE, statusProperty);
             }
         }
     }
 
     /**
-     * Get Status enum names as list of strings
-     * @return List of status names
+     * Checks concept wordClass
+     * In case Word class is added make sure its one of the available options
+     * @param properties List of properties
+     * @param context Constraint validator context
      */
-    private static List<String> getStatusNames() {
-        return Arrays.stream(Status.class.getEnumConstants())
-                .map(Enum::name)
-                .collect(Collectors.toList());
+    private void checkConceptWordClass(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var wordClass = "wordClass";
+        //Check if wordClass is one of the available options, since wordClass is optional we only check when it exists
+        if(properties.containsKey(wordClass) && !properties.get(wordClass).isEmpty()
+                && properties.get(wordClass).stream()
+                .anyMatch(d -> !d.getValue().isEmpty()
+                           && !d.getValue().equals("adjective")
+                           && !d.getValue().equals("verb"))
+        ){
+            addConstraintViolation(context, INVALID_VALUE, wordClass);
+        }
+    }
+
+    /**
+     * Checks concept relationships are ok.
+     * @param references References
+     * @param context Constraint validation context
+     */
+    private void checkRelationships(Map<String, List<Identifier>> references, ConstraintValidatorContext context){
+        final var relationships = List.of("broader", "narrower", "related", "isPartOf", "hasPart", "relatedMatch", "related");
+        for(String relationship : relationships){
+            if(references.containsKey(relationship) && !references.get(relationship).isEmpty()
+                    && references.get(relationship).stream()
+                        .anyMatch(ref -> ref.getType().getId() == null
+                                       || ref.getId() == null || ref.getType().getGraphId() == null)){
+                    addConstraintViolation(context, INVALID_VALUE, relationship);
+            }
+        }
+    }
+
+    /**
+     * Check concept fields with selectable language
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkConceptLanguageFields(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var propertiesWithLanguages = List.of("example", "note");
+        for(String property : propertiesWithLanguages){
+            if(properties.containsKey(property) && !properties.get(property).isEmpty()
+                && properties.get(property).stream()
+                    .anyMatch(lang -> (!lang.getLang().isEmpty() && lang.getValue().isEmpty())
+                                    || lang.getLang().isEmpty() && !lang.getValue().isEmpty())){
+                addConstraintViolation(context, INVALID_VALUE, property);
+            }
+        }
+    }
+
+    /**
+     * Check if homograph number is empty or a number
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkHomographNumber(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var termHomographNumber = "termHomographNumber";
+        if(properties.containsKey(termHomographNumber) && !properties.get(termHomographNumber).isEmpty()
+            && properties.get(termHomographNumber).stream()
+                .anyMatch(number -> !number.getValue().matches("(\\d)*"))){
+            addConstraintViolation(context, INVALID_VALUE, termHomographNumber);
+        }
+    }
+
+    /**
+     * Check term style empty or one of specified
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkTermStyle(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var termStyle = "termStyle";
+        if(properties.containsKey(termStyle) && !properties.get(termStyle).isEmpty()
+                && properties.get(termStyle).stream()
+                .anyMatch(style -> !style.getValue().isEmpty() && !style.getValue().equals("spoken-form"))){
+            addConstraintViolation(context, INVALID_VALUE, termStyle);
+        }
+    }
+
+    /**
+     * Check term family empty or one of specified
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkTermFamily(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var termFamily = "termFamily";
+        if(properties.containsKey(termFamily) && !properties.get(termFamily).isEmpty()
+                && properties.get(termFamily).stream()
+                .anyMatch(style -> !style.getValue().isEmpty() && !style.getValue().equals("masculine")
+                 && !style.getValue().equals("neutral") && !style.getValue().equals("feminine"))){
+            addConstraintViolation(context, INVALID_VALUE, termFamily);
+        }
+    }
+
+    /**
+     * Check term conjugation empty or one of specified
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkTermConjugation(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var termConjugation = "termConjugation";
+        if(properties.containsKey(termConjugation) && !properties.get(termConjugation).isEmpty()
+                && properties.get(termConjugation).stream()
+                .anyMatch(style -> !style.getValue().isEmpty()
+                        && !style.getValue().equals("singular")
+                        && !style.getValue().equals("plural"))){
+            addConstraintViolation(context, INVALID_VALUE, termConjugation);
+        }
+    }
+
+    /**
+     * Checks term wordClass
+     * In case Word class is added make sure its one of the available options
+     * @param properties List of properties
+     * @param context Constraint validator context
+     */
+    private void checkTermWordClass(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var wordClass = "wordClass";
+        //Check if wordClass is one of the available options, since wordClass is optional we only check when it exists
+        if(properties.containsKey(wordClass) && !properties.get(wordClass).isEmpty()
+                && properties.get(wordClass).stream()
+                .anyMatch(d -> !d.getValue().isEmpty()
+                        && !d.getValue().equals("adjective")
+        )){
+            addConstraintViolation(context, INVALID_VALUE, wordClass);
+        }
+    }
+
+    /**
+     * Check that collection prefLabel and definition count match
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkCollectionPairCount(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var prefLabelCount = properties.get("prefLabel").stream().filter(prefLabel -> prefLabel.getValue() != null && !prefLabel.getValue().isEmpty()).count();
+        final var definitionCount = properties.get("definition").stream().filter(definition -> definition.getValue() != null && !definition.getValue().isEmpty()).count();
+        if(prefLabelCount == 0 || definitionCount == 0){
+            addConstraintViolation(context, "prefLabel or definition cannot be empty", "prefLabel + definition");
+        }
+
+        if(prefLabelCount != definitionCount){
+            addConstraintViolation(context, "prefLabel and definition count mismatch", "prefLabel + definition");
+        }
     }
 }

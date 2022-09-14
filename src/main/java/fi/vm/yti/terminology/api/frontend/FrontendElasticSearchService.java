@@ -157,17 +157,6 @@ public class FrontendElasticSearchService {
         }
     }
 
-    TerminologySearchResponse findTerminology(UUID terminologyId) {
-        SearchRequest request = terminologyQueryFactory.createFindTerminologyByIdQuery(terminologyId);
-        try {
-            SearchResponse response = esRestClient.search(request, RequestOptions.DEFAULT);
-            return terminologyQueryFactory.parseResponse(response, new TerminologySearchRequest(), Collections.emptyMap());
-        } catch (IOException e) {
-            logger.error("Error fetching terminology", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     private boolean superUser() {
         return userProvider.getUser().isSuperuser();
     }

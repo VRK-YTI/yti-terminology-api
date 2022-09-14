@@ -74,7 +74,8 @@ public class FrontEndControllerInternalNodeTests {
     public void shouldValidateAndCreate() throws Exception {
         var termNode = constructNodeWithType(NodeType.Term, constructTermProperties(), constructTermReferences());
         var conceptNode = constructNodeWithType(NodeType.Concept, constructConceptProperties(), constructConceptReferences());
-        var nodes = new GenericDeleteAndSave(Collections.emptyList(), List.of(termNode, conceptNode));
+        var collectionNode = constructNodeWithType(NodeType.Collection, constructCollectionProperties(), constructCollectionReferences());
+        var nodes = new GenericDeleteAndSave(Collections.emptyList(), List.of(termNode, conceptNode, collectionNode));
 
         this.mvc
                 .perform(post("/api/v1/frontend/modify")
@@ -152,6 +153,20 @@ public class FrontEndControllerInternalNodeTests {
         verifyNoMoreInteractions(termedService);
     }
 
+    @ParameterizedTest
+    @MethodSource("provideMisMatchedData")
+    public void shouldFailOnMismatchedData(GenericDeleteAndSave node) throws Exception {
+        mvc.perform(post("/api/v1/frontend/validate")
+                        .contentType("application/json")
+                        .content(convertObjectToJsonString(node)))
+                .andDo(log())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.message").value("Object validation failed"))
+                .andExpect(jsonPath("$.details").exists());
+        verifyNoMoreInteractions(termedService);
+    }
+
     private static HashMap<String, List<Attribute>> constructTermProperties() {
         var properties = new HashMap<String, List<Attribute>>();
         properties.put("prefLabel", List.of(new Attribute("en", "test label")));
@@ -204,6 +219,17 @@ public class FrontEndControllerInternalNodeTests {
         references.put("prefLabelXl", singletonList(prefLabelXl));
         return references;
     }
+
+    private static HashMap<String, List<Attribute>> constructCollectionProperties(){
+        var properties = new HashMap<String, List<Attribute>>();
+        properties.put("definition", singletonList(new Attribute("en", "description")));
+        properties.put("prefLabel", singletonList(new Attribute("en", "prefLabel")));
+        return properties;
+    }
+    private static HashMap<String, List<Identifier>> constructCollectionReferences() {
+        return new HashMap<>();
+    }
+
 
     private static GenericNode constructNodeWithType(
             NodeType type,
@@ -283,6 +309,103 @@ public class FrontEndControllerInternalNodeTests {
             genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
             args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
         }
+
+        return args.stream().map(Arguments::of);
+    }
+
+    private static Stream<Arguments> provideMisMatchedData(){
+        var args = new ArrayList<GenericDeleteAndSave>();
+
+        //Term homograph number
+        var properties = constructTermProperties();
+        properties.replace("termHomographNumber", List.of(new Attribute("en", "not a number")));
+        var genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Term style
+        properties = constructTermProperties();
+        properties.replace("termStyle", List.of(new Attribute("en", "not a term style")));
+        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Term family
+        properties = constructTermProperties();
+        properties.replace("termFamily", List.of(new Attribute("en", "not a term family")));
+        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Term conjugation
+        properties = constructTermProperties();
+        properties.replace("termConjugation", List.of(new Attribute("en", "not a term conjugation")));
+        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Term wordClass
+        properties = constructTermProperties();
+        properties.replace("wordClass", List.of(new Attribute("en", "not a term wordClass")));
+        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept relationships value
+        var references = constructConceptReferences();
+        references.put("broader", List.of(new Identifier(UUID.randomUUID(), new TypeId(NodeType.ConceptLink, null))));
+        genericNode = constructNodeWithType(NodeType.Concept, constructConceptProperties(), references);
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept relationships value
+        references = constructConceptReferences();
+        references.put("narrower", List.of(new Identifier(null, new TypeId(NodeType.ConceptLink, new GraphId(UUID.fromString(TEMPLATE_GRAPH_ID))))));
+        genericNode = constructNodeWithType(NodeType.Concept, constructConceptProperties(), references);
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept relationships value
+        references = constructConceptReferences();
+        references.put("related", List.of(new Identifier(UUID.randomUUID(), new TypeId(null, new GraphId(UUID.fromString(TEMPLATE_GRAPH_ID))))));
+        genericNode = constructNodeWithType(NodeType.Concept, constructConceptProperties(), references);
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept wordClass
+        properties = constructConceptProperties();
+        properties.replace("wordClass", List.of(new Attribute("en", "not a wordClass")));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept languageField note
+        properties = constructConceptProperties();
+        properties.replace("note", List.of(new Attribute("", "empty language")));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Concept languageField example
+        properties = constructConceptProperties();
+        properties.replace("example", List.of(new Attribute("en", "")));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Collection field pair
+        properties = constructConceptProperties();
+        properties.replace("note", List.of(new Attribute("", "empty language")));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Collection field pair prefLabel empty
+        properties = constructCollectionProperties();
+        properties.replace("prefLabel", List.of(new Attribute("en", "")));
+        genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Collection field pair definition empty
+        properties = constructCollectionProperties();
+        properties.replace("definition", List.of(new Attribute("en", "")));
+        genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        //Collection field pair prefLabel more than definition
+        properties = constructCollectionProperties();
+        properties.replace("prefLabel", List.of(new Attribute("en", "prefLabel 1"), new Attribute("en", "preflabel 2")));
+        genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
 
         return args.stream().map(Arguments::of);
     }
