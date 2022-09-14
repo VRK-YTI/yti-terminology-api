@@ -158,6 +158,14 @@ public class FrontendController {
         return termedService.getVocabulary(graphId);
     }
 
+    @Operation(summary = "Get terminology basic info as JSON")
+    @ApiResponse(responseCode = "200", description = "The requested terminology node data")
+    @GetMapping(path = "/simpleVocabulary", produces = APPLICATION_JSON_VALUE)
+    TerminologySearchResponse getSimpleVocabulary(@Parameter(description = "ID for the requested terminology") @RequestParam UUID graphId) {
+        logger.info("GET /simpleVocabulary requested with graphId: " + graphId.toString());
+        return elasticSearchService.findTerminology(graphId);
+    }
+
     @Operation(summary = "Get basic info for all terminologies", description = "Get basic info for termonologies in Termed JSON format. The list may be filtered for INCOMPLETE terminologies.")
     @Parameter(
         name = "incomplete",
