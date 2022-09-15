@@ -89,6 +89,9 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             }
         }else if(nodeType.equals(NodeType.Collection)){
             checkCollectionPairCount(node.getProperties(), context);
+        }else if(nodeType.equals(NodeType.TerminologicalVocabulary) || nodeType.equals(NodeType.Vocabulary)){
+            new VocabularyNodeValidator()
+                    .isValid(node, context);
         }
     }
 
