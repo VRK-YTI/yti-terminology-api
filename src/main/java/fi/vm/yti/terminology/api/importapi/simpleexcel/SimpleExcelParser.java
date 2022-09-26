@@ -2,7 +2,6 @@ package fi.vm.yti.terminology.api.importapi.simpleexcel;
 
 import fi.vm.yti.terminology.api.exception.ExcelParseException;
 import fi.vm.yti.terminology.api.frontend.Status;
-import fi.vm.yti.terminology.api.importapi.excel.Fields;
 import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.validation.ValidationConstants;
 import org.apache.poi.ss.usermodel.Cell;
