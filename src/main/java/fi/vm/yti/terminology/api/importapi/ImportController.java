@@ -64,10 +64,10 @@ public class ImportController {
             return ResponseEntity
                     .badRequest()
                     .body(
-                            new ExcelImportResponseDTO(
-                                    null,
-                                    e.getReason(),
-                                    new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                        new ExcelImportResponseDTO(
+                                null,
+                                e.getReason(),
+                                new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
                             ));
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -102,9 +102,9 @@ public class ImportController {
 
     @Operation(summary = "Poll status of import job", description = "Get the current status of previously initiated import job")
     @ApiResponse(
-            responseCode = "200",
-            description = "Returns status object for previously initiated import job",
-            content = {@Content(schema = @Schema(implementation = ImportStatusResponse.class))})
+        responseCode = "200",
+        description = "Returns status object for previously initiated import job",
+        content = { @Content(schema = @Schema(implementation = ImportStatusResponse.class)) })
     @GetMapping(path = "/status/{jobtoken}", produces = APPLICATION_JSON_VALUE)
     ResponseEntity<String> getStatus(@Parameter(description = "The job token returned by import request") @PathVariable("jobtoken") UUID id,
                                      @Parameter(description = "Set to true to fetch full status including messages; useful for finished jobs") @RequestParam(name = "full", required = false, defaultValue = "false") boolean full) {

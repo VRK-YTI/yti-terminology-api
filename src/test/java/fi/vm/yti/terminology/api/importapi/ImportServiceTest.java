@@ -73,8 +73,7 @@ public class ImportServiceTest {
     UUID organizationId = UUID.fromString("7d3a3c00-5a6b-489b-a3ed-63bb58c26a63");
 
     private static final String TEMPLATE_GRAPH_ID = "3aa764fc-6b32-4a87-b64e-887caab128b1";
-
-
+    
     public void mockCommon() {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode groups = null;

@@ -219,14 +219,14 @@ public class ImportService {
             if(stat != HttpStatus.OK.value()){
                 System.out.println("Import failed code:"+stat);
             }
-        } catch (IOException ioe) {
+        } catch (IOException ioe){
             System.out.println("Incoming transform error=" + ioe);
         } catch (XMLStreamException se) {
             System.out.println("Incoming transform error=" + se);
-        } catch (JAXBException je) {
+        } catch (JAXBException je){
             System.out.println("Incoming transform error=" + je);
         }
-        return new ResponseEntity<>(rv, HttpStatus.OK);
+        return new ResponseEntity<>( rv, HttpStatus.OK);
     }
 
     public UUID handleSimpleExcelImport(UUID terminologyId, InputStream is) throws NullPointerException, IOException {
