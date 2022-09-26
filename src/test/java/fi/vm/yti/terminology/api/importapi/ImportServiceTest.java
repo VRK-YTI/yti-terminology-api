@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
+import fi.vm.yti.terminology.api.exception.ExcelParseException;
 import fi.vm.yti.terminology.api.exception.NamespaceInUseException;
 import fi.vm.yti.terminology.api.frontend.FrontendGroupManagementService;
 import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
-import fi.vm.yti.terminology.api.model.termed.GenericNode;
-import fi.vm.yti.terminology.api.model.termed.NodeType;
+import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.security.AuthorizationManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,9 +24,12 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,6 +71,9 @@ public class ImportServiceTest {
     ArgumentCaptor<String> stringCaptor;
 
     UUID organizationId = UUID.fromString("7d3a3c00-5a6b-489b-a3ed-63bb58c26a63");
+
+    private static final String TEMPLATE_GRAPH_ID = "3aa764fc-6b32-4a87-b64e-887caab128b1";
+
 
     public void mockCommon() {
         ObjectMapper mapper = new ObjectMapper();
@@ -148,6 +154,83 @@ public class ImportServiceTest {
         assertEquals("testdev", stringCaptor.getValue());
         assertEquals("3aa764fc-6b32-4a87-b64e-887caab128b1", uuidCaptor.getValue().toString());
         assertEquals("Test terminology fi", nodeCaptor.getValue().getProperties().get("prefLabel").get(0).getValue());
+    }
+
+    @Test
+    public void handleImportSimpleExcel() throws IOException {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import.xlsx");
+
+        var labelProperties = Map.of("prefLabel",
+                List.of(new Property("fi", "finlabel")
+                        , new Property("sv", "swelabel")));
+
+        var defaultGraph = new Graph(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", emptyList(), emptyMap(), labelProperties);
+
+        when(termedService.getGraph(any())).thenReturn(defaultGraph);
+        when(authorizationManager.canModifyNodes(anyList())).thenReturn(true);
+
+        importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is);
+
+        verify(ytiMQService).handleExcelImportAsync(
+                any(UUID.class),
+                any(MessageHeaderAccessor.class),
+                stringCaptor.capture(),
+                batchesCaptor.capture());
+
+        assertEquals("http://uri.suomi.fi/terminology/test", stringCaptor.getValue());
+        assertEquals(1, batchesCaptor.getValue().size());
+
+        // 1 concept and 4 terms
+        // 2 prefLabel different language
+        // 2 altLabel same language
+        assertEquals(5, batchesCaptor.getValue().get(0).size());
+    }
+
+    @Test
+    public void handleImportSimpleExcelMissingLanguage() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import.xlsx");
+
+        var labelProperties = Map.of("prefLabel",
+                List.of(new Property("sv", "swelabel")));
+
+        var defaultGraph = new Graph(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", emptyList(), emptyMap(), labelProperties);
+
+        when(termedService.getGraph(any())).thenReturn(defaultGraph);
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("Language does not exist in terminology"));
+    }
+
+    @Test
+    public void handleImportSimpleExcelNoTerminology() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import.xlsx");
+
+        doThrow(NullPointerException.class)
+                .when(termedService)
+                .getGraph(any(UUID.class));
+
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertEquals("Terminology doesnt exist", exception.getMessage());
+    }
+
+    @Test
+    public void handleImportSimpleExcelMissingTermLanguage() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_term_missing_lang.xlsx");
+
+        var labelProperties = Map.of("prefLabel",
+                List.of(new Property("fi", "finlabel")
+                        , new Property("sv", "swelabel")));
+
+        var defaultGraph = new Graph(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", emptyList(), emptyMap(), labelProperties);
+
+        when(termedService.getGraph(any())).thenReturn(defaultGraph);
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("Term name missing language suffix"));
     }
 
     @Test

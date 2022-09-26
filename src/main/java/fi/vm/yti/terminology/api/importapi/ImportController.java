@@ -1,6 +1,5 @@
 package fi.vm.yti.terminology.api.importapi;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import fi.vm.yti.terminology.api.exception.ExcelParseException;
@@ -65,11 +64,37 @@ public class ImportController {
             return ResponseEntity
                     .badRequest()
                     .body(
-                        new ExcelImportResponseDTO(
-                            null,
-                            e.getReason(),
-                            new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
-                        ));
+                            new ExcelImportResponseDTO(
+                                    null,
+                                    e.getReason(),
+                                    new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                            ));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Operation(summary = "Initiate simple Excel import job", description = "Start the procedure to import concepts from Excel file")
+    @ApiResponse(
+            responseCode = "200",
+            description = "If import process started successfully then job token is returned as JSON",
+            content = {@Content(mediaType = APPLICATION_JSON_VALUE, schema = @Schema(implementation = ImportService.ImportResponse.class))})
+    @PostMapping(path = "simpleExcel/{terminology}", consumes = MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ExcelImportResponseDTO> importSimpleExcel(@Parameter(description = "The ID of the terminology to import concepts to")
+                                                             @PathVariable("terminology") UUID terminologyId,
+                                                             @RequestPart(value = "file") MultipartFile file) {
+        try {
+            UUID jobId = importService.handleSimpleExcelImport(terminologyId, file.getInputStream());
+            return ResponseEntity.ok(new ExcelImportResponseDTO(jobId, "SUCCESS"));
+        } catch (ExcelParseException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            new ExcelImportResponseDTO(
+                                    null,
+                                    e.getReason(),
+                                    new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                            ));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -77,9 +102,9 @@ public class ImportController {
 
     @Operation(summary = "Poll status of import job", description = "Get the current status of previously initiated import job")
     @ApiResponse(
-        responseCode = "200",
-        description = "Returns status object for previously initiated import job",
-        content = { @Content(schema = @Schema(implementation = ImportStatusResponse.class)) })
+            responseCode = "200",
+            description = "Returns status object for previously initiated import job",
+            content = {@Content(schema = @Schema(implementation = ImportStatusResponse.class))})
     @GetMapping(path = "/status/{jobtoken}", produces = APPLICATION_JSON_VALUE)
     ResponseEntity<String> getStatus(@Parameter(description = "The job token returned by import request") @PathVariable("jobtoken") UUID id,
                                      @Parameter(description = "Set to true to fetch full status including messages; useful for finished jobs") @RequestParam(name = "full", required = false, defaultValue = "false") boolean full) {
