@@ -199,7 +199,7 @@ public class ImportServiceTest {
         when(termedService.getGraph(any())).thenReturn(defaultGraph);
 
         ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
-        assertTrue(exception.getMessage().contains("Language does not exist in terminology"));
+        assertTrue(exception.getMessage().contains("terminology-no-language"));
     }
 
     @Test
@@ -229,7 +229,7 @@ public class ImportServiceTest {
         when(termedService.getGraph(any())).thenReturn(defaultGraph);
 
         ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
-        assertTrue(exception.getMessage().contains("Term name missing language suffix"));
+        assertTrue(exception.getMessage().contains("term-missing-language-suffix"));
     }
 
     @Test

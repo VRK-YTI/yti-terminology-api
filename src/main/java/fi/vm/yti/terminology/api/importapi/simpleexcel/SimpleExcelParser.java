@@ -66,7 +66,7 @@ public class SimpleExcelParser {
 
             //Get status from concept properties to set it term status same as concept status
             if (!conceptProperties.containsKey("status")) {
-                throw new ExcelParseException("Status column missing for concept", row);
+                throw new ExcelParseException("status_column_missing", row);
             }
             String status = conceptProperties.get("status").get(0).getValue();
 
@@ -113,7 +113,7 @@ public class SimpleExcelParser {
 
                             //Get language from header values can be empty
                             if (headerValues.length == 1 && !Arrays.asList(CONCEPT_NO_LANG_PROPERTIES).contains(propertyName)) {
-                                throw new ExcelParseException("Property needs language: " + propertyName, row, entry.getValue());
+                                throw new ExcelParseException("property-missing-language-suffix", row, entry.getValue());
                             }
                             String lang = headerValues.length > 1 ? headerValues[1] : "";
 
@@ -129,7 +129,7 @@ public class SimpleExcelParser {
                                             if (isPropertyValid(propertyName, value)) {
                                                 attributes.add(new Attribute(lang, value));
                                             } else {
-                                                throw new ExcelParseException("Value is not valid for property: " + propertyName, row, entry.getValue());
+                                                throw new ExcelParseException("value-not-valid", row, entry.getValue());
                                             }
                                         });
                             } else {
@@ -137,7 +137,7 @@ public class SimpleExcelParser {
                                 if (isPropertyValid(propertyName, cellValue)) {
                                     attributes.add(new Attribute(lang, cellValue));
                                 } else {
-                                    throw new ExcelParseException("Value is not valid for property: " + propertyName, row, entry.getValue());
+                                    throw new ExcelParseException("value-not-valid", row, entry.getValue());
                                 }
                             }
                             properties.put(propertyName, attributes);
@@ -163,7 +163,7 @@ public class SimpleExcelParser {
                 .forEach(entry -> {
                     String[] headerValues = entry.getKey().split(HEADER_SEPARATOR);
                     if (headerValues.length != 2) {
-                        throw new ExcelParseException("Term name missing language suffix", row, entry.getValue());
+                        throw new ExcelParseException("term-missing-language-suffix", row, entry.getValue());
                     }
                     List<GenericNode> termList = terms.getOrDefault(headerValues[0], new ArrayList<>());
 
@@ -203,7 +203,7 @@ public class SimpleExcelParser {
         row.forEach(cell -> {
             String[] separatedValue = cell.getStringCellValue().split(HEADER_SEPARATOR);
             if (separatedValue.length > 1 && languages.stream().noneMatch(language -> language.equals(separatedValue[1]))) {
-                throw new ExcelParseException("Language does not exist in terminology", row, cell.getColumnIndex());
+                throw new ExcelParseException("terminology-no-language", row, cell.getColumnIndex());
             }
             columnMap.put(cell.getStringCellValue(), cell.getColumnIndex());
         });
