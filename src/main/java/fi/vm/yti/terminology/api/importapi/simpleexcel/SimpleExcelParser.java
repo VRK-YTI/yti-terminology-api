@@ -103,46 +103,45 @@ public class SimpleExcelParser {
     private Map<String, List<Attribute>> createConceptProperties(Row row, Map<String, Integer> headers) {
         Map<String, List<Attribute>> properties = new HashMap<>();
         headers.entrySet().stream()
-                //Only use properties that are concept properties
-                .filter(entry -> cellHasText(row.getCell(headers.get(entry.getKey())))
+                //Only use non-empty properties that are concept properties
+                .filter(entry -> cellHasText(row.getCell(entry.getValue()))
                         && Arrays.asList(CONCEPT_PROPERTIES).contains(entry.getKey().split(HEADER_SEPARATOR)[0]))
                 .forEach(entry -> {
-                            String[] headerValues = entry.getKey().split(HEADER_SEPARATOR);
-                            String propertyName = headerValues[0];
-                            List<Attribute> attributes = properties.getOrDefault(propertyName, new ArrayList<>());
+                    String[] headerValues = entry.getKey().split(HEADER_SEPARATOR);
+                    String propertyName = headerValues[0];
 
-                            //Get language from header values can be empty
-                            if (headerValues.length == 1 && !Arrays.asList(CONCEPT_NO_LANG_PROPERTIES).contains(propertyName)) {
-                                throw new ExcelParseException("property-missing-language-suffix", row, entry.getValue());
-                            }
-                            String lang = headerValues.length > 1 ? headerValues[1] : "";
+                    //Get language from header values can be empty
+                    if (headerValues.length == 1 && !Arrays.asList(CONCEPT_NO_LANG_PROPERTIES).contains(propertyName)) {
+                        throw new ExcelParseException("property-missing-language-suffix", row, entry.getValue());
+                    }
+                    String lang = headerValues.length > 1 ? headerValues[1] : "";
+                    var cellValue = row.getCell(entry.getValue()).getStringCellValue();
 
-                            var cellValue = row.getCell(headers.get(entry.getKey())).getStringCellValue();
+                    List<Attribute> attributes = properties.getOrDefault(propertyName, new ArrayList<>());
 
-                            //Multiline properties can have multiple properties per cell
-                            if (Arrays.asList(CONCEPT_MULTILINE_PROPERTIES).contains((propertyName))) {
-                                cellValue.lines()
-                                        //lines() can output empty lines but not null lines
-                                        .filter(String::isEmpty)
-                                        //Add all lines as a new attribute
-                                        .forEach(value -> {
-                                            if (isPropertyValid(propertyName, value)) {
-                                                attributes.add(new Attribute(lang, value));
-                                            } else {
-                                                throw new ExcelParseException("value-not-valid", row, entry.getValue());
-                                            }
-                                        });
-                            } else {
-                                //Add the whole string as attribute
-                                if (isPropertyValid(propertyName, cellValue)) {
-                                    attributes.add(new Attribute(lang, cellValue));
+                    //Multiline properties can have multiple properties per cell
+                    if (Arrays.asList(CONCEPT_MULTILINE_PROPERTIES).contains((propertyName))) {
+                        cellValue.lines()
+                        //lines() can output empty lines but not null lines
+                            .filter(line -> !line.trim().isEmpty())
+                            //Add all lines as a new attribute
+                            .forEach(value -> {
+                                if (isPropertyValid(propertyName, value)) {
+                                    attributes.add(new Attribute(lang, value));
                                 } else {
                                     throw new ExcelParseException("value-not-valid", row, entry.getValue());
                                 }
-                            }
-                            properties.put(propertyName, attributes);
+                            });
+                    } else {
+                        //Add the whole string as attribute
+                        if (isPropertyValid(propertyName, cellValue)) {
+                            attributes.add(new Attribute(lang, cellValue));
+                        } else {
+                            throw new ExcelParseException("value-not-valid", row, entry.getValue());
                         }
-                );
+                    }
+                    properties.put(propertyName, attributes);
+                });
         return properties;
     }
 
@@ -158,39 +157,55 @@ public class SimpleExcelParser {
     private Map<String, List<GenericNode>> createTerms(Row row, Map<String, Integer> headers, UUID terminologyId, String status) {
         Map<String, List<GenericNode>> terms = new HashMap<>();
         headers.entrySet().stream()
-                .filter(entry -> cellHasText(row.getCell(headers.get(entry.getKey()))) &&
+                .filter(entry -> cellHasText(row.getCell(entry.getValue())) &&
                         Arrays.asList(TERM_TYPES).contains(entry.getKey().split(HEADER_SEPARATOR)[0]))
                 .forEach(entry -> {
                     String[] headerValues = entry.getKey().split(HEADER_SEPARATOR);
                     if (headerValues.length != 2) {
                         throw new ExcelParseException("term-missing-language-suffix", row, entry.getValue());
                     }
-                    List<GenericNode> termList = terms.getOrDefault(headerValues[0], new ArrayList<>());
+                    var termType = headerValues[0];
+                    List<GenericNode> termList = terms.getOrDefault(termType, new ArrayList<>());
 
-                    row.getCell(headers.get(entry.getKey()))
-                            .getStringCellValue().lines()
-                            .filter(value -> value != null && !value.isEmpty())
-                            .forEach(value -> {
-                                Map<String, List<Attribute>> properties = new HashMap<>();
-                                //headerValues[1] should always be language
-                                properties.put("prefLabel", List.of(new Attribute(headerValues[1], value)));
-                                properties.put("status", List.of(new Attribute("", status)));
-                                for (String property : TERM_PROPERTIES) {
-                                    properties.put(property, List.of(new Attribute("", "")));
-                                }
-                                var node = new GenericNode(new TypeId(NodeType.Term, new GraphId(terminologyId), TERM_TYPE_URI), properties, emptyMap());
-                                termList.add(node);
-                            });
+                    var cellValue = row.getCell(entry.getValue()).getStringCellValue();
 
-                    terms.put(headerValues[0], termList);
+                    //prefLabel is a special case as there can only be 1 per language
+                    if(termType.equals("prefLabel")){
+                        termList.add(createTerm(headerValues[1], cellValue, status, terminologyId));
+                    }else{
+                        cellValue.lines()
+                            .filter(line -> !line.isEmpty())
+                            .forEach(value -> termList.add(createTerm(headerValues[1], value, status, terminologyId)));
+                    }
+
+                    terms.put(termType, termList);
                 });
 
         return terms;
     }
 
     /**
+     * Create a new term
+     * @param language Language of the prefLabel
+     * @param prefLabel prefLabel value
+     * @param status Status
+     * @param terminologyId Terminology Id
+     * @return new Terminology node
+     */
+    public GenericNode createTerm(String language, String prefLabel, String status, UUID terminologyId){
+        Map<String, List<Attribute>> properties = new HashMap<>();
+        //headerValues[1] should always be language
+        properties.put("prefLabel", List.of(new Attribute(language, prefLabel)));
+        properties.put("status", List.of(new Attribute("", status)));
+        for (String property : TERM_PROPERTIES) {
+            properties.put(property, List.of(new Attribute("", "")));
+        }
+        return new GenericNode(new TypeId(NodeType.Term, new GraphId(terminologyId), TERM_TYPE_URI), properties, emptyMap());
+    }
+
+    /**
      * Map column names and check if languages exist in terminology
-     *
+     * The map also ensures that we cannot have duplicate cell headers
      * @param row       Header row
      * @param languages List of languages
      * @return Map of column names and their indexes
@@ -205,15 +220,29 @@ public class SimpleExcelParser {
             if (separatedValue.length > 1 && languages.stream().noneMatch(language -> language.equals(separatedValue[1]))) {
                 throw new ExcelParseException("terminology-no-language", row, cell.getColumnIndex());
             }
+            if(columnMap.containsKey(cell.getStringCellValue())){
+                throw new ExcelParseException("duplicate-key-value", row, cell.getColumnIndex());
+            }
             columnMap.put(cell.getStringCellValue(), cell.getColumnIndex());
         });
         return columnMap;
     }
 
+    /**
+     * Check if cell is not empty
+     * @param cell Cell
+     * @return true if cell has text
+     */
     private boolean cellHasText(Cell cell) {
         return cell != null && cell.getCellType() != CellType.BLANK;
     }
 
+    /**
+     * Check if property is valid
+     * @param propertyName Property name
+     * @param propertyValue Property value
+     * @return true if valid
+     */
     private boolean isPropertyValid(String propertyName, String propertyValue) {
         if (propertyName.equals("status")) {
             try {

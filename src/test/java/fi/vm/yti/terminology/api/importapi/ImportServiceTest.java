@@ -89,6 +89,11 @@ public class ImportServiceTest {
                 eq(NodeType.Group)
         )).thenReturn(groups);
 
+        when(authorizationManager.canModifyAllGraphs(any())).thenReturn(true);
+        Map<String, List<Attribute>> nodeProperties = Map.of("language", List.of(new Attribute("", "fi"), new Attribute("", "sv")));
+        when(termedService.getVocabulary(any())).thenReturn(new GenericNodeInlined(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", 0l, "", new Date(), "", new Date(), TypeId.placeholder(), nodeProperties, emptyMap(), emptyMap()));
+        when(authorizationManager.canModifyNodes(anyList())).thenReturn(true);
+
         Map<UUID, Set<Role>> rolesInOrganizations = new HashMap<>();
         rolesInOrganizations.put(organizationId, Set.of(Role.TERMINOLOGY_EDITOR));
 
@@ -189,14 +194,7 @@ public class ImportServiceTest {
     @Test
     public void handleImportSimpleExcelMissingLanguage() {
         mockCommon();
-        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import.xlsx");
-
-        var labelProperties = Map.of("prefLabel",
-                List.of(new Property("sv", "swelabel")));
-
-        var defaultGraph = new Graph(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", emptyList(), emptyMap(), labelProperties);
-
-        when(termedService.getGraph(any())).thenReturn(defaultGraph);
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_missing_lang.xlsx");
 
         ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
         assertTrue(exception.getMessage().contains("terminology-no-language"));
@@ -220,16 +218,17 @@ public class ImportServiceTest {
         mockCommon();
         InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_term_missing_lang.xlsx");
 
-        var labelProperties = Map.of("prefLabel",
-                List.of(new Property("fi", "finlabel")
-                        , new Property("sv", "swelabel")));
-
-        var defaultGraph = new Graph(UUID.fromString(TEMPLATE_GRAPH_ID), "test", "http://uri.suomi.fi/terminology/test", emptyList(), emptyMap(), labelProperties);
-
-        when(termedService.getGraph(any())).thenReturn(defaultGraph);
-
         ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
         assertTrue(exception.getMessage().contains("term-missing-language-suffix"));
+    }
+
+    @Test
+    public void handleImportSimpleExcelDuplicateColumnKey() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_duplicate_column.xlsx");
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("duplicate-key-value"));
     }
 
     @Test

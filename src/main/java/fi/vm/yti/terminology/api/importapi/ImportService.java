@@ -230,13 +230,14 @@ public class ImportService {
     }
 
     public UUID handleSimpleExcelImport(UUID terminologyId, InputStream is) throws NullPointerException, IOException {
+        check(authorizationManager.canModifyAllGraphs(List.of(terminologyId)));
         boolean exists = terminologyExists(terminologyId);
         if (!exists) {
             throw new NullPointerException("Terminology doesnt exist");
         }
 
-        var graph = termedService.getGraph(terminologyId);
-        List<String> languages = graph.getProperties().get("prefLabel").stream().map(Property::getLang).collect(Collectors.toList());
+        var node = termedService.getVocabulary(terminologyId);
+        List<String> languages = node.getProperties().get("language").stream().map(Attribute::getValue).collect(Collectors.toList());
 
         var parser = new SimpleExcelParser();
         XSSFWorkbook workbook = parser.getWorkbook(is);
@@ -251,7 +252,7 @@ public class ImportService {
 
         List<List<GenericNode>> batches = ImportUtil.getBatches(nodes, batchSize);
 
-        ytiMQService.handleExcelImportAsync(jobToken, accessor, graph.getUri(), batches);
+        ytiMQService.handleExcelImportAsync(jobToken, accessor, node.getUri(), batches);
 
         return jobToken;
     }
