@@ -56,17 +56,30 @@ public class SimpleExcelParser {
     public List<GenericNode> buildNodes(XSSFWorkbook workbook, UUID terminologyId, List<String> languages) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         var headers = mapColumnNames(sheet.getRow(0), languages);
+        //there needs to be at least 1 prefLabel column
+        if(headers.keySet().stream().noneMatch(key -> key.contains("prefLabel"))){
+            throw new ExcelParseException("prefLabel-column-missing", sheet.getRow(0));
+        }
         List<GenericNode> nodes = new ArrayList<>();
 
         for (var i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
+
+            //There has to be data at least on 1 prefLabel column
+            if(headers.entrySet().stream()
+                    .filter(entry -> entry.getKey().contains("prefLabel"))
+                    .map(Map.Entry::getValue)
+                    .noneMatch(col -> cellHasText(row.getCell(col)))
+            ){
+                throw new ExcelParseException("prefLabel-row-missing", row);
+            }
 
             //Make concept properties
             Map<String, List<Attribute>> conceptProperties = createConceptProperties(row, headers);
 
             //Get status from concept properties to set it term status same as concept status
             if (!conceptProperties.containsKey("status")) {
-                throw new ExcelParseException("status_column_missing", row);
+                throw new ExcelParseException("status-column-missing", row);
             }
             String status = conceptProperties.get("status").get(0).getValue();
 

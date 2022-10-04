@@ -232,6 +232,24 @@ public class ImportServiceTest {
     }
 
     @Test
+    public void handleImportSimpleExcelMissingPrefLabelColumn() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_preflabel_column_missing.xlsx");
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("prefLabel-column-missing"));
+    }
+
+    @Test
+    public void handleImportSimpleExcelMissingPrefLabelData() {
+        mockCommon();
+        InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import_preflabel_row_missing.xlsx");
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("prefLabel-row-missing"));
+    }
+
+    @Test
     public void namespaceAlreadyInUse() {
         mockCommon();
         InputStream is = this.getClass().getResourceAsStream("/importapi/excel/excel_export.xlsx");
