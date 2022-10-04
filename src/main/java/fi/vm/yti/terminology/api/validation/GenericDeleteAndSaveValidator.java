@@ -67,28 +67,29 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
     private void checkNodeType(GenericNode node, ConstraintValidatorContext context){
         //validate like vocabulary node if concept or term
         final var nodeType = node.getType().getId();
+        var properties = node.getProperties();
         if (nodeType == null) {
             this.addConstraintViolation(context, MISSING_VALUE, "type");
         } else if (nodeType.equals(NodeType.Concept) || nodeType.equals(NodeType.Term)) {
             checkStatus(node, context);
             if (nodeType.equals(NodeType.Concept)) {
-                checkConceptWordClass(node.getProperties(), context);
+                checkConceptWordClass(properties, context);
                 checkRelationships(node.getReferences(), context);
-                checkConceptLanguageFields(node.getProperties(), context);
+                checkConceptLanguageFields(properties, context);
                 final var prefLabelXl = node.getReferences().get("prefLabelXl");
-                if (prefLabelXl == null || prefLabelXl.size() == 0) {
+                if (prefLabelXl == null || prefLabelXl.isEmpty()) {
                     addConstraintViolation(context, MISSING_VALUE, "prefLabelXl");
                 }
             }else{
-                checkHomographNumber(node.getProperties(), context);
-                checkTermStyle(node.getProperties(), context);
-                checkTermFamily(node.getProperties(), context);
-                checkTermWordClass(node.getProperties(), context);
-                checkTermConjugation(node.getProperties(), context);
-                checkTermConjugation(node.getProperties(), context);
+                checkHomographNumber(properties, context);
+                checkTermStyle(properties, context);
+                checkTermFamily(properties, context);
+                checkTermEquivalency(properties, context);
+                checkTermWordClass(properties, context);
+                checkTermConjugation(properties, context);
             }
         }else if(nodeType.equals(NodeType.Collection)){
-            checkCollectionPairCount(node.getProperties(), context);
+            checkCollectionPairCount(properties, context);
         }else if(nodeType.equals(NodeType.TerminologicalVocabulary) || nodeType.equals(NodeType.Vocabulary)){
             new VocabularyNodeValidator()
                     .isValid(node, context);
@@ -258,6 +259,21 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 .anyMatch(style -> !style.getValue().isEmpty() && !style.getValue().equals("masculine")
                  && !style.getValue().equals("neutral") && !style.getValue().equals("feminine"))){
             addConstraintViolation(context, INVALID_VALUE, termFamily);
+        }
+    }
+
+    /**
+     * Check term equivalency empty or one of specified
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkTermEquivalency(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var termEquivalency = "termEquivalency";
+        if(properties.containsKey(termEquivalency) && !properties.get(termEquivalency).isEmpty()
+                && properties.get(termEquivalency).stream()
+                .anyMatch(style -> !style.getValue().isEmpty() && !style.getValue().equals("<")
+                        && !style.getValue().equals(">") && !style.getValue().equals("~"))){
+            addConstraintViolation(context, INVALID_VALUE, termEquivalency);
         }
     }
 

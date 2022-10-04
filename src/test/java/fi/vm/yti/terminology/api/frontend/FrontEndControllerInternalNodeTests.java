@@ -135,6 +135,7 @@ public class FrontEndControllerInternalNodeTests {
         properties.put("scope", singletonList(new Attribute("", "")));
         properties.put("termStyle", singletonList(new Attribute("", "")));
         properties.put("termFamily", singletonList(new Attribute("", "")));
+        properties.put("termEquivalency", singletonList(new Attribute("", "")));
         properties.put("termConjugation", singletonList(new Attribute("", "")));
         properties.put("termInfo", singletonList(new Attribute("", "")));
         properties.put("wordClass", singletonList(new Attribute("", "")));
@@ -292,6 +293,11 @@ public class FrontEndControllerInternalNodeTests {
         //Term family
         properties = constructTermProperties();
         properties.replace("termFamily", List.of(new Attribute("en", "not a term family")));
+        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
+
+        properties = constructTermProperties();
+        properties.replace("termEquivalency", List.of(new Attribute("en", "not a term equivalency")));
         genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
