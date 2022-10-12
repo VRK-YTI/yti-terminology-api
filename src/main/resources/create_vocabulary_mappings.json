@@ -86,6 +86,9 @@
     "references.inGroup.id": {
       "type": "keyword"
     },
+    "properties.language.value": {
+      "type": "keyword"
+    },
     "vocabulary": {
       "properties": {
         "id": {

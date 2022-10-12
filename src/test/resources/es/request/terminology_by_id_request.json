@@ -1,0 +1,16 @@
+{
+  "size": 1,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "type.graph.id": {
+              "query": "1259496e-6996-43d2-894c-95c85543e5a1"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

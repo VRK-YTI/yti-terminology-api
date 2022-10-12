@@ -11,6 +11,7 @@ public class ExcelParseException extends RuntimeException {
 
     public ExcelParseException(String message) {
         super(message);
+        this.reason = message;
     }
 
     public ExcelParseException(String message, Row row, String column) {

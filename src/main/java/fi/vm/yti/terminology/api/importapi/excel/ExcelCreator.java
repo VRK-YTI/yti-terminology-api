@@ -45,13 +45,13 @@ public class ExcelCreator {
      *
      * @param placeHolderLanguages list of languages to create placeholder terms for
      */
-    public @NotNull Workbook createExcel(List<String> placeHolderLanguages) {
+    public @NotNull Workbook createExcel(List<String> placeHolderLanguages, boolean isInOrganization) {
         Workbook workbook = new XSSFWorkbook();
 
         this.createTerminologyDetailsSheet(workbook);
         this.createCollectionsSheet(workbook);
-        this.createConceptsSheet(workbook, placeHolderLanguages);
-        this.createTermsSheet(workbook);
+        this.createConceptsSheet(workbook, placeHolderLanguages, isInOrganization);
+        this.createTermsSheet(workbook, isInOrganization);
         this.createConceptLinksSheet(workbook);
 
         return workbook;
@@ -60,8 +60,8 @@ public class ExcelCreator {
     /**
      * Create Excel workbook
      */
-    public @NotNull Workbook createExcel() {
-        return createExcel(List.of());
+    public @NotNull Workbook createExcel(boolean isInOrganization) {
+        return createExcel(List.of(), isInOrganization);
     }
 
     /**
@@ -136,7 +136,8 @@ public class ExcelCreator {
      * It loops over all concepts and creates a row for each.
      */
     private void createConceptsSheet(@NotNull Workbook workbook,
-                                     List<String> placeHolderLanguages) {
+                                     List<String> placeHolderLanguages,
+                                     boolean isInOrganization) {
         var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(CONCEPT)) {
             builder.addDataToCurrentRow("IDENTIFIER", terminology.getCode());
@@ -148,8 +149,9 @@ public class ExcelCreator {
                     .get(0));
             this.addProperty("DEFINITION", "definition", terminology, builder);
             this.addProperty("NOTE", "note", terminology, builder);
-            // TODO: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
-//            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            if (isInOrganization) {
+                this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            }
             this.addProperty("EXAMPLE", "example", terminology, builder);
             this.addProperty("SUBJECTAREA", "subjectArea", terminology, builder);
             this.addProperty("CONCEPTCLASS", "conceptClass", terminology, builder);
@@ -193,7 +195,7 @@ public class ExcelCreator {
      * <p>
      * It loops over all terms and creates a row for each.
      */
-    private void createTermsSheet(@NotNull Workbook workbook) {
+    private void createTermsSheet(@NotNull Workbook workbook, boolean isInOrganization) {
         var builder = new DTOBuilder();
         for (JSONWrapper terminology : this.wrappersOfType(TERM)) {
 
@@ -211,8 +213,9 @@ public class ExcelCreator {
             this.addPropertyIgnoreLanguage("TERMINFO", "termInfo", terminology, builder);
             this.addPropertyIgnoreLanguage("WORDCLASS", "wordClass", terminology, builder);
             this.addPropertyIgnoreLanguage("HOMOGRAPHNUMBER", "termHomographNumber", terminology, builder);
-            // TODO: EDITORIALNOTE should be visible if the user has write permissions to the terminology.
-//            this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            if (isInOrganization) {
+                this.addProperty("EDITORIALNOTE", "editorialNote", terminology, builder);
+            }
             this.addPropertyIgnoreLanguage("DRAFTCOMMENT", "draftComment", terminology, builder);
             this.addPropertyIgnoreLanguage("HISTORYNOTE", "historyNote", terminology, builder);
             this.addPropertyIgnoreLanguage("CHANGENOTE", "changeNote", terminology, builder);

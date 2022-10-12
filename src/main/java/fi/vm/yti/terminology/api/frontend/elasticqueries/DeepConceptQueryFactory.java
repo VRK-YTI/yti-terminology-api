@@ -1,14 +1,12 @@
 package fi.vm.yti.terminology.api.frontend.elasticqueries;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.exception.InvalidQueryException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -26,8 +24,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -63,7 +59,13 @@ public class DeepConceptQueryFactory {
         var mustQueries = new ArrayList<QueryBuilder>();
 
         // NOTE: In deep concept query the query should always be non-empty.
-        var labelQuery = ElasticRequestUtils.buildPrefixSuffixQuery(query).field("label.*");
+        var labelQuery = ElasticRequestUtils.buildPrefixSuffixQuery(query)
+                .field("label.*", 5.0f)
+                .field("altLabel.*", 3.0f)
+                .field("searchTerm.*", 3.0f)
+                .field("hiddenTerm.*", 3.0f)
+                .field("notRecommendedSynonym.*", 1.5f)
+                .field("definition.*", 3.0f);
         mustQueries.add(labelQuery);
 
         if (statuses != null && statuses.length > 0) {
@@ -76,13 +78,15 @@ public class DeepConceptQueryFactory {
         // is in some visible state.
         if (!superUser) {
             var incompleteQuery = QueryBuilders.boolQuery()
-                    .should(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("status", "INCOMPLETE")))
+                    .should(QueryBuilders.boolQuery()
+                            .mustNot(QueryBuilders.termQuery("status", "INCOMPLETE"))
+                            .mustNot(QueryBuilders.termQuery("vocabulary.status", "INCOMPLETE")))
                     .should(QueryBuilders.termsQuery("vocabulary.id", incompleteFromTerminologies))
                     .minimumShouldMatch(1);
             mustQueries.add(incompleteQuery);
         }
 
-        QueryBuilder withIncompleteHandling = null;
+        QueryBuilder withIncompleteHandling;
         if (mustQueries.size() > 1) {
             withIncompleteHandling = QueryBuilders.boolQuery();
             for (var mustQuery : mustQueries) {
@@ -110,7 +114,7 @@ public class DeepConceptQueryFactory {
                         .fetchSource(sourceIncludes))
                     .subAggregation(AggregationBuilders.max("best_concept_hit")
                         .script(topHitScript))));
-        log.debug("Deep Concept Query request: " + sr.toString());
+        log.debug("Deep Concept Query request: {}", sr.toString());
         return sr;
     }
 

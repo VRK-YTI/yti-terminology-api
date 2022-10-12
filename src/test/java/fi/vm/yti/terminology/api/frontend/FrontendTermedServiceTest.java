@@ -591,6 +591,24 @@ class FrontendTermedServiceTest {
         assertEquals(conceptNode.getId(), collectionNode.getReferences().get("member").get(0).getId());
     }
 
+    @Test
+    public void testGetCollectionCount() throws JsonProcessingException {
+        var graphId = UUID.randomUUID();
+        JsonNode jsonNode = new ObjectMapper()
+                .readTree("[ { \"id\":\"2809414d-3bb1-4e0e-b315-a035ad8bb311\" } ]");
+
+        when(termedRequester.exchange(
+                    eq(String.format("/graphs/%s/types/%s/nodes", graphId, NodeType.Collection)),
+                    eq(HttpMethod.GET),
+                    any(Parameters.class),
+                    any(Class.class)))
+                .thenReturn(jsonNode);
+
+        Long collectionCount = frontEndTermedService.getCollectionCount(graphId);
+
+        assertEquals(1L, collectionCount);
+    }
+
     private String getUri(String prefix, String code) {
         return "http://uri.suomi.fi/terminology/" + prefix + "/" + code + "/";
     }

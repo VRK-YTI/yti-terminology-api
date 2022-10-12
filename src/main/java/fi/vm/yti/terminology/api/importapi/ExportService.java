@@ -13,8 +13,11 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import fi.vm.yti.security.AuthenticatedUserProvider;
+import fi.vm.yti.security.Role;
+import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.importapi.excel.ExcelCreator;
 import fi.vm.yti.terminology.api.importapi.excel.JSONWrapper;
+import fi.vm.yti.terminology.api.security.AuthorizationTermedService;
 import jakarta.ws.rs.InternalServerErrorException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.NotNull;
@@ -41,11 +44,14 @@ public class ExportService {
     private final TermedRequester termedRequester;
     private static final Logger logger = LoggerFactory.getLogger(ExportService.class);
     private AuthenticatedUserProvider userProvider;
+    private AuthorizationTermedService authorizationTermedService;
 
     @Autowired
-    public ExportService(TermedRequester termedRequester, AuthenticatedUserProvider userProvider) {
+    public ExportService(TermedRequester termedRequester, AuthenticatedUserProvider userProvider,
+                         AuthorizationTermedService authorizationTermedService) {
         this.termedRequester = termedRequester;
         this.userProvider = userProvider;
+        this.authorizationTermedService = authorizationTermedService;
     }
 
     private Parameters constructFullVocabularyQuery() {
@@ -254,12 +260,17 @@ public class ExportService {
      */
     ResponseEntity<InputStreamResource> getXLSX(UUID vocabularyId, List<String> placeholderLanguages) {
         ExcelCreator creator = getFullVocabularyXLSX(vocabularyId);
+        YtiUser user = userProvider.getUser();
+        Set<UUID> organizationIds = authorizationTermedService.getOrganizationIds(vocabularyId);
+
+        boolean isInOrganization = user.isSuperuser() || user.isInAnyRole(
+                List.of(Role.TERMINOLOGY_EDITOR, Role.ADMIN), organizationIds);
 
         Workbook workbook;
-        if (userProvider.getUser().isSuperuser()) {
-            workbook = creator.createExcel(placeholderLanguages);
+        if (user.isSuperuser()) {
+            workbook = creator.createExcel(placeholderLanguages, true);
         } else {
-            workbook = creator.createExcel();
+            workbook = creator.createExcel(isInOrganization);
         }
 
         String filename = String.format(

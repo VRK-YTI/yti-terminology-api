@@ -11,6 +11,7 @@ import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
 import fi.vm.yti.terminology.api.importapi.ImportStatusResponse.ImportStatus;
 import fi.vm.yti.terminology.api.importapi.excel.ExcelParser;
 import fi.vm.yti.terminology.api.importapi.excel.TerminologyImportDTO;
+import fi.vm.yti.terminology.api.importapi.simpleexcel.SimpleExcelParser;
 import fi.vm.yti.terminology.api.migration.DomainIndex;
 import fi.vm.yti.terminology.api.model.ntrf.VOCABULARY;
 import fi.vm.yti.terminology.api.model.termed.*;
@@ -83,7 +84,6 @@ public class ImportService {
      */
     private HashMap<String,MetaNode> typeMap = new HashMap<>();
 
-    private static final Logger logger = LoggerFactory.getLogger(ImportService.class);
     private final String subSystem;
     private final Integer batchSize;
 
@@ -159,7 +159,7 @@ public class ImportService {
         System.out.println("Incoming vocabularity= "+vocabularyId+" - file:"+file.getName()+" size:"+file.getSize()+ " type="+file.getContentType());
         // Fail if given format string is not ntrf
         if (!format.equals("ntrf")) {
-            logger.error("Unsupported format:<" + format + "> (Currently supported formats: ntrf)");
+            LOGGER.error("Unsupported format:<{}> (Currently supported formats: ntrf)", format);
             // Unsupported format
             return new ResponseEntity<>("Unsupported format:<" + format + ">    (Currently supported formats: ntrf)\n", HttpStatus.NOT_ACCEPTABLE);
         }
@@ -171,12 +171,12 @@ public class ImportService {
             vocabulary = termedService.getGraph(vocabularyId);
             // Import running for given vocabulary, drop it
             if(ytiMQService.checkIfImportIsRunning(vocabulary.getUri())){
-                logger.error("Import running for Vocabulary:<" + vocabularyId + ">");
+                LOGGER.error("Import running for Vocabulary:<{}>", vocabularyId);
                 return new ResponseEntity<>("Import running for Vocabulary:<" + vocabularyId+">", HttpStatus.CONFLICT);
             }
         } catch ( NullPointerException nex){
             // Vocabularity not found
-            logger.error("Vocabulary:<" + vocabularyId + "> not found");
+            LOGGER.error("Vocabulary:<{}> not found", vocabularyId);
             return new ResponseEntity<>("Vocabulary:<" + vocabularyId + "> not found\n", HttpStatus.NOT_FOUND);
         }
 
@@ -223,10 +223,38 @@ public class ImportService {
             System.out.println("Incoming transform error=" + ioe);
         } catch (XMLStreamException se) {
             System.out.println("Incoming transform error=" + se);
-        } catch(JAXBException je){
+        } catch (JAXBException je){
             System.out.println("Incoming transform error=" + je);
         }
         return new ResponseEntity<>( rv, HttpStatus.OK);
+    }
+
+    public UUID handleSimpleExcelImport(UUID terminologyId, InputStream is) throws NullPointerException, IOException {
+        check(authorizationManager.canModifyAllGraphs(List.of(terminologyId)));
+        boolean exists = terminologyExists(terminologyId);
+        if (!exists) {
+            throw new NullPointerException("Terminology doesnt exist");
+        }
+
+        var node = termedService.getVocabulary(terminologyId);
+        List<String> languages = node.getProperties().get("language").stream().map(Attribute::getValue).collect(Collectors.toList());
+
+        var parser = new SimpleExcelParser();
+        XSSFWorkbook workbook = parser.getWorkbook(is);
+        List<GenericNode> nodes = parser.buildNodes(workbook, terminologyId, languages);
+
+        check(authorizationManager.canModifyNodes(nodes));
+        //JOB
+        var jobToken = UUID.randomUUID();
+        var accessor = new MessageHeaderAccessor();
+        accessor.setHeader("vocabularyId", terminologyId.toString());
+        accessor.setHeader("format", "EXCEL");
+
+        List<List<GenericNode>> batches = ImportUtil.getBatches(nodes, batchSize);
+
+        ytiMQService.handleExcelImportAsync(jobToken, accessor, node.getUri(), batches);
+
+        return jobToken;
     }
 
     public UUID handleExcelImport(InputStream is) {

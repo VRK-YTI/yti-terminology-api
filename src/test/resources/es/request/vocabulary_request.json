@@ -24,8 +24,8 @@
                 "query_string": {
                   "query": "test test* *test",
                   "fields": [
-                    "properties.prefLabel.value^1.0",
-                    "references.contributor.properties.prefLabel.value^2.0"
+                    "properties.prefLabel.value^5.0",
+                    "references.contributor.properties.prefLabel.value^1.0"
                   ]
                 }
               },

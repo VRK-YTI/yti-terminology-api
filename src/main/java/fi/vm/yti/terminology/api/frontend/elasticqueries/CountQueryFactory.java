@@ -9,6 +9,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -16,10 +17,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CountQueryFactory {
@@ -57,7 +55,8 @@ public class CountQueryFactory {
                         .query(withIncompleteHandling)
                         .aggregation(this.createStatusAggregation())
                         .aggregation(this.createGroupAggregation())
-                        .aggregation(this.createIndexAggregation()));
+                        .aggregation(this.createIndexAggregation())
+                        .aggregation(this.createLanguageAggregation()));
     }
 
     public SearchRequest createConceptCountQuery(UUID vocabularyId) {
@@ -126,6 +125,25 @@ public class CountQueryFactory {
                 .script(script);
     }
 
+    private TermsAggregationBuilder createLanguageAggregation() {
+        String scriptSource = "params._source.properties.language" +
+                ".stream()" +
+                ".map(lang -> lang.value)" +
+                ".collect(Collectors.toList())";
+
+        Script script = new Script(
+                Script.DEFAULT_SCRIPT_TYPE,
+                "painless",
+                scriptSource,
+                new HashMap<>(16));
+
+        return AggregationBuilders
+                .terms("langagg")
+                .order(BucketOrder.count(false))
+                .size(300)
+                .script(script);
+    }
+
     public CountSearchResponse parseResponse(SearchResponse response) {
         CountSearchResponse ret = new CountSearchResponse();
         ret.setTotalHitCount(response.getHits().getTotalHits());
@@ -163,7 +181,23 @@ public class CountQueryFactory {
         categories.putIfAbsent(CountDTO.Category.CONCEPT.getName(), 0L);
         categories.putIfAbsent(CountDTO.Category.COLLECTION.getName(), 0L);
 
-        ret.setCounts(new CountDTO(categories, statuses, groups));
+        Map<String, Long> languages = new HashMap<>();
+        Terms langagg = response.getAggregations().get("langagg");
+        if (langagg != null) {
+            languages = langagg
+                    .getBuckets()
+                    .stream()
+                    .collect(
+                            LinkedHashMap::new,
+                            (map, item) -> map.put(
+                                    item.getKeyAsString(),
+                                    item.getDocCount()
+                            ),
+                            Map::putAll
+                    );
+        }
+
+        ret.setCounts(new CountDTO(categories, statuses, groups, languages));
 
         return ret;
     }

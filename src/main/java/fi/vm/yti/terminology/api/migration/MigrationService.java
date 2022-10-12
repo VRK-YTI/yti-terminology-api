@@ -258,4 +258,16 @@ public class MigrationService {
         termedRequester.exchange("/graphs/" + graphId + "/types/" + typeName, DELETE, Parameters.empty(), String.class);
     }
 
+    public List<GenericNode> getNodes(Predicate<GenericNode> filter) {
+        Parameters parameters = new Parameters();
+        parameters.add("max", "-1");
+
+        List<GenericNode> nodes = termedRequester.exchange("/nodes/", GET, parameters,
+                new ParameterizedTypeReference<>() {
+        });
+        return nodes.stream()
+                .filter(filter)
+                .collect(toList());
+    }
+
 }

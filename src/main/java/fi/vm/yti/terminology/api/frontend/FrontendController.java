@@ -1,10 +1,12 @@
 package fi.vm.yti.terminology.api.frontend;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.exception.NamespaceInUseException;
 import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
 import fi.vm.yti.terminology.api.frontend.searchdto.*;
+import fi.vm.yti.terminology.api.validation.ValidGenericDeleteAndSave;
 import fi.vm.yti.terminology.api.validation.ValidVocabularyNode;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -36,13 +38,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import static fi.vm.yti.terminology.api.model.termed.NodeType.Group;
 import static fi.vm.yti.terminology.api.model.termed.NodeType.Organization;
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.PREFIX_REGEX;
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_FIELD_MAX_LENGTH;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static fi.vm.yti.terminology.api.util.CollectionUtils.mapToSet;
 
 @RestController
 @RequestMapping("/api/v1/frontend")
@@ -152,6 +158,14 @@ public class FrontendController {
         return termedService.getVocabulary(graphId);
     }
 
+    @Operation(summary = "Get terminology basic info as JSON")
+    @ApiResponse(responseCode = "200", description = "The requested terminology node data")
+    @GetMapping(path = "/simpleVocabulary", produces = APPLICATION_JSON_VALUE)
+    TerminologySearchResponse getSimpleVocabulary(@Parameter(description = "ID for the requested terminology") @RequestParam UUID graphId) {
+        logger.info("GET /simpleVocabulary requested with graphId: " + graphId.toString());
+        return elasticSearchService.findTerminology(graphId);
+    }
+
     @Operation(summary = "Get basic info for all terminologies", description = "Get basic info for termonologies in Termed JSON format. The list may be filtered for INCOMPLETE terminologies.")
     @Parameter(
         name = "incomplete",
@@ -210,7 +224,8 @@ public class FrontendController {
             @Parameter(description = "The meta model graph for the new terminology")
             @RequestParam UUID templateGraphId,
 
-            @Size(min = 3, message = "Prefix must be minimum of 3 characters")
+            @Pattern(regexp = PREFIX_REGEX)
+            @Size(min = 3, max = TEXT_FIELD_MAX_LENGTH, message = "Prefix must be minimum of 3 characters and a maximum of " + TEXT_FIELD_MAX_LENGTH + " characters")
             @Parameter(description = "The prefix, i.e., freely selectable part of terminology namespace")
             @RequestParam String prefix,
 
@@ -338,6 +353,7 @@ public class FrontendController {
     @PostMapping(path = "/modify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     void updateAndDeleteInternalNodes(@Parameter(description = "Whether to do synchronous modification, i.e., wait for the result. This is recommended.")
                                       @RequestParam(required = false, defaultValue = "true") boolean sync,
+                                      @ValidGenericDeleteAndSave
                                       @RequestBody GenericDeleteAndSave deleteAndSave) {
         logger.info("POST /modify requested with deleteAndSave: delete ids: ");
         for (int i = 0; i < deleteAndSave.getDelete().size(); i++) {
@@ -349,6 +365,20 @@ public class FrontendController {
         }
 
         termedService.bulkChange(deleteAndSave, sync);
+    }
+
+    @Operation(summary = "Validate a bulk modification request", description = "Validate several nodes")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "JSON for the bulk request containing nodes to validate")
+    @ApiResponse(responseCode = "200", description = "OK on success")
+    @PostMapping(path = "/validate", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public String validateInternalNodes(@ValidGenericDeleteAndSave
+                                      @RequestBody GenericDeleteAndSave deleteAndSave) {
+        logger.info("POST /validate requested with deleteAndSave: delete ids: ");
+        deleteAndSave.getDelete().forEach(e -> logger.info(e.getId().toString()));
+        logger.info("and save ids: ");
+        deleteAndSave.getSave().forEach(e -> logger.info(e.getId().toString()));
+
+        return "OK";
     }
 
     @Operation(summary = "Delete several nodes", description = "May be used, e.g., to delete a concept and its terms in one request")
@@ -456,9 +486,9 @@ public class FrontendController {
         logger.info("GET /conceptCounts requested");
 
         // fetch collections separately and add the count to dto because collections are not stored in elastic search
-        JsonNode collectionList = termedService.getCollectionList(graphId);
+        Long collectionCount = termedService.getCollectionCount(graphId);
         CountSearchResponse conceptCounts = elasticSearchService.getConceptCounts(graphId);
-        conceptCounts.getCounts().getCategories().put(CountDTO.Category.COLLECTION.getName(), Long.valueOf(collectionList.size()));
+        conceptCounts.getCounts().getCategories().put(CountDTO.Category.COLLECTION.getName(), collectionCount);
         return conceptCounts;
     }
 

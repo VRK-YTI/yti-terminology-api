@@ -4,7 +4,8 @@
       "label": {
         "path_match": "label.*",
         "mapping": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "termed"
         }
       }
     },
@@ -28,6 +29,33 @@
     {
       "altLabel": {
         "path_match": "altLabel.*",
+        "mapping": {
+          "type": "text",
+          "analyzer": "termed"
+        }
+      }
+    },
+    {
+      "searchTerm": {
+        "path_match": "searchTerm.*",
+        "mapping": {
+          "type": "text",
+          "analyzer": "termed"
+        }
+      }
+    },
+    {
+      "hiddenTerm": {
+        "path_match": "hiddenTerm.*",
+        "mapping": {
+          "type": "text",
+          "analyzer": "termed"
+        }
+      }
+    },
+    {
+      "notRecommendedSynonym": {
+        "path_match": "notRecommendedSynonym.*",
         "mapping": {
           "type": "text",
           "analyzer": "termed"

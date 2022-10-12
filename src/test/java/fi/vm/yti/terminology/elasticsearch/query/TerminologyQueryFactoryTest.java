@@ -12,6 +12,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.util.Collections;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,5 +51,14 @@ public class TerminologyQueryFactoryTest {
         assertEquals("Test contributor", dto.getContributors().get(0).getLabel().get("fi"));
         assertEquals("DRAFT", dto.getStatus());
         assertEquals("Testipalveluluokka label", dto.getInformationDomains().get(0).getLabel().get("fi"));
+        assertEquals("TERMINOLOGICAL_VOCABULARY", dto.getType());
+    }
+
+    @Test
+    public void testCreateTerminologyByIdQuery() throws Exception {
+        UUID id = UUID.fromString("1259496e-6996-43d2-894c-95c85543e5a1");
+        String expectedRequest = EsUtils.getJsonString("/es/request/terminology_by_id_request.json");
+        SearchRequest findTerminologyByIdQuery = factory.createFindTerminologyByIdQuery(id);
+        JSONAssert.assertEquals(expectedRequest, findTerminologyByIdQuery.source().toString(), JSONCompareMode.LENIENT);
     }
 }

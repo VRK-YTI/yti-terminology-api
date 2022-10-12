@@ -338,7 +338,7 @@ public class ExcelParser {
 
                 Map<String, List<Attribute>> properties = Map.of(
                         "prefLabel", getLocalizedProperty(row, columnMap, Fields.PREFLABEL, languages),
-                        "description", getLocalizedProperty(row, columnMap, Fields.DESCRIPTION, languages)
+                        "definition", getLocalizedProperty(row, columnMap, Fields.DESCRIPTION, languages)
                 );
 
                 Map<String, List<Identifier>> references = Map.of(
@@ -600,7 +600,7 @@ public class ExcelParser {
     private XSSFRow getRow(XSSFSheet sheet, int rowNumber, boolean isMandatory) {
         XSSFRow row = sheet.getRow(rowNumber);
         if (row == null && isMandatory) {
-            throw new ExcelParseException(String.format("Row %d doesn't exist", rowNumber));
+            throw new ExcelParseException(String.format("Row %d doesn't exist, sheet %s", rowNumber, sheet.getSheetName()));
         }
         return row;
     }

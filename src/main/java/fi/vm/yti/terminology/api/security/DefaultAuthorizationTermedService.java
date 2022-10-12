@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import fi.vm.yti.terminology.api.TermedRequester;
 import fi.vm.yti.terminology.api.model.termed.GenericNode;
 import fi.vm.yti.terminology.api.model.termed.Identifier;
+import fi.vm.yti.terminology.api.model.termed.NodeType;
 import fi.vm.yti.terminology.api.util.Parameters;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -57,18 +58,12 @@ public class DefaultAuthorizationTermedService implements AuthorizationTermedSer
     }
 
     private Set<UUID> fetchOrganizationIds(UUID graphId) {
-
-        Parameters params = new Parameters();
-        params.add("select", "id");
-        params.add("select", "references.contributor");
-        params.add("where",
-                "graph.id:" + graphId +
-                " AND (type.id:" + Vocabulary +
-                " OR type.id:" + TerminologicalVocabulary + ")");
-        params.add("max", "-1");
-
-        List<GenericNode> result = termedRequester.exchange("/node-trees", GET, params, new ParameterizedTypeReference<List<GenericNode>>() {});
-
+        List<GenericNode> result = termedRequester
+                .exchange(String.format("/graphs/%s/types/%s/nodes", graphId, NodeType.TerminologicalVocabulary),
+                        GET,
+                        new Parameters(),
+                        new ParameterizedTypeReference<>() {}
+                );
         GenericNode vocabularyNode = requireSingle(result);
 
         return mapToSet(vocabularyNode.getReferences().getOrDefault("contributor", emptyList()), Identifier::getId);

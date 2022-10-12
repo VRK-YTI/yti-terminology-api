@@ -35,7 +35,7 @@ public class ExcelCreatorTest {
     @Test
     public void testCreateExcelWithoutData() {
         ExcelCreator creator = new ExcelCreator(List.of());
-        Workbook workbook = creator.createExcel();
+        Workbook workbook = creator.createExcel(true);
 
         // check that all sheets exist
         assertNotNull(workbook);
@@ -53,7 +53,7 @@ public class ExcelCreatorTest {
     @Test
     public void testCreateExcelWithData() {
         ExcelCreator creator = new ExcelCreator(wrappers);
-        Workbook workbook = creator.createExcel();
+        Workbook workbook = creator.createExcel(true);
 
         // Check that all sheets exist
         assertNotNull(workbook);
@@ -85,7 +85,7 @@ public class ExcelCreatorTest {
     @Test
     public void testCreateTermLanguageVersion() {
         ExcelCreator creator = new ExcelCreator(wrappers);
-        Workbook workbook = creator.createExcel(List.of("fi", "sv", "en"));
+        Workbook workbook = creator.createExcel(List.of("fi", "sv", "en"), true);
 
         Sheet concepts = workbook.getSheet("Concepts");
         Sheet terms = workbook.getSheet("Terms");
@@ -137,6 +137,18 @@ public class ExcelCreatorTest {
         }
     }
 
+    @Test
+    public void testEditorialNote() {
+        ExcelCreator creator = new ExcelCreator(wrappers);
+        Workbook workbook = creator.createExcel(List.of("fi", "sv", "en"), false);
+
+        Sheet concepts = workbook.getSheet("Concepts");
+
+        Iterator<Row> iterator = concepts.iterator();
+
+        assertNull(getHeaderCellByName(concepts, "EDITORIALNOTE"));
+    }
+
     private boolean isEmptyCell(Row row, int index) {
         return row.getCell(index) == null || row.getCell(index).getCellType() == CellType.BLANK;
     }
@@ -147,9 +159,9 @@ public class ExcelCreatorTest {
         while (cellIterator.hasNext()) {
             cell = cellIterator.next();
             if (cell.getStringCellValue().equals(name)) {
-                break;
+                return cell;
             }
         }
-        return cell;
+        return null;
     }
 }

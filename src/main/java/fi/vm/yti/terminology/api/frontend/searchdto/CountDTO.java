@@ -26,20 +26,24 @@ public class CountDTO {
     private Map<String, Long> categories;
     private Map<String, Long> statuses;
     private Map<String, Long> groups;
+    private Map<String, Long> languages;
 
     public CountDTO() {
         this.categories = Collections.emptyMap();
         this.statuses = Collections.emptyMap();
         this.groups = Collections.emptyMap();
+        this.languages = Collections.emptyMap();
     }
 
     public CountDTO(
             final Map<String, Long> categories,
             final Map<String, Long> statuses,
-            final Map<String, Long> groups) {
+            final Map<String, Long> groups,
+            final Map<String, Long> languages) {
         this.categories = categories;
         this.statuses = statuses;
         this.groups = groups;
+        this.languages = languages;
     }
 
     public Map<String, Long> getCategories() {
@@ -64,5 +68,13 @@ public class CountDTO {
 
     public void setGroups(Map<String, Long> groups) {
         this.groups = groups;
+    }
+
+    public Map<String, Long> getLanguages() {
+        return languages;
+    }
+
+    public void setLanguages(Map<String, Long> languages) {
+        this.languages = languages;
     }
 }

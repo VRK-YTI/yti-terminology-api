@@ -16,6 +16,8 @@ public class TerminologySearchRequest {
 
     private String prefLang;
 
+    private String language;
+
     private Integer pageSize;
     private Integer pageFrom;
 
@@ -90,6 +92,14 @@ public class TerminologySearchRequest {
 
     public void setPageFrom(final Integer pageFrom) {
         this.pageFrom = pageFrom;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
     @Override

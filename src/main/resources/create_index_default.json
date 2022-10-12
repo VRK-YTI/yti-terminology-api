@@ -1,23 +1,8 @@
 {
   "analysis": {
-    "tokenizer": {
-      "ngram_tokenizer": {
-        "type": "edge_ngram",
-        "min_gram": 1,
-        "max_gram": 15,
-        "token_chars": [
-          "letter",
-          "digit"
-        ]
-      }
-    },
     "analyzer": {
       "termed": {
-        "type": "custom",
-        "tokenizer": "ngram_tokenizer",
-        "filter": [
-          "lowercase"
-        ]
+        "type": "standard"
       }
     }
   }

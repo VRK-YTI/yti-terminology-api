@@ -13,11 +13,12 @@ public class TerminologyDTO extends TerminologySimpleDTO {
                           final String code,
                           final String uri,
                           final String status,
+                          final String type,
                           final Map<String, String> label,
                           final Map<String, String> description,
                           final List<InformationDomainDTO> informationDomains,
                           final List<OrganizationDTO> contributors) {
-        super(id, code, uri, status, label);
+        super(id, code, uri, status, type, label);
 
         this.description = description;
         this.informationDomains = informationDomains;

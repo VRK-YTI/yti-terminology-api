@@ -26,6 +26,15 @@
         { "key": "6f505105-5cc8-3293-aff6-64a58114bbe8", "doc_count": 1 },
         { "key": "9f69e282-b4d9-3cc0-a0d2-e7ccd861266a", "doc_count": 1 }
       ]
+    },
+    "sterms#langagg": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        { "key": "fi", "doc_count": 13 },
+        { "key": "sv", "doc_count": 10 },
+        { "key": "en", "doc_count": 8 }
+      ]
     }
   }
 }

@@ -1,6 +1,5 @@
 package fi.vm.yti.terminology.api.importapi;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import fi.vm.yti.terminology.api.exception.ExcelParseException;
@@ -27,7 +26,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 @RestController
-@RequestMapping("/api/v1/import")
+@RequestMapping({"/api/v1/import", "/api/v1/frontend/import"})
 @Tag(name = "Import-Export")
 public class ImportController {
 
@@ -66,10 +65,36 @@ public class ImportController {
                     .badRequest()
                     .body(
                         new ExcelImportResponseDTO(
-                            null,
-                            e.getReason(),
-                            new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
-                        ));
+                                null,
+                                e.getReason(),
+                                new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                            ));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Operation(summary = "Initiate simple Excel import job", description = "Start the procedure to import concepts from Excel file")
+    @ApiResponse(
+            responseCode = "200",
+            description = "If import process started successfully then job token is returned as JSON",
+            content = {@Content(mediaType = APPLICATION_JSON_VALUE, schema = @Schema(implementation = ImportService.ImportResponse.class))})
+    @PostMapping(path = "simpleExcel/{terminology}", consumes = MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ExcelImportResponseDTO> importSimpleExcel(@Parameter(description = "The ID of the terminology to import concepts to")
+                                                             @PathVariable("terminology") UUID terminologyId,
+                                                             @RequestPart(value = "file") MultipartFile file) {
+        try {
+            UUID jobId = importService.handleSimpleExcelImport(terminologyId, file.getInputStream());
+            return ResponseEntity.ok(new ExcelImportResponseDTO(jobId, "SUCCESS"));
+        } catch (ExcelParseException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            new ExcelImportResponseDTO(
+                                    null,
+                                    e.getReason(),
+                                    new ExcelImportResponseDTO.ErrorDetails(e.getSheet(), e.getRowNumber(), e.getColumn())
+                            ));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

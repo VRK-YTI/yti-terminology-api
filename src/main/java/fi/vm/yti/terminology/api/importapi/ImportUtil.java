@@ -19,14 +19,14 @@ public class ImportUtil {
      * because all referred nodes must reside in the same batch
      *
      * @param allNodes
-     * @param batchSize
+     * @param maxBatchSize
      * @return
      */
-    public static List<List<GenericNode>> getBatches(List<GenericNode> allNodes, int batchSize) {
+    public static List<List<GenericNode>> getBatches(List<GenericNode> allNodes, int maxBatchSize) {
         Set<UUID> allIds = new LinkedHashSet<>();
-        List<Integer> batchSizes = new ArrayList<>();
+        List<Set<UUID>> batches = new ArrayList<>();
 
-        int currentBatchSize = 0;
+        Set<UUID> currentBatch = new HashSet<>();
 
         for (GenericNode node : allNodes) {
             if (allIds.contains(node.getId())) {
@@ -37,47 +37,44 @@ public class ImportUtil {
                 Set<UUID> references = getReferencesRecursive(
                         allNodes,
                         node.getId(),
-                        new HashSet<>()
+                        new HashSet<>(),
+                        allIds
                 );
+                currentBatch.addAll(references);
                 allIds.addAll(references);
-                currentBatchSize += references.size();
             } else if (node.getType().getId() == NodeType.Collection) {
                 allIds.add(node.getId());
-                currentBatchSize++;
+                currentBatch.add(node.getId());
             } else if (node.getType().getId() == NodeType.TerminologicalVocabulary) {
                 allIds.add(node.getId());
-                currentBatchSize++;
+                currentBatch.add(node.getId());
             }
 
-            if (currentBatchSize > batchSize) {
-                batchSizes.add(currentBatchSize);
-                currentBatchSize = 0;
+            if (currentBatch.size() > maxBatchSize) {
+                batches.add(Set.copyOf(currentBatch));
+                currentBatch = new HashSet<>();
             }
         }
 
-        if (currentBatchSize > 0) {
-            batchSizes.add(currentBatchSize);
+        if (currentBatch.size() > 0) {
+            batches.add(currentBatch);
         }
 
-        List<List<GenericNode>> batches = new ArrayList<>();
+        List<List<GenericNode>> genericNodeBatches = new ArrayList<>();
 
-        int total = 0;
-        for (Integer size : batchSizes) {
-
-            batches.add(
-                    allIds.stream()
-                            .skip(total)
-                            .limit(size)
+        for (Set<UUID> batch : batches) {
+            genericNodeBatches.add(
+                    batch.stream()
                             .map(id -> Iterables.find(allNodes, (n) -> n.getId().equals(id)))
                             .collect(Collectors.toList())
             );
-            total += size;
         }
 
-        return batches;
+        return genericNodeBatches;
     }
 
-    private static Set<UUID> getReferencesRecursive(List<GenericNode> allNodes, UUID current, Set<UUID> result) {
+    private static Set<UUID> getReferencesRecursive(List<GenericNode> allNodes, UUID current,
+                                                    Set<UUID> result, Set<UUID> handledIds) {
 
         // add current node to result set
         result.add(current);
@@ -94,8 +91,8 @@ public class ImportUtil {
 
         for (UUID refId : conceptRefs) {
             boolean added = result.add(refId);
-            if (added) {
-                getReferencesRecursive(allNodes, refId, result);
+            if (added && !handledIds.contains(refId)) {
+                getReferencesRecursive(allNodes, refId, result, handledIds);
             }
         }
 

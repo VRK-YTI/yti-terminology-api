@@ -1,8 +1,6 @@
 package fi.vm.yti.terminology.api.resolve;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.UUID;
 
@@ -41,12 +39,15 @@ public class ResolveController {
 
     private final ResolveService urlResolverService;
     private final String applicationUrl;
+    private final String betaUrl;
 
     @Autowired
     ResolveController(ResolveService urlResolverService,
-                      @Value("${application.public.url}") String applicationUrl) {
+                      @Value("${application.public.url}") String applicationUrl,
+                      @Value("${application.public.beta.url:}") String betaUrl) {
         this.urlResolverService = urlResolverService;
         this.applicationUrl = applicationUrl;
+        this.betaUrl = betaUrl;
     }
 
     @Operation(summary = "Resolve a resource URI", description = "Resolve the given terminology, concept or collection URI and forward to appropriate address to either view (in UI) or fetch (JSON or other format) the resource")
@@ -57,6 +58,7 @@ public class ResolveController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> resolve(
         @Parameter(description = "The resource URI to resolve") @RequestParam String uri,
+        @Parameter(description = "Environment to redirect, e.g. awstest") @RequestParam(required = false) String env,
         @Parameter(
             description = "Requested format. This parameter has priority over the Accept header.",
             schema = @Schema(allowableValues = { "application/json", "application/ld+json", "application/rdf+xml", "text/turtle", "text/html" })
@@ -71,22 +73,26 @@ public class ResolveController {
         try {
             URI u = new URI(uri);
             URL ur = u.toURL();
-        } catch (URISyntaxException uex) {
-            return new ResponseEntity<>(uex.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (MalformedURLException mex) {
-            return new ResponseEntity<>(mex.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            logger.warn("Invalid URI " + uri, e);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+
         // ok, continue into the resolver
         try {
             ResolvedResource resource = urlResolverService.resolveResource(uri);
             ResolvableContentType contentType = ResolvableContentType.fromString(format, acceptHeader);
-            // String responseValue = "redirect:" + applicationUrl + formatPath(resource,
-            // contentType)
-            // + (contentType.isHandledByFrontend() || StringUtils.isEmpty(format) ? "" :
-            // "&format=" + format);
-            // return new ResponseEntity<>(responseValue, HttpStatus.OK);
-            String responseValue = applicationUrl + formatPath(resource, contentType)
-                + (!contentType.isHandledByFrontend() && !StringUtils.isEmpty(format) && contentType.getMediaType().equals(format) ? "&format=" + format.replaceAll("\\+", "%2b") : "");
+
+            StringBuilder urlBuilder = new StringBuilder();
+            urlBuilder
+                    .append(!"".equals(betaUrl) && env != null && env.endsWith("_v2") ? betaUrl : applicationUrl)
+                    .append(formatPath(resource, contentType))
+                    .append(!contentType.isHandledByFrontend() && !StringUtils.hasLength(format) && contentType.getMediaType().equals(format)
+                        ? "&format=" + format.replaceAll("\\+", "%2b")
+                        : "");
+
+            String responseValue = urlBuilder.toString();
+
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setLocation(new URI(responseValue));
             return new ResponseEntity<>(httpHeaders, HttpStatus.SEE_OTHER);
@@ -136,8 +142,6 @@ public class ResolveController {
                                                 @RequestHeader("Accept") String acceptHeader) {
 
         logger.info("Fetching terminology [id=\"" + graphId + "\", format=\"" + format + "\", accept=\"" + acceptHeader + "\"]");
-        //return urlResolverService.getResource(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary),
-        //    TermedContentType.fromString(format, acceptHeader), null);
         TermedContentType tct = TermedContentType.fromString(format, acceptHeader);
         return buildResponse(urlResolverService.getTerminology(graphId, tct), tct);
     }

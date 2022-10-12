@@ -9,15 +9,23 @@ public final class GenericDeleteAndSave implements DeleteAndSave, Serializable {
 
     private final List<Identifier> delete;
     private final List<GenericNode> save;
+    private final List<GenericNode> patch;
 
     // Jackson constructor
     private GenericDeleteAndSave() {
-        this(emptyList(), emptyList());
+        this(emptyList(), emptyList(), emptyList());
     }
 
     public GenericDeleteAndSave(List<Identifier> delete, List<GenericNode> save) {
         this.delete = delete;
         this.save = save;
+        this.patch = emptyList();
+    }
+
+    public GenericDeleteAndSave(List<Identifier> delete, List<GenericNode> save, List<GenericNode> patch) {
+        this.delete = delete;
+        this.save = save;
+        this.patch = patch;
     }
 
     public List<Identifier> getDelete() {
@@ -26,5 +34,9 @@ public final class GenericDeleteAndSave implements DeleteAndSave, Serializable {
 
     public List<GenericNode> getSave() {
         return save;
+    }
+
+    public List<GenericNode> getPatch() {
+        return patch;
     }
 }

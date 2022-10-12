@@ -48,6 +48,14 @@ public final class JsonUtils {
         }
     }
 
+	public static @Nullable JsonNode findSingleOrNull(@Nullable JsonNode array) {
+		if (array == null || array.size() == 0) {
+			return null;
+		} else {
+			return array.get(0);
+		}
+	}
+
 	public static JsonNode listToJson(ObjectMapper mapper, @NotNull List<UUID> collection) {
         ArrayNode arrayNode = mapper.createArrayNode();
         collection.forEach(item -> arrayNode.add(item.toString()));

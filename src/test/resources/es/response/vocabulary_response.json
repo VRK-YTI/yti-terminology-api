@@ -62,6 +62,13 @@
                 "value" : "DRAFT",
                 "regex" : "(?s)^.*$"
               }
+            ],
+            "terminologyType" : [
+              {
+                "lang" : "",
+                "value" : "TERMINOLOGICAL_VOCABULARY",
+                "regex" : "^(OTHER_VOCABULARY|TERMINOLOGICAL_VOCABULARY)$"
+              }
             ]
           },
           "references" : {

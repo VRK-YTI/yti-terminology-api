@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.index;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fi.vm.yti.terminology.api.TermedRequester;
+import fi.vm.yti.terminology.api.migration.DomainIndex;
 import fi.vm.yti.terminology.api.util.JsonUtils;
 import fi.vm.yti.terminology.api.util.Parameters;
 import fi.vm.yti.terminology.api.model.termed.*;
@@ -20,8 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static fi.vm.yti.terminology.api.util.JsonUtils.asStream;
-import static fi.vm.yti.terminology.api.util.JsonUtils.findSingle;
+import static fi.vm.yti.terminology.api.util.JsonUtils.*;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -140,10 +140,16 @@ public class IndexTermedService {
         params.add("select", "properties.status");
         params.add("select", "references.prefLabelXl:2");
         params.add("select", "references.altLabelXl:2");
+        params.add("select", "references.searchTerm:2");
+        params.add("select", "references.notRecommendedSynonym:2");
+        params.add("select", "references.hiddenTerm:2");
         params.add("select", "references.broader");
         params.add("select", "referrers.broader");
         params.add("where", "graph.id:" + vocabulary.getGraphId());
         params.add("where", idInCollectionWhereClause(conceptIds));
+        params.add("graphTypeId", vocabulary.getGraphId().toString());
+        params.add("graphTypeId", DomainIndex.ORGANIZATION_DOMAIN.getGraphId().toString());
+        params.add("graphTypeId", DomainIndex.GROUP_DOMAIN.getGraphId().toString());
         params.add("max", "-1");
 
         return asStream(termedRequester.exchange("/node-trees", GET, params, JsonNode.class))
@@ -202,30 +208,18 @@ public class IndexTermedService {
 
         Parameters params = new Parameters();
         params.add("select", "*");
-/*
-        params.add("select", "id");
-        params.add("select", "type");
-        params.add("select", "properties.*");
-        params.add("select", "lastModifiedDate");
-        */
         params.add("where", "graph.id:" + graphId);
         params.add("where", "type.id:" + vocabularyType.name());
         params.add("max", "-1");
+        params.add("graphTypeId", graphId.toString());
+        params.add("graphTypeId", DomainIndex.ORGANIZATION_DOMAIN.getGraphId().toString());
+        params.add("graphTypeId", DomainIndex.GROUP_DOMAIN.getGraphId().toString());
 
         return findSingle(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
     }
     private @Nullable JsonNode getVocabularyNode(@NotNull UUID graphId, @NotNull VocabularyType vocabularyType) {
-
-        Parameters params = new Parameters();
-        params.add("select", "id");
-        params.add("select", "type");
-        params.add("select", "uri");
-        params.add("select", "properties.*");
-        params.add("where", "graph.id:" + graphId);
-        params.add("where", "type.id:" + vocabularyType.name());
-        params.add("max", "-1");
-
-        return findSingle(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
+        return findSingleOrNull(termedRequester.exchange(String.format("/graphs/%s/types/%s/nodes",
+                    graphId, vocabularyType), GET, new Parameters(), JsonNode.class));
     }
 
     private @NotNull AllNodesResult fetchAllNodesInGraph(UUID graphId) {

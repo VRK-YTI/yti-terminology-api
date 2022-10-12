@@ -38,26 +38,16 @@ public class DefaultAuthorizationTermedServiceTest {
 
     private UUID organizationId = UUID.fromString("9adc94fb-65ab-4fd1-a9ef-de126b26cbe6");
 
-    @BeforeEach
-    public void setUp() {
-        when(requester
-                .exchange(eq("/node-trees"),
-                        eq(HttpMethod.GET),
-                        any(Parameters.class),
-                        any(ParameterizedTypeReference.class)
-                )
-        ).thenReturn(getSampleNode());
-    }
-
     @Test
     public void cachedOrganizations() {
         UUID graphId = UUID.randomUUID();
+        mockTermedRequest(graphId);
 
         Set<UUID> ids = service.getOrganizationIds(graphId);
         service.getOrganizationIds(graphId);
 
         // expect only one requester interaction, because result is cached
-        verify(requester).exchange(eq("/node-trees"),
+        verify(requester).exchange(eq(getPath(graphId)),
                 eq(HttpMethod.GET),
                 any(Parameters.class),
                 any(ParameterizedTypeReference.class));
@@ -67,6 +57,7 @@ public class DefaultAuthorizationTermedServiceTest {
     @Test
     public void cachedOrganizationsExpired() throws Exception {
         UUID graphId = UUID.randomUUID();
+        mockTermedRequest(graphId);
 
         Set<UUID> ids = service.getOrganizationIds(graphId);
 
@@ -76,7 +67,7 @@ public class DefaultAuthorizationTermedServiceTest {
         service.getOrganizationIds(graphId);
 
         // expect two requester interactions, because cache has been expired
-        verify(requester, times(2)).exchange(eq("/node-trees"),
+        verify(requester, times(2)).exchange(eq(getPath(graphId)),
                 eq(HttpMethod.GET),
                 any(Parameters.class),
                 any(ParameterizedTypeReference.class));
@@ -112,5 +103,19 @@ public class DefaultAuthorizationTermedServiceTest {
         );
 
         return Arrays.asList(node);
+    }
+
+    private void mockTermedRequest(UUID graphId) {
+        when(requester
+                .exchange(eq(getPath(graphId)),
+                        eq(HttpMethod.GET),
+                        any(Parameters.class),
+                        any(ParameterizedTypeReference.class)
+                )
+        ).thenReturn(getSampleNode());
+    }
+
+    private String getPath(UUID graphId) {
+        return String.format("/graphs/%s/types/%s/nodes", graphId, NodeType.TerminologicalVocabulary);
     }
 }

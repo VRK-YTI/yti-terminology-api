@@ -63,6 +63,7 @@ public class TerminologyQueryFactory {
                 request.getGroups(),
                 request.getTypes(),
                 request.getOrganizations(),
+                request.getLanguage(),
                 additionalTerminologyIds,
                 pageSize(request),
                 pageFrom(request),
@@ -76,6 +77,7 @@ public class TerminologyQueryFactory {
                                       String[] groupIds,
                                       String[] types,
                                       String[] organizationIds,
+                                      String language,
                                       Collection<String> additionalTerminologyIds,
                                       int pageSize,
                                       int pageFrom,
@@ -97,8 +99,8 @@ public class TerminologyQueryFactory {
             var labelQuery = ElasticRequestUtils
                     .buildPrefixSuffixQuery(query)
                     .fields(Map.of(
-                            "properties.prefLabel.value", 1.0f,
-                            "references.contributor.properties.prefLabel.value", 2.0f));
+                            "properties.prefLabel.value", 5.0f,
+                            "references.contributor.properties.prefLabel.value", 1.0f));
             mustQueries.add(labelQuery);
         }
 
@@ -120,7 +122,7 @@ public class TerminologyQueryFactory {
 
         if (groupIds != null && groupIds.length > 0)  {
             try {
-                Arrays.stream(groupIds).forEach(x -> UUID.fromString(x));
+                Arrays.stream(groupIds).forEach(UUID::fromString);
             } catch (IllegalArgumentException exception){
                 log.error("One or more group IDs were invalid");
                 throw new InvalidQueryException("One or more group IDs were invalid");
@@ -132,7 +134,7 @@ public class TerminologyQueryFactory {
 
         if (organizationIds != null && organizationIds.length > 0)  {
             try {
-                Arrays.stream(organizationIds).forEach(x -> UUID.fromString(x));
+                Arrays.stream(organizationIds).forEach(UUID::fromString);
             } catch (IllegalArgumentException exception){
                 log.error("One or more organization IDs were invalid");
                 throw new InvalidQueryException("One or organization IDs were invalid");
@@ -156,6 +158,11 @@ public class TerminologyQueryFactory {
             // filtering by additionalTerminologyIds
             typeQuery = QueryBuilders.termsQuery("terminologyType", types);
             mustQueries.add(typeQuery);
+        }
+
+        if (language != null ) {
+            mustQueries.add(QueryBuilders.termsQuery(
+                    "properties.language.value", language));
         }
 
         // if the search was also done to concepts, we may have
@@ -204,14 +211,18 @@ public class TerminologyQueryFactory {
 
         String sortLanguage = prefLang != null ? prefLang : "fi";
         sourceBuilder
-                .query(shouldQuery != null ? shouldQuery : mustQuery)
-                .sort(SortBuilders
-                        .fieldSort("sortByLabel." + sortLanguage)
-                        .order(SortOrder.ASC));
+                .query(shouldQuery != null ? shouldQuery : mustQuery);
+
+        if (query.isEmpty()) {
+            sourceBuilder.sort(SortBuilders
+                    .fieldSort("sortByLabel." + sortLanguage)
+                    .order(SortOrder.ASC)
+                    .unmappedType("keyword"));
+        }
 
         SearchRequest sr = new SearchRequest("vocabularies")
             .source(sourceBuilder);
-        log.debug("Terminology Query request: " + sr.toString());
+        log.debug("Terminology Query request: {}", sr.toString());
         return sr;
     }
 
@@ -242,6 +253,17 @@ public class TerminologyQueryFactory {
         //.fetchSource(false));
         //log.debug("createMatchingTerminologiesQuery Query request: " + sr.toString());
         return sr;
+    }
+
+    public SearchRequest createFindTerminologyByIdQuery(UUID terminologyId) {
+        QueryBuilder query = QueryBuilders.boolQuery()
+                .must(QueryBuilders.matchQuery("type.graph.id", terminologyId.toString()));
+
+        return new SearchRequest("vocabularies")
+                .source(new SearchSourceBuilder()
+                        .size(1)
+                        .query(query)
+                );
     }
 
     public Set<String> parseMatchingTerminologiesResponse(SearchResponse response) {
@@ -277,6 +299,8 @@ public class TerminologyQueryFactory {
                 JsonNode properties = terminology.get("properties");
                 JsonNode statusArray = properties.get("status");
                 String terminologyStatus = statusArray != null ? (statusArray.has(0) ? statusArray.get(0).get("value").textValue() : "DRAFT") : "DRAFT";
+                JsonNode terminologyTypeArray = properties.get("terminologyType");
+                String terminologyType = terminologyTypeArray != null ? (terminologyTypeArray.has(0) ? terminologyTypeArray.get(0).get("value").textValue() : "TERMINOLOGICAL_VOCABULARY") : "TERMINOLOGICAL_VOCABULARY";
                 Map<String, String> labelMap = ElasticRequestUtils.labelFromLangValueArray(properties.get("prefLabel"));
                 Map<String, String> descriptionMap = ElasticRequestUtils.labelFromLangValueArray(properties.get("description"));
 
@@ -302,7 +326,7 @@ public class TerminologyQueryFactory {
                     }
                 }
 
-                terminologies.add(new TerminologyDTO(terminologyId, terminologyCode, terminologyUri, terminologyStatus, labelMap, descriptionMap, domains, contributors));
+                terminologies.add(new TerminologyDTO(terminologyId, terminologyCode, terminologyUri, terminologyStatus, terminologyType, labelMap, descriptionMap, domains, contributors));
 
             }
         } catch (Exception e) {

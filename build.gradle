@@ -68,8 +68,8 @@ dependencies {
 
     implementation 'org.springdoc:springdoc-openapi-ui:1.5.9'
 
-    implementation 'fi.vm.yti:yti-spring-security:0.1.17'
-    implementation 'fi.vm.yti:yti-spring-migration:0.1.4'
+    implementation 'fi.vm.yti:yti-spring-security:0.2.0'
+    implementation 'fi.vm.yti:yti-spring-migration:0.2.0'
 
     implementation 'org.apache.activemq:activemq-broker'
     implementation 'org.elasticsearch:elasticsearch:6.8.22'

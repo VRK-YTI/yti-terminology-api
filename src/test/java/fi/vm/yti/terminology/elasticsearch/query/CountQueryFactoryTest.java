@@ -79,6 +79,7 @@ public class CountQueryFactoryTest {
         Map<String, Long> groups = countSearchResponse.getCounts().getGroups();
         Map<String, Long> statuses = countSearchResponse.getCounts().getStatuses();
         Map<String, Long> categories = countSearchResponse.getCounts().getCategories();
+        Map<String, Long> languages = countSearchResponse.getCounts().getLanguages();
 
         assertEquals(2, groups.keySet().size());
         assertEquals(groups.get("6f505105-5cc8-3293-aff6-64a58114bbe8"), 1L);
@@ -93,5 +94,8 @@ public class CountQueryFactoryTest {
         assertEquals(0, categories.get("OtherVocabulary"));
         assertEquals(0, categories.get("Collection"));
 
+        assertEquals(13, languages.get("fi"));
+        assertEquals(10, languages.get("sv"));
+        assertEquals(8, languages.get("en"));
     }
 }

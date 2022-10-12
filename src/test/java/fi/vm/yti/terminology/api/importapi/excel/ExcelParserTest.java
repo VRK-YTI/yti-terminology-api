@@ -173,7 +173,7 @@ public class ExcelParserTest {
         var node = nodes.get(0);
 
         assertEquals("Testivalikoima", getPropertyValue(node, "prefLabel"));
-        assertEquals("Testivalikoiman kuvaus", getPropertyValue(node, "description"));
+        assertEquals("Testivalikoiman kuvaus", getPropertyValue(node, "definition"));
 
         assertEquals(2, node.getReferences().get("member").size());
 
