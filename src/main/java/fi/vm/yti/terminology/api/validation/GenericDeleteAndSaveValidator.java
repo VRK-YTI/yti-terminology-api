@@ -82,7 +82,6 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 }
             }else{
                 checkHomographNumber(properties, context);
-                checkTermStyle(properties, context);
                 checkTermFamily(properties, context);
                 checkTermEquivalency(properties, context);
                 checkTermWordClass(properties, context);
@@ -110,7 +109,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 textFieldProperties = List.of("subjectArea", "conceptClass");
                 textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
             }else if(nodeType.equals(NodeType.Term)){
-                textFieldProperties = List.of("prefLabel");
+                textFieldProperties = List.of("prefLabel", "termStyle");
                 textAreaProperties = List.of("termInfo", "changeNote", "scope", "source", "historyNote", "editorialNote");
             }else if(nodeType.equals(NodeType.Collection)){
                 textFieldProperties = List.of("prefLabel");
@@ -230,20 +229,6 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             && properties.get(termHomographNumber).stream()
                 .anyMatch(number -> !number.getValue().matches("(\\d)*"))){
             addConstraintViolation(context, INVALID_VALUE, termHomographNumber);
-        }
-    }
-
-    /**
-     * Check term style empty or one of specified
-     * @param properties Properties
-     * @param context Constraint validator context
-     */
-    private void checkTermStyle(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
-        final var termStyle = "termStyle";
-        if(properties.containsKey(termStyle) && !properties.get(termStyle).isEmpty()
-                && properties.get(termStyle).stream()
-                .anyMatch(style -> !style.getValue().isEmpty() && !style.getValue().equals("spoken-form"))){
-            addConstraintViolation(context, INVALID_VALUE, termStyle);
         }
     }
 

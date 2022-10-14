@@ -284,12 +284,6 @@ public class FrontEndControllerInternalNodeTests {
         var genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
-        //Term style
-        properties = constructTermProperties();
-        properties.replace("termStyle", List.of(new Attribute("en", "not a term style")));
-        genericNode = constructNodeWithType(NodeType.Term, properties, constructTermReferences());
-        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
-
         //Term family
         properties = constructTermProperties();
         properties.replace("termFamily", List.of(new Attribute("en", "not a term family")));
