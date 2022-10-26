@@ -610,7 +610,7 @@ class FrontendTermedServiceTest {
     }
 
     private String getUri(String prefix, String code) {
-        return "http://uri.suomi.fi/terminology/" + prefix + "/" + code + "/";
+        return "http://uri.suomi.fi/terminology/" + prefix + "/" + code;
     }
 
     private String getUri(String prefix, GenericNode node) {

@@ -534,7 +534,7 @@ public class FrontendTermedService {
         List<GenericNode> nodes = dump.getNodes().stream().map(n -> new GenericNode(
                 nodeIdMap.get(n.getId()),
                 n.getCode(),
-                String.format("%s%s/",
+                String.format("%s%s",
                         formatNamespace(createVersionDTO.getNewCode()), n.getCode()),
                 n.getNumber(),
                 n.getCreatedBy(),
