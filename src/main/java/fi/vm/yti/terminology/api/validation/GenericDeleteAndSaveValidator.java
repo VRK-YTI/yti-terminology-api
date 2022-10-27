@@ -291,6 +291,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 && properties.get(wordClass).stream()
                 .anyMatch(d -> !d.getValue().isEmpty()
                         && !d.getValue().equals("adjective")
+                        && !d.getValue().equals("verb")
         )){
             addConstraintViolation(context, INVALID_VALUE, wordClass);
         }
