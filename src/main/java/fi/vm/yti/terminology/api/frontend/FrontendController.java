@@ -120,7 +120,9 @@ public class FrontendController {
     @RequestMapping(path = "/authenticated-user", method = GET, produces = APPLICATION_JSON_VALUE)
     YtiUser getUser(@RequestHeader("Cookie") String cookie) {
         logger.info("GET /authenticated-user requested {}", cookie);
-        return userProvider.getUser();
+        YtiUser user = userProvider.getUser();
+        logger.info("got user {}", user);
+        return user;
     }
 
     @Operation(summary = "Get list of authorization requests for the current user", description = "Get the currently authenticated user's pending requests for roles for organizations")
