@@ -13,14 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,8 +118,8 @@ public class FrontendController {
     @Operation(summary = "Get the currently authenticated use, i.e., the caller")
     @ApiResponse(responseCode = "200", description = "User object for the caller")
     @RequestMapping(path = "/authenticated-user", method = GET, produces = APPLICATION_JSON_VALUE)
-    YtiUser getUser() {
-        logger.info("GET /authenticated-user requested");
+    YtiUser getUser(@RequestHeader("Cookie") String cookie) {
+        logger.info("GET /authenticated-user requested {}", cookie);
         return userProvider.getUser();
     }
 
