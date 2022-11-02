@@ -122,7 +122,8 @@ public class FrontendController {
     @RequestMapping(path = "/authenticated-user", method = GET, produces = APPLICATION_JSON_VALUE)
     YtiUser getUser(HttpServletRequest request, @RequestHeader("Cookie") String cookie) {
         HttpSession session = request.getSession(false);
-        logger.info("GET /authenticated-user requested {}, session id {}", cookie, session != null ? session.getId() : "-");
+        logger.info("GET /authenticated-user requested {}, session id {}, valid: {}",
+                cookie, session != null ? session.getId() : "-", request.isRequestedSessionIdValid());
         YtiUser user = userProvider.getUser();
         logger.info("got user {}", user);
         return user;
