@@ -92,6 +92,6 @@ public class Application {
                 .flatMap(Arrays::stream)
                 .distinct()
                 .filter(prop -> !(prop.contains("secret") || prop.contains("api.pw")))
-                .forEach(prop -> logger.info(prop + ": " + env.getProperty(prop)));
+                .forEach(prop -> logger.info("PROPERTY {}: {}", prop, env.getProperty(prop)));
     }
 }

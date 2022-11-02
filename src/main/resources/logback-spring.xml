@@ -2,7 +2,8 @@
 <configuration>
     <springProfile name="dev,test,prod">
         <logger name="org.apache" level="WARN"/>
-        <logger name="org.springframework" level="DEBUG"/>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
         <logger name="fi.vm" level="INFO"/>
         <logger name="fi.vm.yti.security" level="DEBUG"/>
         <property name="SERVICE_NAME" value="yti-terminology-api"/>
