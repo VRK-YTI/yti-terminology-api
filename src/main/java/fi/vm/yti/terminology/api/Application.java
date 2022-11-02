@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.stream.StreamSupport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -53,6 +55,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @EnableJms
 public class Application {
 
+    private static Logger logger = LoggerFactory.getLogger(Application.class);
+
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
@@ -87,7 +91,7 @@ public class Application {
                 .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames())
                 .flatMap(Arrays::stream)
                 .distinct()
-                .filter(prop -> !(prop.contains("credentials") || prop.contains("password")))
-                .forEach(prop -> System.out.println(prop + ": " + env.getProperty(prop)));
+                .filter(prop -> !(prop.contains("secret") || prop.contains("api.pw")))
+                .forEach(prop -> logger.info(prop + ": " + env.getProperty(prop)));
     }
 }
