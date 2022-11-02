@@ -31,6 +31,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
@@ -118,8 +120,9 @@ public class FrontendController {
     @Operation(summary = "Get the currently authenticated use, i.e., the caller")
     @ApiResponse(responseCode = "200", description = "User object for the caller")
     @RequestMapping(path = "/authenticated-user", method = GET, produces = APPLICATION_JSON_VALUE)
-    YtiUser getUser(@RequestHeader("Cookie") String cookie) {
-        logger.info("GET /authenticated-user requested {}", cookie);
+    YtiUser getUser(HttpServletRequest request, @RequestHeader("Cookie") String cookie) {
+        HttpSession session = request.getSession(false);
+        logger.info("GET /authenticated-user requested {}, session id {}", cookie, session != null ? session.getId() : "-");
         YtiUser user = userProvider.getUser();
         logger.info("got user {}", user);
         return user;
