@@ -65,6 +65,19 @@ public class SimpleExcelParser {
         for (var i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
 
+            //Check that there is at least one value in the row
+            Iterator<Cell> iterator = row.cellIterator();
+            var allEmpty = true;
+            while(iterator.hasNext()){
+                if(cellHasText(iterator.next())){
+                   allEmpty = false;
+                   break;
+                }
+            }
+            if(allEmpty){
+                continue;
+            }
+
             //There has to be data at least on 1 prefLabel column
             if(headers.entrySet().stream()
                     .filter(entry -> entry.getKey().contains("prefLabel"))
@@ -229,14 +242,17 @@ public class SimpleExcelParser {
         }
         HashMap<String, Integer> columnMap = new HashMap<>();
         row.forEach(cell -> {
-            String[] separatedValue = cell.getStringCellValue().split(HEADER_SEPARATOR);
+            String value = cell.getStringCellValue()
+                    .replace("\u00a0", "")
+                    .trim();
+            String[] separatedValue = value.split(HEADER_SEPARATOR);
             if (separatedValue.length > 1 && languages.stream().noneMatch(language -> language.equals(separatedValue[1]))) {
                 throw new ExcelParseException("terminology-no-language", row, cell.getColumnIndex());
             }
             if(columnMap.containsKey(cell.getStringCellValue())){
                 throw new ExcelParseException("duplicate-key-value", row, cell.getColumnIndex());
             }
-            columnMap.put(cell.getStringCellValue(), cell.getColumnIndex());
+            columnMap.put(value, cell.getColumnIndex());
         });
         return columnMap;
     }
@@ -247,7 +263,7 @@ public class SimpleExcelParser {
      * @return true if cell has text
      */
     private boolean cellHasText(Cell cell) {
-        return cell != null && cell.getCellType() != CellType.BLANK;
+        return cell != null && cell.getCellType() != CellType.BLANK && !cell.getStringCellValue().replace("\u00a0", "").trim().equals("");
     }
 
     /**
