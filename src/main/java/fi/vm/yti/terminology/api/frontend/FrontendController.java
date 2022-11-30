@@ -511,6 +511,8 @@ public class FrontendController {
         }
     }
 
+    @Operation(summary = "Get status counts", description = "Return status counts for concepts and terms of a terminology")
+    @ApiResponse(responseCode = "200", description = "JSON list of status counts of concepts and terms")
     @RequestMapping(value = "/statusCounts", method = GET, produces = APPLICATION_JSON_VALUE)
     StatusCountSearchResponse getStatusCounts(@RequestParam UUID graphId) {
         logger.info("GET /statusCounts requested");
