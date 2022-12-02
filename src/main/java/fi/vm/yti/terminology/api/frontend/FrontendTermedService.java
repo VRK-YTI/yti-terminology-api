@@ -252,7 +252,6 @@ public class FrontendTermedService {
         if (result.size() == 0) {
             throw new NodeNotFoundException(graphId, conceptId);
         } else {
-            System.out.println("GetConcept " + result.get(0).getProperties().get("status").stream().iterator().next().getValue());
             return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
                     authorizationManager.isUserPartOfOrganization(graphId));
         }
