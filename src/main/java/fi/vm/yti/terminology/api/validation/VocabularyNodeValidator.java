@@ -181,7 +181,7 @@ public class VocabularyNodeValidator extends BaseValidator implements
         //Check length, since description is optional we only check when it exists
         if(properties.containsKey(description) && !properties.get(description).isEmpty()
                 && properties.get(description).stream()
-                .anyMatch(d -> d.getValue().length() > TEXT_AREA_MAX_LENGTH)){
+                .anyMatch(d -> d.getValue().length() > DEFINITION_MAX_LENGTH)){
             addConstraintViolation(context, INVALID_VALUE, description);
         }
     }

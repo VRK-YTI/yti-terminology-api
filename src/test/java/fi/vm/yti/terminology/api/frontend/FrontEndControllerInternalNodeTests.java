@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -22,10 +21,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_AREA_MAX_LENGTH;
-import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_FIELD_MAX_LENGTH;
+import static fi.vm.yti.terminology.api.validation.ValidationConstants.*;
 import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -240,6 +237,7 @@ public class FrontEndControllerInternalNodeTests {
 
         final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
         final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
+        final var definitionMaxPlus = DEFINITION_MAX_LENGTH + 20;
 
         var properties = constructTermProperties();
         properties.replace("prefLabel", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
@@ -264,13 +262,19 @@ public class FrontEndControllerInternalNodeTests {
         genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
-        textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
+        textAreaProperties = List.of("changeNote", "example", "historyNote", "note", "source");
         for(String property : textAreaProperties){
             properties = constructConceptProperties();
             properties.replace(property, List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
             genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
             args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
         }
+
+        //definition testing is separate due to different length
+        properties = constructConceptProperties();;
+        properties.replace("definition", List.of(new Attribute("en", RandomStringUtils.random(definitionMaxPlus))));
+        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
+        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
         return args.stream().map(Arguments::of);
     }
