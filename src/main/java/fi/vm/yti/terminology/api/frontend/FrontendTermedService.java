@@ -13,6 +13,8 @@ import fi.vm.yti.terminology.api.exception.NodeNotFoundException;
 import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
 import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionDTO;
 import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionResponse;
+import fi.vm.yti.terminology.api.frontend.searchdto.StatusCountDTO;
+import fi.vm.yti.terminology.api.frontend.searchdto.StatusCountSearchResponse;
 import fi.vm.yti.terminology.api.migration.DomainIndex;
 import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.security.AuthorizationManager;
@@ -785,4 +787,74 @@ public class FrontendTermedService {
         }
     }
 
+    @NotNull
+    StatusCountSearchResponse getConceptTermsCount(UUID graphId) {
+        StatusCountSearchResponse response = new StatusCountSearchResponse();
+
+        Parameters params = new Parameters();
+        params.add("select", "id");
+        params.add("select", "properties.status");
+        params.add("select", "references.prefLabelXl");
+        params.add("select", "references.altLabelXl");
+        params.add("select", "references.notRecommendedSynonym");
+        params.add("select", "references.searchTerm");
+        params.add("where", "graph.id:" + graphId);
+        params.add("where", "type.id:Concept");
+        params.add("max", "-1");
+        addGraphTypeIds(graphId, params);
+
+        List<GenericNodeInlined> result = requireNonNull(termedRequester.exchange("/node-trees", GET, params,
+                new ParameterizedTypeReference<List<GenericNodeInlined>>() {
+                }));
+
+        if (result.size() == 0) {
+            throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
+        } else {
+            Map<String, Long> conceptStatuses = Stream.of(new Object[][] {
+                    {"DRAFT", 0L},
+                    {"RETIRED", 0L},
+                    {"SUPERSEDED", 0L},
+                    {"VALID", 0L}
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));
+            Map<String, Long> termStatuses = Stream.of(new Object[][] {
+                    {"DRAFT", 0L},
+                    {"RETIRED", 0L},
+                    {"SUPERSEDED", 0L},
+                    {"VALID", 0L}
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));;
+
+            result.forEach(r -> {
+                String conceptStatus = r.getProperties().get("status").get(0).getValue();
+                if (conceptStatuses.containsKey(conceptStatus)) {
+                    conceptStatuses.replace(conceptStatus, conceptStatuses.get(conceptStatus) + 1L);
+                }
+
+                List<GenericNodeInlined> terms = new ArrayList<>();
+
+                if (r.getReferences().containsKey("prefLabelXl")) {
+                    terms.addAll(r.getReferences().get("prefLabelXl"));
+                }
+                if (r.getReferences().containsKey("altLabelXl")) {
+                    terms.addAll(r.getReferences().get("altLabelXl"));
+                }
+                if (r.getReferences().containsKey("notRecommendedSynonym")) {
+                    terms.addAll(r.getReferences().get("notRecommendedSynonym"));
+                }
+                if (r.getReferences().containsKey("searchTerm")) {
+                    terms.addAll(r.getReferences().get("notRecommendedSynonym"));
+                }
+
+                terms.forEach(label -> {
+                    String status = label.getProperties().get("status").get(0).getValue();
+                    if (termStatuses.containsKey(status)) {
+                        termStatuses.replace(status, termStatuses.get(status) + 1L);
+                    }
+                });
+            });
+
+            response.setCounts(new StatusCountDTO(conceptStatuses, termStatuses));
+        }
+
+        return response;
+    }
 }

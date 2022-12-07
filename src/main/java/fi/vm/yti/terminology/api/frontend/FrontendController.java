@@ -510,4 +510,19 @@ public class FrontendController {
             throw new RuntimeException(e);
         }
     }
+
+    @Operation(summary = "Get status counts", description = "Return status counts for concepts and terms of a terminology")
+    @ApiResponse(responseCode = "200", description = "JSON list of status counts of concepts and terms")
+    @RequestMapping(value = "/statusCounts", method = GET, produces = APPLICATION_JSON_VALUE)
+    StatusCountSearchResponse getStatusCounts(@RequestParam UUID graphId) {
+        logger.info("GET /statusCounts requested");
+
+        try {
+            return termedService.getConceptTermsCount(graphId);
+        } catch (Exception e) {
+            logger.error("Unhandled error occurred while getting terminology({}) status counts", graphId, e);
+            throw new RuntimeException(e);
+        }
+    }
+
 }
