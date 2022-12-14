@@ -35,12 +35,24 @@ public class ExcelParser {
     public static final String SHEET_COLLECTIONS = "Collections";
     public static final String SHEET_CONCEPT_LINKS = "Concept links";
 
-    public XSSFWorkbook getWorkbook(InputStream is) throws IOException {
+    private static final String ERROR_MISSING_VALUE = "Missing value";
+
+    public XSSFWorkbook getWorkbook(InputStream is) {
         try {
             return new XSSFWorkbook(is);
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
-            throw e;
+            throw new ExcelParseException("error-file-read");
+        }
+    }
+
+    /**
+     * Check if user is using correct Excel file
+     * @param workbook Workbook
+     */
+    public void checkWorkbook(XSSFWorkbook workbook){
+        if(workbook.getNumberOfSheets() != 5){
+            throw new ExcelParseException("incorrect-sheet-count");
         }
     }
 
@@ -54,7 +66,7 @@ public class ExcelParser {
         XSSFCell languageCell = row.getCell(columnMap.get(Fields.LANGUAGE));
 
         if (isEmptyCell(languageCell)) {
-            throw new ExcelParseException("Missing value", row, Fields.LANGUAGE);
+            throw new ExcelParseException(ERROR_MISSING_VALUE, row, Fields.LANGUAGE);
         }
 
         var languages = getSplittedCellValues(row, columnMap.get(Fields.LANGUAGE));
@@ -264,7 +276,7 @@ public class ExcelParser {
     }
 
     public Map<UUID, Set<ConceptLinkImportDTO>> buildConceptLinkNodes(XSSFWorkbook workbook, String namespace, UUID terminologyId, List<String> languages) {
-        var sheet = workbook.getSheet(SHEET_CONCEPT_LINKS);
+        var sheet = getSheet(workbook, SHEET_CONCEPT_LINKS);
         var columnMap = mapColumnNames(getRow(sheet, 0, false));
 
         if (columnMap.isEmpty()) {
@@ -419,7 +431,7 @@ public class ExcelParser {
         Cell uuidCell = row.getCell(uuidColumn);
         try {
             if (isEmptyCell(uuidCell) && !createNew) {
-                throw new ExcelParseException("Missing value", row, uuidColumn);
+                throw new ExcelParseException(ERROR_MISSING_VALUE, row, uuidColumn);
             } else if (isEmptyCell(uuidCell) && createNew) {
                 return UUID.randomUUID();
             } else {
@@ -456,13 +468,12 @@ public class ExcelParser {
 
             if (columnIndex != null) {
                 getMergedCellValues(row, columnIndex)
-                    .stream()
                     .forEach(value -> attributes.add(new Attribute(lang, value)));
             }
         });
 
-        if (isMandatory && attributes.size() == 0) {
-            throw new ExcelParseException("Missing value", row, columnName);
+        if (isMandatory && attributes.isEmpty()) {
+            throw new ExcelParseException(ERROR_MISSING_VALUE, row, columnName);
         }
         return attributes;
     }
@@ -510,7 +521,7 @@ public class ExcelParser {
 
         if (columnIndex == null) {
             if (isMandatory) {
-                throw new ExcelParseException("Missing value", row);
+                throw new ExcelParseException(ERROR_MISSING_VALUE, row);
             } else {
                 return emptyList();
             }
@@ -530,8 +541,8 @@ public class ExcelParser {
                 values.add(cell.getStringCellValue());
             }
         }
-        if (isMandatory && values.size() == 0) {
-            throw new ExcelParseException("Missing value", row, columnIndex);
+        if (isMandatory && values.isEmpty()) {
+            throw new ExcelParseException(ERROR_MISSING_VALUE, row, columnIndex);
         }
         return values;
     }
@@ -558,7 +569,7 @@ public class ExcelParser {
         Cell cell = row.getCell(columnIndex);
 
         if (isEmptyCell(cell)) {
-            throw new ExcelParseException("Missing value", row, columnIndex);
+            throw new ExcelParseException(ERROR_MISSING_VALUE, row, columnIndex);
         }
 
         return Arrays.stream(cell.getStringCellValue().split(SEPARATOR))
@@ -581,9 +592,7 @@ public class ExcelParser {
             return emptyMap();
         }
         Map<String, Integer> columnMap = new HashMap<>();
-        Iterator<Cell> iterator = row.iterator();
-        while(iterator.hasNext()) {
-            Cell cell = iterator.next();
+        for (Cell cell : row) {
             columnMap.put(cell.getStringCellValue(), cell.getColumnIndex());
         }
         return columnMap;
@@ -613,7 +622,7 @@ public class ExcelParser {
         Cell cell = row.getCell(columnMap.get(fieldName));
 
         if (isEmptyCell(cell) && isMandatory) {
-            throw new ExcelParseException("Missing value", row, fieldName);
+            throw new ExcelParseException(ERROR_MISSING_VALUE, row, fieldName);
         } else if (isEmptyCell(cell) && !isMandatory) {
             return null;
         } else {
