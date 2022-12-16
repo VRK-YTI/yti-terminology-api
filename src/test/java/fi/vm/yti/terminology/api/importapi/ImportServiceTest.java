@@ -161,6 +161,20 @@ public class ImportServiceTest {
     }
 
     @Test
+    void checkWrongFile(){
+        mockCommon();
+        final InputStream is_simple = this.getClass().getResourceAsStream("/importapi/excel/simple_import_missing_lang.xlsx");
+
+        ExcelParseException exception = assertThrows(ExcelParseException.class, () -> importService.handleExcelImport(is_simple));
+        assertTrue(exception.getMessage().contains("incorrect-sheet-count"));
+
+        final InputStream is = this.getClass().getResourceAsStream("/importapi/excel/excel_export.xlsx");
+
+        exception = assertThrows(ExcelParseException.class, () -> importService.handleSimpleExcelImport(UUID.fromString(TEMPLATE_GRAPH_ID), is));
+        assertTrue(exception.getMessage().contains("incorrect-sheet-count"));
+    }
+
+    @Test
     public void handleImportSimpleExcel() throws IOException {
         mockCommon();
         InputStream is = this.getClass().getResourceAsStream("/importapi/excel/simple_import.xlsx");

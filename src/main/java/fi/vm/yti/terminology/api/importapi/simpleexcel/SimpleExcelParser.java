@@ -36,12 +36,22 @@ public class SimpleExcelParser {
     private static final String[] TERM_TYPES = new String[]{"prefLabel", "altLabel", "searchTerm", "hiddenTerm", "notRecommendedSynonym"};
 
 
-    public XSSFWorkbook getWorkbook(InputStream is) throws IOException {
+    public XSSFWorkbook getWorkbook(InputStream is) {
         try {
             return new XSSFWorkbook(is);
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
-            throw e;
+            throw new ExcelParseException("error-file-read");
+        }
+    }
+
+    /**
+     * Check if user is using correct Excel file
+     * @param workbook Workbook
+     */
+    public void checkWorkbook(XSSFWorkbook workbook){
+        if(workbook.getNumberOfSheets() != 1){
+            throw new ExcelParseException("incorrect-sheet-count");
         }
     }
 
@@ -64,17 +74,7 @@ public class SimpleExcelParser {
 
         for (var i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-
-            //Check that there is at least one value in the row
-            Iterator<Cell> iterator = row.cellIterator();
-            var allEmpty = true;
-            while(iterator.hasNext()){
-                if(cellHasText(iterator.next())){
-                   allEmpty = false;
-                   break;
-                }
-            }
-            if(allEmpty){
+            if(isRowEmpty(row)){
                 continue;
             }
 
@@ -121,6 +121,21 @@ public class SimpleExcelParser {
     }
 
     /**
+     * Check that atleast one value has been set in the row
+     * @param row Row
+     * @return true if row is empty
+     */
+    private boolean isRowEmpty(Row row){
+        Iterator<Cell> iterator = row.cellIterator();
+        while(iterator.hasNext()){
+            if(cellHasText(iterator.next())){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Add property to concept
      *
      * @param row     Row to get data from
@@ -151,24 +166,31 @@ public class SimpleExcelParser {
                         //lines() can output empty lines but not null lines
                             .filter(line -> !line.trim().isEmpty())
                             //Add all lines as a new attribute
-                            .forEach(value -> {
-                                if (isPropertyValid(propertyName, value)) {
-                                    attributes.add(new Attribute(lang, value));
-                                } else {
-                                    throw new ExcelParseException("value-not-valid", row, entry.getValue());
-                                }
-                            });
+                            .forEach(value -> addAttribute(attributes, propertyName, value, lang, row, entry.getValue()));
                     } else {
                         //Add the whole string as attribute
-                        if (isPropertyValid(propertyName, cellValue)) {
-                            attributes.add(new Attribute(lang, cellValue));
-                        } else {
-                            throw new ExcelParseException("value-not-valid", row, entry.getValue());
-                        }
+                        addAttribute(attributes, propertyName, cellValue, lang, row, entry.getValue());
                     }
                     properties.put(propertyName, attributes);
                 });
         return properties;
+    }
+
+    /**
+     * Add Attribute to list
+     * @param attributes Attribute list
+     * @param propertyName Property name
+     * @param value Value
+     * @param lang Language
+     * @param row Row
+     * @param column column
+     */
+    private void addAttribute(List<Attribute> attributes, String propertyName, String value, String lang, Row row, int column){
+        if (isPropertyValid(propertyName, value)) {
+            attributes.add(new Attribute(lang, value));
+        } else {
+            throw new ExcelParseException("value-not-valid", row, column);
+        }
     }
 
     /**
