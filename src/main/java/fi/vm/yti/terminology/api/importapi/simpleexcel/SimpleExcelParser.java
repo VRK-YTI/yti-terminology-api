@@ -36,12 +36,22 @@ public class SimpleExcelParser {
     private static final String[] TERM_TYPES = new String[]{"prefLabel", "altLabel", "searchTerm", "hiddenTerm", "notRecommendedSynonym"};
 
 
-    public XSSFWorkbook getWorkbook(InputStream is) throws IOException {
+    public XSSFWorkbook getWorkbook(InputStream is) {
         try {
             return new XSSFWorkbook(is);
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
-            throw e;
+            throw new ExcelParseException("error-file-read");
+        }
+    }
+
+    /**
+     * Check if user is using correct Excel file
+     * @param workbook Workbook
+     */
+    public void checkWorkbook(XSSFWorkbook workbook){
+        if(workbook.getNumberOfSheets() != 1){
+            throw new ExcelParseException("incorrect-sheet-count");
         }
     }
 
@@ -64,6 +74,9 @@ public class SimpleExcelParser {
 
         for (var i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
+            if(isRowEmpty(row)){
+                continue;
+            }
 
             //There has to be data at least on 1 prefLabel column
             if(headers.entrySet().stream()
@@ -108,6 +121,21 @@ public class SimpleExcelParser {
     }
 
     /**
+     * Check that atleast one value has been set in the row
+     * @param row Row
+     * @return true if row is empty
+     */
+    private boolean isRowEmpty(Row row){
+        Iterator<Cell> iterator = row.cellIterator();
+        while(iterator.hasNext()){
+            if(cellHasText(iterator.next())){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Add property to concept
      *
      * @param row     Row to get data from
@@ -138,24 +166,31 @@ public class SimpleExcelParser {
                         //lines() can output empty lines but not null lines
                             .filter(line -> !line.trim().isEmpty())
                             //Add all lines as a new attribute
-                            .forEach(value -> {
-                                if (isPropertyValid(propertyName, value)) {
-                                    attributes.add(new Attribute(lang, value));
-                                } else {
-                                    throw new ExcelParseException("value-not-valid", row, entry.getValue());
-                                }
-                            });
+                            .forEach(value -> addAttribute(attributes, propertyName, value, lang, row, entry.getValue()));
                     } else {
                         //Add the whole string as attribute
-                        if (isPropertyValid(propertyName, cellValue)) {
-                            attributes.add(new Attribute(lang, cellValue));
-                        } else {
-                            throw new ExcelParseException("value-not-valid", row, entry.getValue());
-                        }
+                        addAttribute(attributes, propertyName, cellValue, lang, row, entry.getValue());
                     }
                     properties.put(propertyName, attributes);
                 });
         return properties;
+    }
+
+    /**
+     * Add Attribute to list
+     * @param attributes Attribute list
+     * @param propertyName Property name
+     * @param value Value
+     * @param lang Language
+     * @param row Row
+     * @param column column
+     */
+    private void addAttribute(List<Attribute> attributes, String propertyName, String value, String lang, Row row, int column){
+        if (isPropertyValid(propertyName, value)) {
+            attributes.add(new Attribute(lang, value));
+        } else {
+            throw new ExcelParseException("value-not-valid", row, column);
+        }
     }
 
     /**
@@ -229,14 +264,17 @@ public class SimpleExcelParser {
         }
         HashMap<String, Integer> columnMap = new HashMap<>();
         row.forEach(cell -> {
-            String[] separatedValue = cell.getStringCellValue().split(HEADER_SEPARATOR);
+            String value = cell.getStringCellValue()
+                    .replace("\u00a0", "")
+                    .trim();
+            String[] separatedValue = value.split(HEADER_SEPARATOR);
             if (separatedValue.length > 1 && languages.stream().noneMatch(language -> language.equals(separatedValue[1]))) {
                 throw new ExcelParseException("terminology-no-language", row, cell.getColumnIndex());
             }
             if(columnMap.containsKey(cell.getStringCellValue())){
                 throw new ExcelParseException("duplicate-key-value", row, cell.getColumnIndex());
             }
-            columnMap.put(cell.getStringCellValue(), cell.getColumnIndex());
+            columnMap.put(value, cell.getColumnIndex());
         });
         return columnMap;
     }
@@ -247,7 +285,7 @@ public class SimpleExcelParser {
      * @return true if cell has text
      */
     private boolean cellHasText(Cell cell) {
-        return cell != null && cell.getCellType() != CellType.BLANK;
+        return cell != null && cell.getCellType() != CellType.BLANK && !cell.getStringCellValue().replace("\u00a0", "").trim().equals("");
     }
 
     /**
@@ -265,10 +303,12 @@ public class SimpleExcelParser {
                 return false;
             }
         }
-        if (propertyValue.length() > ValidationConstants.TEXT_AREA_MAX_LENGTH) {
-            return false;
+        //returns valid (true) if length is smaller than validation constant
+        if(propertyName.equals("definition")){
+            return propertyValue.length() < ValidationConstants.DEFINITION_MAX_LENGTH;
+        }else {
+            return propertyValue.length() < ValidationConstants.TEXT_AREA_MAX_LENGTH;
         }
-        return true;
     }
 
 }

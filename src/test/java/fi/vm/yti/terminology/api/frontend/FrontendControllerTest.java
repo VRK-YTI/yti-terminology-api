@@ -76,7 +76,7 @@ public class FrontendControllerTest {
 
     @Test
     public void shouldValidateAndCreate() throws Exception {
-        var vocabularyNode = this.constructVocabularyNode();
+        var vocabularyNode = constructVocabularyNode();
 
         this.mvc
                 .perform(post("/api/v1/frontend/validatedVocabulary")
@@ -105,7 +105,7 @@ public class FrontendControllerTest {
 
         // templateGraph UUID, predefined in database
 
-        var vocabularyNode = this.constructVocabularyNode();
+        var vocabularyNode = constructVocabularyNode();
 
         var request = this.mvc
                 .perform(post("/api/v1/frontend/validatedVocabulary")
@@ -300,7 +300,7 @@ public class FrontendControllerTest {
         var args = new ArrayList<GenericNode>();
 
         final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
-        final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
+        final var definitionMaxPLus = DEFINITION_MAX_LENGTH + 20;
         final var emailMaxPlus = EMAIL_MAX_LENGTH + 20;
 
         var properties = constructProperties();
@@ -309,7 +309,7 @@ public class FrontendControllerTest {
                 properties, constructReferences(), constructReferrers()));
 
         properties = constructProperties();
-        properties.replace("description", List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
+        properties.replace("description", List.of(new Attribute("en", RandomStringUtils.random(definitionMaxPLus))));
         args.add(constructVocabularyNode(
                 properties, constructReferences(), constructReferrers()));
 
@@ -326,10 +326,10 @@ public class FrontendControllerTest {
         var properties = new HashMap<String, List<Attribute>>();
         properties.put(
                 "prefLabel",
-                Arrays.asList(
+                List.of(
                         new Attribute("en", "test label")
                 ));
-        properties.put("description", new ArrayList());
+        properties.put("description", new ArrayList<>());
         properties.put(
                 "language",
                 singletonList(new Attribute("", "en")));
@@ -360,21 +360,20 @@ public class FrontendControllerTest {
                 new TypeId(
                         NodeType.Organization,
                         new GraphId(UUID.fromString("228cce1e-8360-4039-a3f7-725df5643354"))));
-        references.put("contributor", Arrays.asList(org1));
+        references.put("contributor", List.of(org1));
 
         var group1 = new Identifier(
                 UUID.fromString("9ba19f8d-d688-39cc-b620-ebb7875e6e9b"),
                 new TypeId(
                         NodeType.Group,
                         new GraphId(UUID.fromString("7f4cb68f-31f6-4bf9-b699-9d72dd110c4c"))));
-        references.put("inGroup", Arrays.asList(group1));
+        references.put("inGroup", List.of(group1));
 
         return references;
     }
 
     private static HashMap<String, List<Identifier>> constructReferrers() {
-        var referrers = new HashMap<String, List<Identifier>>();
-        return referrers;
+        return new HashMap<>();
     }
 
     private static GenericNode constructVocabularyNode() {
@@ -392,7 +391,7 @@ public class FrontendControllerTest {
         // templateGraph UUID, predefined in database
 
 
-        var vocabularyNode = new GenericNode(
+        return new GenericNode(
                 UUID.fromString(TEST_NODE_ID),
                 null,
                 null,
@@ -411,8 +410,6 @@ public class FrontendControllerTest {
                 references,             // references
                 referrers               // referrers
         );
-
-        return vocabularyNode;
     }
 
     private String convertObjectToJsonString(GenericNode node) throws JsonProcessingException {

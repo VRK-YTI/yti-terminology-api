@@ -13,6 +13,8 @@ import fi.vm.yti.terminology.api.exception.NodeNotFoundException;
 import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
 import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionDTO;
 import fi.vm.yti.terminology.api.frontend.searchdto.CreateVersionResponse;
+import fi.vm.yti.terminology.api.frontend.searchdto.StatusCountDTO;
+import fi.vm.yti.terminology.api.frontend.searchdto.StatusCountSearchResponse;
 import fi.vm.yti.terminology.api.migration.DomainIndex;
 import fi.vm.yti.terminology.api.model.termed.*;
 import fi.vm.yti.terminology.api.security.AuthorizationManager;
@@ -188,20 +190,28 @@ public class FrontendTermedService {
 
         check(authorizationManager.canCreateVocabulary(vocabularyNode));
 
-        List<MetaNode> templateMetaNodes = getTypes(templateGraphId);
-        List<Property> prefLabel = mapToList(vocabularyNode.getProperties().get("prefLabel"), Attribute::asProperty);
+        try {
+            List<MetaNode> templateMetaNodes = getTypes(templateGraphId);
+            List<Property> prefLabel = mapToList(vocabularyNode.getProperties().get("prefLabel"), Attribute::asProperty);
 
-        logger.debug("Creating graph for \"" + prefix + "\"");
-        createGraph(prefix, prefLabel, graphId);
-        logger.debug("Graph created for \"" + prefix + "\"");
-        List<MetaNode> graphMetaNodes = mapToList(templateMetaNodes, node -> node.copyToGraph(graphId));
+            logger.debug("Creating graph for \"" + prefix + "\"");
+            createGraph(prefix, prefLabel, graphId);
+            logger.debug("Graph created for \"" + prefix + "\"");
+            List<MetaNode> graphMetaNodes = mapToList(templateMetaNodes, node -> node.copyToGraph(graphId));
 
-        logger.debug("Updating types for \"" + prefix + "\"");
-        updateTypes(graphId, graphMetaNodes);
-        logger.debug("Handling nodes for \"" + prefix + "\"");
-        updateAndDeleteInternalNodes(
-                new GenericDeleteAndSave(emptyList(), singletonList(vocabularyNode.copyToGraph(graphId))), sync, null);
-        logger.debug("Finished for \"" + prefix + "\"");
+            logger.debug("Updating types for \"" + prefix + "\"");
+            updateTypes(graphId, graphMetaNodes);
+            logger.debug("Handling nodes for \"" + prefix + "\"");
+            updateAndDeleteInternalNodes(
+                    new GenericDeleteAndSave(emptyList(), singletonList(vocabularyNode.copyToGraph(graphId))), sync, null);
+            logger.debug("Finished for \"" + prefix + "\"");
+        } catch (Exception e) {
+            logger.error("Error occurred while creating terminology " + graphId, e);
+
+            removeTypes(graphId, getTypes(graphId));
+            deleteGraph(graphId);
+            throw new RuntimeException(e);
+        }
     }
 
     void deleteVocabulary(UUID graphId) {
@@ -641,7 +651,7 @@ public class FrontendTermedService {
 
         Graph graph = new Graph(graphId, code, uri, roles, permissions, properties);
 
-        termedRequester.exchange("/graphs", POST, Parameters.empty(), String.class, graph);
+        termedRequester.exchange("/graphs", POST, Parameters.single("sync", "true"), String.class, graph);
     }
 
     private void updateAndDeleteInternalNodes(GenericDeleteAndSave deleteAndSave, boolean sync, UUID externalUserId) {
@@ -664,6 +674,7 @@ public class FrontendTermedService {
 
         Parameters params = new Parameters();
         params.add("batch", "true");
+        params.add("sync", "true");
 
         termedRequester.exchange("/graphs/" + graphId + "/types", POST, params, String.class, metaNodes);
     }
@@ -776,4 +787,74 @@ public class FrontendTermedService {
         }
     }
 
+    @NotNull
+    StatusCountSearchResponse getConceptTermsCount(UUID graphId) {
+        StatusCountSearchResponse response = new StatusCountSearchResponse();
+
+        Parameters params = new Parameters();
+        params.add("select", "id");
+        params.add("select", "properties.status");
+        params.add("select", "references.prefLabelXl");
+        params.add("select", "references.altLabelXl");
+        params.add("select", "references.notRecommendedSynonym");
+        params.add("select", "references.searchTerm");
+        params.add("where", "graph.id:" + graphId);
+        params.add("where", "type.id:Concept");
+        params.add("max", "-1");
+        addGraphTypeIds(graphId, params);
+
+        List<GenericNodeInlined> result = requireNonNull(termedRequester.exchange("/node-trees", GET, params,
+                new ParameterizedTypeReference<List<GenericNodeInlined>>() {
+                }));
+
+        if (result.size() == 0) {
+            throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
+        } else {
+            Map<String, Long> conceptStatuses = Stream.of(new Object[][] {
+                    {"DRAFT", 0L},
+                    {"RETIRED", 0L},
+                    {"SUPERSEDED", 0L},
+                    {"VALID", 0L}
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));
+            Map<String, Long> termStatuses = Stream.of(new Object[][] {
+                    {"DRAFT", 0L},
+                    {"RETIRED", 0L},
+                    {"SUPERSEDED", 0L},
+                    {"VALID", 0L}
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));;
+
+            result.forEach(r -> {
+                String conceptStatus = r.getProperties().get("status").get(0).getValue();
+                if (conceptStatuses.containsKey(conceptStatus)) {
+                    conceptStatuses.replace(conceptStatus, conceptStatuses.get(conceptStatus) + 1L);
+                }
+
+                List<GenericNodeInlined> terms = new ArrayList<>();
+
+                if (r.getReferences().containsKey("prefLabelXl")) {
+                    terms.addAll(r.getReferences().get("prefLabelXl"));
+                }
+                if (r.getReferences().containsKey("altLabelXl")) {
+                    terms.addAll(r.getReferences().get("altLabelXl"));
+                }
+                if (r.getReferences().containsKey("notRecommendedSynonym")) {
+                    terms.addAll(r.getReferences().get("notRecommendedSynonym"));
+                }
+                if (r.getReferences().containsKey("searchTerm")) {
+                    terms.addAll(r.getReferences().get("notRecommendedSynonym"));
+                }
+
+                terms.forEach(label -> {
+                    String status = label.getProperties().get("status").get(0).getValue();
+                    if (termStatuses.containsKey(status)) {
+                        termStatuses.replace(status, termStatuses.get(status) + 1L);
+                    }
+                });
+            });
+
+            response.setCounts(new StatusCountDTO(conceptStatuses, termStatuses));
+        }
+
+        return response;
+    }
 }

@@ -241,6 +241,8 @@ public class ImportService {
 
         var parser = new SimpleExcelParser();
         XSSFWorkbook workbook = parser.getWorkbook(is);
+        parser.checkWorkbook(workbook);
+
         List<GenericNode> nodes = parser.buildNodes(workbook, terminologyId, languages);
 
         check(authorizationManager.canModifyNodes(nodes));
@@ -268,6 +270,8 @@ public class ImportService {
             List<String> userOrganizations = getUserOrganizations();
 
             XSSFWorkbook workbook = parser.getWorkbook(is);
+
+            parser.checkWorkbook(workbook);
 
             TerminologyImportDTO dto = parser.buildTerminologyNode(workbook, groupMap, userOrganizations);
             check(authorizationManager.canCreateVocabulary(dto.getTerminologyNode()));
