@@ -56,7 +56,6 @@ public class FrontendTermedService {
     private static final String USER_PASSWORD = "user";
     private static final Pattern UUID_PATTERN = Pattern
             .compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendTermedService.class);
     private static final Object USER_LOCK = new Object();
 
     private final TermedRequester termedRequester;
@@ -121,7 +120,7 @@ public class FrontendTermedService {
                 new ParameterizedTypeReference<List<GenericNodeInlined>>() {
                 }));
 
-        if (result.size() == 0) {
+        if (result.isEmpty()) {
             throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
         } else {
             return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
@@ -132,16 +131,14 @@ public class FrontendTermedService {
     @NotNull JsonNode getVocabularyList(boolean incomplete) {
 
         if(userProvider.getUser() != null){ 
-            System.err.println("getVocabularyList:"+userProvider.getUser().getUsername() );
+            logger.error("getVocabularyList: {}", userProvider.getUser().getUsername() );
         }
         List<UUID> orgList = new ArrayList<>();
 
         YtiUser user = userProvider.getUser();
         // Resolve current organizations for filtering
         Map<UUID,?> rolesAndOrgs = user.getRolesInOrganizations();
-        rolesAndOrgs.forEach((k,v)->{
-            orgList.add(k);
-        });
+        rolesAndOrgs.forEach((k,v)-> orgList.add(k));
         Parameters params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
@@ -174,7 +171,7 @@ public class FrontendTermedService {
                     nodes.add(n);
                 } else {
                     if(logger.isDebugEnabled()){ 
-                        logger.debug("Dropped INCOMPLETE vocabulary "+id.toString());
+                        logger.debug("Dropped INCOMPLETE vocabulary {}", id);
                     }
                 }
             } else {
@@ -614,7 +611,7 @@ public class FrontendTermedService {
 
         // store origin of new version
         if (isVocabulary(node)) {
-            properties.put("origin", asList(new Attribute("", node.getUri())));
+            properties.put("origin", List.of(new Attribute("", node.getUri())));
         }
 
         return properties;
@@ -687,7 +684,7 @@ public class FrontendTermedService {
         termedRequester.exchange("/graphs/" + graphId + "/types", HttpMethod.DELETE, params, String.class, metaNodes);
     }
 
-    private UUID ensureTermedUser(UUID externalUserId) {
+    public UUID ensureTermedUser(UUID externalUserId) {
 
         YtiUser user = userProvider.getUser();
 
@@ -722,6 +719,7 @@ public class FrontendTermedService {
         Parameters params = Parameters.single("sync", "true");
         String userIdForTermedUser = externalUserId == null ? user.getId().toString() : externalUserId.toString();
         TermedUser termedUser = new TermedUser(userIdForTermedUser, USER_PASSWORD, "ADMIN");
+        logger.info("Creating termed user for: {}", userIdForTermedUser);
         termedRequester.exchange("/users", POST, params, String.class, termedUser);
     }
 
@@ -807,7 +805,7 @@ public class FrontendTermedService {
                 new ParameterizedTypeReference<List<GenericNodeInlined>>() {
                 }));
 
-        if (result.size() == 0) {
+        if (result.isEmpty()) {
             throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
         } else {
             Map<String, Long> conceptStatuses = Stream.of(new Object[][] {
@@ -821,7 +819,7 @@ public class FrontendTermedService {
                     {"RETIRED", 0L},
                     {"SUPERSEDED", 0L},
                     {"VALID", 0L}
-            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));;
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (Long) data[1]));
 
             result.forEach(r -> {
                 String conceptStatus = r.getProperties().get("status").get(0).getValue();

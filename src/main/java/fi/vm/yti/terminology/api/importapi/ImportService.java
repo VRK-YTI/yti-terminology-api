@@ -79,11 +79,6 @@ public class ImportService {
     private final AuthorizationManager authorizationManager;
     private final YtiMQService ytiMQService;
 
-    /**
-     * Map containing metadata types. used  when creating nodes.
-     */
-    private HashMap<String,MetaNode> typeMap = new HashMap<>();
-
     private final String subSystem;
     private final Integer batchSize;
 
@@ -146,9 +141,9 @@ public class ImportService {
     }
 
     ResponseEntity<String> checkIfImportIsRunning(String uri){
-        System.out.println("CheckIfRunning");
+        LOGGER.info("CheckIfRunning");
         boolean status = ytiMQService.checkIfImportIsRunning(uri);
-        System.out.println("CheckIfRunning - "+status);
+        LOGGER.info("CheckIfRunning - {}", status);
         if(status)
             return new ResponseEntity<>("{\"status\":\"Running\"}", HttpStatus.OK);
         return new ResponseEntity<>("{\"status\":\"Stopped\"}", HttpStatus.OK);
@@ -156,7 +151,7 @@ public class ImportService {
 
     ResponseEntity<String> handleNtrfDocumentAsync(String format, UUID vocabularyId, MultipartFile file) {
         String rv;
-        System.out.println("Incoming vocabularity= "+vocabularyId+" - file:"+file.getName()+" size:"+file.getSize()+ " type="+file.getContentType());
+        LOGGER.info("Incoming vocabularity= {} - file:{} size:{} type={}", vocabularyId, file.getName(), file.getSize(), file.getContentType());
         // Fail if given format string is not ntrf
         if (!format.equals("ntrf")) {
             LOGGER.error("Unsupported format:<{}> (Currently supported formats: ntrf)", format);
@@ -203,7 +198,7 @@ public class ImportService {
 
             // All set up, execute actual import
             List<?> l = voc.getRECORDAndHEADAndDIAG();
-            System.out.println("Incoming objects count=" + l.size());
+            LOGGER.info("Incoming objects count={}", l.size());
             ImportStatusResponse response = new ImportStatusResponse();
             response.setStatus(ImportStatus.PREPROCESSING);
             response.addStatusMessage(new ImportStatusMessage("Vocabulary",l.size()+" items validated"));
@@ -217,19 +212,15 @@ public class ImportService {
             accessor.setHeader("format","NTRF");
             int stat = ytiMQService.handleImportAsync(operationId, accessor, subSystem, vocabulary.getUri(), sw.toString());
             if(stat != HttpStatus.OK.value()){
-                System.out.println("Import failed code:"+stat);
+                LOGGER.error("Import failed code:{}", stat);
             }
-        } catch (IOException ioe){
-            System.out.println("Incoming transform error=" + ioe);
-        } catch (XMLStreamException se) {
-            System.out.println("Incoming transform error=" + se);
-        } catch (JAXBException je){
-            System.out.println("Incoming transform error=" + je);
+        } catch (IOException | JAXBException | XMLStreamException e){
+            LOGGER.error("Incoming transform error={}", e, e);
         }
         return new ResponseEntity<>( rv, HttpStatus.OK);
     }
 
-    public UUID handleSimpleExcelImport(UUID terminologyId, InputStream is) throws NullPointerException, IOException {
+    public UUID handleSimpleExcelImport(UUID terminologyId, InputStream is) throws NullPointerException {
         check(authorizationManager.canModifyAllGraphs(List.of(terminologyId)));
         boolean exists = terminologyExists(terminologyId);
         if (!exists) {
@@ -246,7 +237,9 @@ public class ImportService {
         List<GenericNode> nodes = parser.buildNodes(workbook, terminologyId, languages);
 
         check(authorizationManager.canModifyNodes(nodes));
+
         //JOB
+        termedService.ensureTermedUser(null); // YTI MQ service will use userProvider.getUser() to ensure that same login is being used
         var jobToken = UUID.randomUUID();
         var accessor = new MessageHeaderAccessor();
         accessor.setHeader("vocabularyId", terminologyId.toString());
@@ -280,6 +273,7 @@ public class ImportService {
             UUID graphId = dto.getTerminologyNode().getType().getGraphId();
             boolean exists = terminologyExists(graphId);
 
+            termedService.ensureTermedUser(null); // YTI MQ service will use userProvider.getUser() to ensure that same login is being used
             if (!exists) {
                 // if not exists, check that namespace is available
                 if (termedService.isNamespaceInUse(dto.getNamespace())) {
@@ -374,7 +368,7 @@ public class ImportService {
 
 
     @PreDestroy
-    public void onDestroy() throws Exception {
-        System.out.println("Spring Container is destroyed!");
+    public void onDestroy() {
+        LOGGER.debug("Spring Container is destroyed!");
     }
 }
