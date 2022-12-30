@@ -300,7 +300,7 @@ public class FrontendControllerTest {
         var args = new ArrayList<GenericNode>();
 
         final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
-        final var definitionMaxPLus = DEFINITION_MAX_LENGTH + 20;
+        final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
         final var emailMaxPlus = EMAIL_MAX_LENGTH + 20;
 
         var properties = constructProperties();
@@ -309,7 +309,7 @@ public class FrontendControllerTest {
                 properties, constructReferences(), constructReferrers()));
 
         properties = constructProperties();
-        properties.replace("description", List.of(new Attribute("en", RandomStringUtils.random(definitionMaxPLus))));
+        properties.replace("description", List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
         args.add(constructVocabularyNode(
                 properties, constructReferences(), constructReferrers()));
 

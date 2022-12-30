@@ -107,14 +107,13 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             List<String> textAreaProperties = new ArrayList<>();
             if(nodeType.equals(NodeType.Concept)){
                 textFieldProperties = List.of("subjectArea", "conceptClass");
-                textAreaProperties = List.of("changeNote", "example", "historyNote", "note", "source");
-                checkTextLength(List.of("definition"), DEFINITION_MAX_LENGTH, node.getProperties(), context);
+                textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
             }else if(nodeType.equals(NodeType.Term)){
                 textFieldProperties = List.of("prefLabel", "termStyle");
                 textAreaProperties = List.of("termInfo", "changeNote", "scope", "source", "historyNote", "editorialNote");
             }else if(nodeType.equals(NodeType.Collection)){
                 textFieldProperties = List.of("prefLabel");
-                checkTextLength(List.of("definition"), DEFINITION_MAX_LENGTH, node.getProperties(), context);
+                textAreaProperties = List.of("definition");
             }
 
             //Skip checking if empty
