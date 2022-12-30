@@ -304,11 +304,7 @@ public class SimpleExcelParser {
             }
         }
         //returns valid (true) if length is smaller than validation constant
-        if(propertyName.equals("definition")){
-            return propertyValue.length() < ValidationConstants.DEFINITION_MAX_LENGTH;
-        }else {
-            return propertyValue.length() < ValidationConstants.TEXT_AREA_MAX_LENGTH;
-        }
+        return propertyValue.length() < ValidationConstants.TEXT_AREA_MAX_LENGTH;
     }
 
 }

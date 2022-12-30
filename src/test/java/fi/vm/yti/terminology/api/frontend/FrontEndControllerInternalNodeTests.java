@@ -237,7 +237,6 @@ public class FrontEndControllerInternalNodeTests {
 
         final var textFieldMaxPlus = TEXT_FIELD_MAX_LENGTH + 20;
         final var textAreaMaxPlus = TEXT_AREA_MAX_LENGTH + 20;
-        final var definitionMaxPlus = DEFINITION_MAX_LENGTH + 20;
 
         var properties = constructTermProperties();
         properties.replace("prefLabel", List.of(new Attribute("en", RandomStringUtils.random(textFieldMaxPlus))));
@@ -272,7 +271,7 @@ public class FrontEndControllerInternalNodeTests {
 
         //definition testing is separate due to different length
         properties = constructConceptProperties();;
-        properties.replace("definition", List.of(new Attribute("en", RandomStringUtils.random(definitionMaxPlus))));
+        properties.replace("definition", List.of(new Attribute("en", RandomStringUtils.random(textAreaMaxPlus))));
         genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
