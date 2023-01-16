@@ -839,7 +839,7 @@ public class FrontendTermedService {
                     terms.addAll(r.getReferences().get("notRecommendedSynonym"));
                 }
                 if (r.getReferences().containsKey("searchTerm")) {
-                    terms.addAll(r.getReferences().get("notRecommendedSynonym"));
+                    terms.addAll(r.getReferences().get("searchTerm"));
                 }
 
                 terms.forEach(label -> {
