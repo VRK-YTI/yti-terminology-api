@@ -88,7 +88,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 checkTermConjugation(properties, context);
             }
         }else if(nodeType.equals(NodeType.Collection)){
-            checkCollectionPairCount(properties, context);
+            checkCollectionPrefLabelCount(node.getProperties(), context);
         }else if(nodeType.equals(NodeType.TerminologicalVocabulary) || nodeType.equals(NodeType.Vocabulary)){
             new VocabularyNodeValidator()
                     .isValid(node, context);
@@ -295,6 +295,18 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                         && !d.getValue().equals("verb")
         )){
             addConstraintViolation(context, INVALID_VALUE, wordClass);
+        }
+    }
+
+    /**
+     * Check that collection has at least one prefLabel
+     * @param properties Properties
+     * @param context Constraint validator context
+     */
+    private void checkCollectionPrefLabelCount(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+        final var prefLabelCount = properties.get("prefLabel").stream().filter(prefLabel -> prefLabel.getValue() != null && !prefLabel.getValue().isEmpty()).count();
+        if(prefLabelCount == 0){
+            addConstraintViolation(context, "prefLabel cannot be empty", "prefLabel");
         }
     }
 

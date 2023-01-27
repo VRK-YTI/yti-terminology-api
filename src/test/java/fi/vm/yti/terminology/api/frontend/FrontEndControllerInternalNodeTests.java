@@ -346,27 +346,9 @@ public class FrontEndControllerInternalNodeTests {
         genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
-        //Collection field pair
-        properties = constructConceptProperties();
-        properties.replace("note", List.of(new Attribute("", "empty language")));
-        genericNode = constructNodeWithType(NodeType.Concept, properties, constructConceptReferences());
-        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
-
         //Collection field pair prefLabel empty
         properties = constructCollectionProperties();
         properties.replace("prefLabel", List.of(new Attribute("en", "")));
-        genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
-        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
-
-        //Collection field pair definition empty
-        properties = constructCollectionProperties();
-        properties.replace("definition", List.of(new Attribute("en", "")));
-        genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
-        args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
-
-        //Collection field pair prefLabel more than definition
-        properties = constructCollectionProperties();
-        properties.replace("prefLabel", List.of(new Attribute("en", "prefLabel 1"), new Attribute("en", "preflabel 2")));
         genericNode = constructNodeWithType(NodeType.Collection, properties, constructCollectionReferences());
         args.add(new GenericDeleteAndSave(Collections.emptyList(), List.of(genericNode)));
 
