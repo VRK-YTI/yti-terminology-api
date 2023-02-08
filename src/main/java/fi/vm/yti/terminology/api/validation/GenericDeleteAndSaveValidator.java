@@ -88,7 +88,7 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
                 checkTermConjugation(properties, context);
             }
         }else if(nodeType.equals(NodeType.Collection)){
-            checkCollectionPairCount(properties, context);
+            checkCollectionPrefLabelCount(node.getProperties(), context);
         }else if(nodeType.equals(NodeType.TerminologicalVocabulary) || nodeType.equals(NodeType.Vocabulary)){
             new VocabularyNodeValidator()
                     .isValid(node, context);
@@ -107,14 +107,13 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
             List<String> textAreaProperties = new ArrayList<>();
             if(nodeType.equals(NodeType.Concept)){
                 textFieldProperties = List.of("subjectArea", "conceptClass");
-                textAreaProperties = List.of("changeNote", "example", "historyNote", "note", "source");
-                checkTextLength(List.of("definition"), DEFINITION_MAX_LENGTH, node.getProperties(), context);
+                textAreaProperties = List.of("definition", "changeNote", "example", "historyNote", "note", "source");
             }else if(nodeType.equals(NodeType.Term)){
                 textFieldProperties = List.of("prefLabel", "termStyle");
                 textAreaProperties = List.of("termInfo", "changeNote", "scope", "source", "historyNote", "editorialNote");
             }else if(nodeType.equals(NodeType.Collection)){
                 textFieldProperties = List.of("prefLabel");
-                checkTextLength(List.of("definition"), DEFINITION_MAX_LENGTH, node.getProperties(), context);
+                textAreaProperties = List.of("definition");
             }
 
             //Skip checking if empty
@@ -300,19 +299,14 @@ public class GenericDeleteAndSaveValidator extends BaseValidator implements
     }
 
     /**
-     * Check that collection prefLabel and definition count match
+     * Check that collection has at least one prefLabel
      * @param properties Properties
      * @param context Constraint validator context
      */
-    private void checkCollectionPairCount(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
+    private void checkCollectionPrefLabelCount(Map<String, List<Attribute>> properties, ConstraintValidatorContext context){
         final var prefLabelCount = properties.get("prefLabel").stream().filter(prefLabel -> prefLabel.getValue() != null && !prefLabel.getValue().isEmpty()).count();
-        final var definitionCount = properties.get("definition").stream().filter(definition -> definition.getValue() != null && !definition.getValue().isEmpty()).count();
-        if(prefLabelCount == 0 || definitionCount == 0){
-            addConstraintViolation(context, "prefLabel or definition cannot be empty", "prefLabel + definition");
-        }
-
-        if(prefLabelCount != definitionCount){
-            addConstraintViolation(context, "prefLabel and definition count mismatch", "prefLabel + definition");
+        if(prefLabelCount == 0){
+            addConstraintViolation(context, "prefLabel cannot be empty", "prefLabel");
         }
     }
 }
