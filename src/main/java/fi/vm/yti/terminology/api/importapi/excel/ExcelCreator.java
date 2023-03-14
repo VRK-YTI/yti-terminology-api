@@ -457,23 +457,6 @@ public class ExcelCreator {
     }
 
     /**
-     * Map concept link as URI of the concept in other terminology from JSON to SheetDTO.
-     */
-    private void addConceptLink(
-            @NotNull String columnName,
-            @NotNull String referenceName,
-            @NotNull JSONWrapper wrapper,
-            @NotNull DTOBuilder builder) {
-        List<String> values = wrapper.getReference(referenceName).stream()
-                .flatMap(reference -> Stream.ofNullable(reference.getDefinition()))
-                .map(JSONWrapper::getMemo)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        builder.addDataToCurrentRow(columnName, values);
-    }
-
-    /**
      * Filter JSON inputs by type.
      */
     private @NotNull List<JSONWrapper> wrappersOfType(@NotNull String type) {
