@@ -1,7 +1,6 @@
 package fi.vm.yti.terminology.api.frontend.elasticqueries;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 import fi.vm.yti.terminology.api.exception.InvalidQueryException;
 import fi.vm.yti.terminology.api.frontend.Status;
@@ -34,10 +33,12 @@ public class TerminologyQueryFactory {
 
     private static final Logger log = LoggerFactory.getLogger(TerminologyQueryFactory.class);
 
+    private static final String INDEX_NAME = "vocabularies";
+
     public static final int DEFAULT_PAGE_SIZE = 10;
     public static final int DEFAULT_PAGE_FROM = 0;
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     public TerminologyQueryFactory(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -61,6 +62,7 @@ public class TerminologyQueryFactory {
                 request.getQuery(),
                 request.getStatuses(),
                 request.getGroups(),
+                request.getGroupNotations(),
                 request.getTypes(),
                 request.getOrganizations(),
                 request.getLanguage(),
@@ -75,6 +77,7 @@ public class TerminologyQueryFactory {
     private SearchRequest createQuery(String query,
                                       String[] statuses,
                                       String[] groupIds,
+                                      String[] groupNotations,
                                       String[] types,
                                       String[] organizationIds,
                                       String language,
@@ -132,6 +135,10 @@ public class TerminologyQueryFactory {
                     "references.inGroup.id", groupIds));
         }
 
+        if(groupNotations != null && groupNotations.length > 0){
+            mustQueries.add(QueryBuilders.termsQuery("references.inGroup.properties.notation.value.keyword", groupNotations));
+        }
+
         if (organizationIds != null && organizationIds.length > 0)  {
             try {
                 Arrays.stream(organizationIds).forEach(UUID::fromString);
@@ -172,7 +179,6 @@ public class TerminologyQueryFactory {
                     "type.graph.id.keyword",
                     additionalTerminologyIds);
 
-            QueryBuilder boolIdQuery = null;
             if (typeQuery != null) {
                 shouldQueries.add(QueryBuilders.boolQuery()
                     .must(idQuery)
@@ -182,7 +188,7 @@ public class TerminologyQueryFactory {
             }
         }
 
-        QueryBuilder mustQuery = null;
+        QueryBuilder mustQuery;
         if (mustQueries.size() > 1) {
             // several queries, collect them into a bool query
             mustQuery = QueryBuilders.boolQuery();
@@ -220,14 +226,10 @@ public class TerminologyQueryFactory {
                     .unmappedType("keyword"));
         }
 
-        SearchRequest sr = new SearchRequest("vocabularies")
+        SearchRequest sr = new SearchRequest(INDEX_NAME)
             .source(sourceBuilder);
-        log.debug("Terminology Query request: {}", sr.toString());
+        log.debug("Terminology Query request: {}", sr);
         return sr;
-    }
-
-    public SearchRequest createMatchingTerminologiesQuery(Set<String> privilegedOrganizations) {
-        return createMatchingTerminologiesQuery(privilegedOrganizations, null);
     }
 
     public SearchRequest createMatchingTerminologiesQuery(final Collection<String> privilegedOrganizations,
@@ -246,20 +248,19 @@ public class TerminologyQueryFactory {
                 .must(limitQuery);
         }
 
-        SearchRequest sr = new SearchRequest("vocabularies")
+        return new SearchRequest(INDEX_NAME)
             .source(new SearchSourceBuilder()
                 .size(1000)
                 .query(finalQuery));
         //.fetchSource(false));
         //log.debug("createMatchingTerminologiesQuery Query request: " + sr.toString());
-        return sr;
     }
 
     public SearchRequest createFindTerminologyByIdQuery(UUID terminologyId) {
         QueryBuilder query = QueryBuilders.boolQuery()
                 .must(QueryBuilders.matchQuery("type.graph.id", terminologyId.toString()));
 
-        return new SearchRequest("vocabularies")
+        return new SearchRequest(INDEX_NAME)
                 .source(new SearchSourceBuilder()
                         .size(1)
                         .query(query)
@@ -284,11 +285,11 @@ public class TerminologyQueryFactory {
                                                    TerminologySearchRequest request,
                                                    Map<String, List<DeepSearchHitListDTO<?>>> deepSearchHitList) {
         List<TerminologyDTO> terminologies = new ArrayList<>();
-        TerminologySearchResponse ret = new TerminologySearchResponse(0, pageFrom(request), terminologies, deepSearchHitList);
+        var ret = new TerminologySearchResponse(0, pageFrom(request), terminologies, deepSearchHitList);
         try {
             SearchHits hits = response.getHits();
             ret.setTotalHitCount(hits.getTotalHits());
-            Pattern highlightPattern = ElasticRequestUtils.createHighlightPattern(request.getQuery());
+            var highlightPattern = ElasticRequestUtils.createHighlightPattern(request.getQuery());
             for (SearchHit hit : hits) {
                 JsonNode terminology = objectMapper.readTree(hit.getSourceAsString());
                 // NOTE: terminology.get("id") would make more sense, but currently concepts contain only graph id => use it here also.
@@ -298,13 +299,15 @@ public class TerminologyQueryFactory {
 
                 JsonNode properties = terminology.get("properties");
                 JsonNode statusArray = properties.get("status");
-                String terminologyStatus = statusArray != null ? (statusArray.has(0) ? statusArray.get(0).get("value").textValue() : "DRAFT") : "DRAFT";
+                String terminologyStatus = statusArray != null && statusArray.has(0) ? statusArray.get(0).get("value").textValue() : "DRAFT";
                 JsonNode terminologyTypeArray = properties.get("terminologyType");
                 String terminologyType = terminologyTypeArray != null ? (terminologyTypeArray.has(0) ? terminologyTypeArray.get(0).get("value").textValue() : "TERMINOLOGICAL_VOCABULARY") : "TERMINOLOGICAL_VOCABULARY";
                 Map<String, String> labelMap = ElasticRequestUtils.labelFromLangValueArray(properties.get("prefLabel"));
                 Map<String, String> descriptionMap = ElasticRequestUtils.labelFromLangValueArray(properties.get("description"));
 
-                ElasticRequestUtils.highlightLabel(labelMap, highlightPattern);
+                if(!request.getHideHighlights()){
+                    ElasticRequestUtils.highlightLabel(labelMap, highlightPattern);
+                }
 
                 JsonNode references = terminology.get("references");
                 JsonNode domainArray = references.get("inGroup");
@@ -338,7 +341,7 @@ public class TerminologyQueryFactory {
     private int pageSize(TerminologySearchRequest request) {
         Integer size = request.getPageSize();
         if (size != null && size >= 0) {
-            return size.intValue();
+            return size;
         }
         return DEFAULT_PAGE_SIZE;
     }
@@ -346,7 +349,7 @@ public class TerminologyQueryFactory {
     private int pageFrom(TerminologySearchRequest request) {
         Integer from = request.getPageFrom();
         if (from != null && from >= 0) {
-            return from.intValue();
+            return from;
         }
         return DEFAULT_PAGE_FROM;
     }
