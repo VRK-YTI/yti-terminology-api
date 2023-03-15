@@ -25,11 +25,6 @@ public class JSONWrapper {
     @NotNull
     private final List<JSONWrapper> others;
 
-    /**
-     * Internal memo. This is used by concept links when fetching uri of the linked concept in other vocabulary.
-     */
-    private String memo;
-
     public JSONWrapper(@NotNull JsonNode json, @NotNull List<JSONWrapper> others) {
         this.json = json;
         this.others = others;
@@ -160,14 +155,6 @@ public class JSONWrapper {
                 .filter(other -> other.getCode().equals(this.getCode()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    public String getMemo() {
-        return this.memo;
-    }
-
-    public void setMemo(String memo) {
-        this.memo = memo;
     }
 
     public List<String> getReferrerTypes() {

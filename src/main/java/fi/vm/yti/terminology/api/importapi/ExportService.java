@@ -8,7 +8,6 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -43,8 +42,8 @@ public class ExportService {
 
     private final TermedRequester termedRequester;
     private static final Logger logger = LoggerFactory.getLogger(ExportService.class);
-    private AuthenticatedUserProvider userProvider;
-    private AuthorizationTermedService authorizationTermedService;
+    private final AuthenticatedUserProvider userProvider;
+    private final AuthorizationTermedService authorizationTermedService;
 
     @Autowired
     public ExportService(TermedRequester termedRequester, AuthenticatedUserProvider userProvider,
@@ -110,18 +109,6 @@ public class ExportService {
         return requireNonNull(rv);
     }
 
-    /**
-     * Get concepts of given vocabulary id but select only id, type and uri.
-     */
-    @NotNull
-    JsonNode getConceptURIFromVocabulary(UUID id) {
-        Parameters params = constructVocabularyTypeQuery("id,type,uri", "Concept");
-        String path = "/graphs/" + id.toString() + "/node-trees";
-        // Execute full search
-        JsonNode rv = requireNonNull(termedRequester.exchange(path, GET, params, JsonNode.class));
-        return requireNonNull(rv);
-    }
-
     @NotNull
     String getFullVocabularyRDF(UUID id) {
         Parameters params = this.constructFullVocabularyQuery();
@@ -178,53 +165,7 @@ public class ExportService {
         JsonNode json = this.getFullVocabulary(id);
         List<JSONWrapper> wrappers = new ArrayList<>();
         json.forEach(node -> wrappers.add(new JSONWrapper(node, wrappers)));
-
-        this.fetchConceptsFromOtherGraphs(wrappers);
-
         return new ExcelCreator(wrappers);
-    }
-
-    /**
-     * Loop over concept links and fetch their reference concepts from other vocabularies. The URI of that concept is
-     * then stored as a memo to the original concept link.
-     */
-    private void fetchConceptsFromOtherGraphs(@NotNull List<JSONWrapper> wrappers) {
-        List<JSONWrapper> conceptLinks = this.wrappersOfType(wrappers, "ConceptLink");
-        Map<String, String> uris = getExternalURIs(conceptLinks);
-        conceptLinks.forEach(link -> link.setMemo(uris.get(String.format(
-                "%s/%s",
-                link.getFirstPropertyValue("targetGraph", ""),
-                link.getFirstPropertyValue("targetId", "")
-        ))));
-    }
-
-    /**
-     * Filter JSONWrappers by type.
-     */
-    private @NotNull List<JSONWrapper> wrappersOfType(@NotNull List<JSONWrapper> wrappers, @NotNull String type) {
-        return wrappers.stream().filter(wrapper -> wrapper.getType().equals(type)).collect(Collectors.toList());
-    }
-
-    /**
-     * Fetch external vocabularies linked in given concept links and map their content to "${graphId}/${id}": "${uri}"
-     * pairs.
-     */
-    @NotNull
-    private Map<String, String> getExternalURIs(List<JSONWrapper> conceptLinks) {
-        Map<String, String> result = new HashMap<>();
-
-        conceptLinks.stream()
-                .map(link -> link.getFirstPropertyValue("targetGraph", ""))
-                .collect(Collectors.toSet())
-                .forEach(graphId -> {
-                    JsonNode json = this.getConceptURIFromVocabulary(UUID.fromString(graphId));
-                    json.forEach(node -> {
-                        JSONWrapper wrapper = new JSONWrapper(node, List.of());
-                        result.put(graphId + "/" + wrapper.getID(), wrapper.getURI());
-                    });
-                });
-
-        return result;
     }
 
     ResponseEntity<String> getJSON(UUID vocabularyId) {
