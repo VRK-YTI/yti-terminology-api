@@ -141,15 +141,21 @@ dependencyCheck {
     }
 }
 
+
 jaxb {
-    // generate java code from schema
-    javaGen {
-        ntrf {
-            binding = file('src/main/resources/import/ntrf/bindings.xjb')
-            schema = file('src/main/resources/import/ntrf/NTRF.xsd')
-            outputDir = file('src/main/java')
-            packageName = 'fi.vm.yti.terminology.api.model.ntrf.test'
-            args = List.of("-no-header")
+    // generate java code from schema (skipped from default build)
+    // Regenerate classes by running ./gradlew build -PntrfGenerate
+    if (project.hasProperty('ntrfGenerate')) {
+        javaGen {
+            ntrf {
+                binding = file('src/main/resources/import/ntrf/bindings.xjb')
+                schema = file('src/main/resources/import/ntrf/NTRF.xsd')
+                outputDir = file('src/main/java')
+                packageName = 'fi.vm.yti.terminology.api.model.ntrf.foow'
+                args = List.of("-no-header")
+            }
         }
     }
 }
+
+
