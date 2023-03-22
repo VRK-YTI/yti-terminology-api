@@ -4,7 +4,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpMethod.POST;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -17,10 +16,11 @@ import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.frontend.Status;
 import fi.vm.yti.terminology.api.model.ntrf.*;
+import fi.vm.yti.terminology.api.model.termed.*;
+import fi.vm.yti.terminology.api.resolve.ResolveService;
 import jakarta.xml.bind.JAXBElement;
 
-import com.google.common.escape.Escaper;
-import com.google.common.escape.Escapers;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,13 +32,6 @@ import fi.vm.yti.terminology.api.TermedRequester;
 import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
 import fi.vm.yti.terminology.api.importapi.ImportStatusMessage.Level;
 import fi.vm.yti.terminology.api.importapi.ImportStatusResponse.ImportStatus;
-import fi.vm.yti.terminology.api.model.termed.Attribute;
-import fi.vm.yti.terminology.api.model.termed.GenericDeleteAndSave;
-import fi.vm.yti.terminology.api.model.termed.GenericNode;
-import fi.vm.yti.terminology.api.model.termed.Graph;
-import fi.vm.yti.terminology.api.model.termed.Identifier;
-import fi.vm.yti.terminology.api.model.termed.MetaNode;
-import fi.vm.yti.terminology.api.model.termed.TypeId;
 import fi.vm.yti.terminology.api.util.JsonUtils;
 import fi.vm.yti.terminology.api.util.Parameters;
 
@@ -46,59 +39,62 @@ import fi.vm.yti.terminology.api.util.Parameters;
 public class NtrfMapper {
 
     private static final String USER_PASSWORD = "user";
-    private final UUID NULL_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final UUID NULL_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private final TermedRequester termedRequester;
     private final FrontendTermedService termedService;
     private final AuthenticatedUserProvider userProvider;
     private final YtiMQService ytiMQService;
+    private final ResolveService resolveService;
 
     /**
      * Map containing metadata types. used when creating nodes.
      */
-    private HashMap<String, MetaNode> typeMap = new HashMap<>();
+    private final HashMap<String, MetaNode> typeMap = new HashMap<>();
     /**
      * Map containing node.code or node.uri as a key and UUID as a value. Used for
      * matching existing items and updating them instead of creating new ones
      */
-    private HashMap<String, UUID> idMap = new HashMap<>();
-    private HashMap<UUID, String> reverseIdMap = new HashMap<>();
+    private final HashMap<String, UUID> idMap = new HashMap<>();
+    private final HashMap<UUID, String> reverseIdMap = new HashMap<>();
     /**
      * Map containing node.code or node.uri as a key and UUID as a value. Used for
      * reference resolving after all concepts and terms are created
      */
-    private HashMap<String, UUID> createdIdMap = new HashMap<>();
+    private final HashMap<String, UUID> createdIdMap = new HashMap<>();
 
     /**
      * Map binding together reference string and external URL fromn ntrf
      * SOURF-element
      */
-    private HashMap<String, HashMap<String, String>> referenceMap = new HashMap<>();
+    private final HashMap<String, HashMap<String, String>> referenceMap = new HashMap<>();
 
     /**
      * Map for NCON/RCON-reference cache. Operation targetId,
      * type(generic/partitive), broaderConceptId
      */
-    private Map<String, List<ConnRef>> nconList = new LinkedHashMap<>();
-    private Map<String, List<ConnRef>> rconList = new LinkedHashMap<>();
-    private Map<String, List<ConnRef>> bconList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> nconList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> rconList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> bconList = new LinkedHashMap<>();
 
     private String currentRecord;
-    private List<StatusMessage> statusList = new ArrayList<>();
+    private final List<StatusMessage> statusList = new ArrayList<>();
 
     int errorCount = 0;
 
-    private static final Logger logger = LoggerFactory.getLogger(ImportService.class);
+    private static final Logger logger = LoggerFactory.getLogger(NtrfMapper.class);
 
     @Autowired
     public NtrfMapper(TermedRequester termedRequester,
             FrontendTermedService frontendTermedService,
             AuthenticatedUserProvider userProvider,
-            YtiMQService ytiMQService) {
+            YtiMQService ytiMQService,
+            ResolveService resolveService) {
         this.termedRequester = termedRequester;
         this.termedService = frontendTermedService;
         this.userProvider = userProvider;
         this.ytiMQService = ytiMQService;
+        this.resolveService = resolveService;
     }
 
     private boolean updateAndDeleteInternalNodes(UUID userId, GenericDeleteAndSave deleteAndSave, boolean sync) {
@@ -123,7 +119,7 @@ public class NtrfMapper {
                 reflist.add(UUID.fromString(a));
             }
             if (reflist.size() > 1) {
-                logger.error("Failed UUID=" + reflist.get(1) + " Code:" + reverseIdMap.get(reflist.get(1)));
+                logger.error("Failed UUID={} Code:{}", reflist.get(1), reverseIdMap.get(reflist.get(1)));
             }
             statusList
                     .add(new StatusMessage(Level.ERROR, currentRecord, "Termed error:" + ex.getResponseBodyAsString()));
@@ -171,7 +167,7 @@ public class NtrfMapper {
 
         // Get all reference-elements and build reference-url-map
         List<REFERENCES> externalReferences = l.stream()
-                .filter(o -> o instanceof REFERENCES)
+                .filter(REFERENCES.class::isInstance)
                 .map(o -> (REFERENCES) o)
                 .collect(Collectors.toList());
 
@@ -181,7 +177,7 @@ public class NtrfMapper {
         // Get all records (mapped to terms) from incoming ntrf-document. Check object
         // type and typecast matching objects to list<>
         List<RECORD> records = l.stream()
-                .filter(o -> o instanceof RECORD)
+                .filter(RECORD.class::isInstance)
                 .map(o -> (RECORD) o)
                 .collect(Collectors.toList());
 
@@ -217,7 +213,9 @@ public class NtrfMapper {
                 flushCount = 0;
                 GenericDeleteAndSave operation = new GenericDeleteAndSave(deleteNodeList, addNodeList);
 
-                logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+                if (logger.isDebugEnabled()) {
+                    logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+                }
 
                 response.setStatus(ImportStatus.PROCESSING);
                 response.clearStatusMessages(); // Forget previous
@@ -242,13 +240,15 @@ public class NtrfMapper {
         }
         GenericDeleteAndSave operation = new GenericDeleteAndSave(deleteNodeList, addNodeList);
 
-        logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+        if (logger.isDebugEnabled()) {
+            logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+        }
 
         if (!updateAndDeleteInternalNodes(userId, operation, true)) {
             response.addStatusMessage(
                     new ImportStatusMessage("Vocabulary", "Processing records, import failed for " + currentRecord));
         } else {
-            // Import successfull, add id:s to resolved one.
+            // Import successful, add id:s to resolved one.
             addNodeList.forEach(v -> {
                 // Add id for reference resolving
                 createdIdMap.put(v.getCode(), v.getId());
@@ -262,15 +262,13 @@ public class NtrfMapper {
         typeMap.clear();
         initImport(vocabularyId);
         // Just add reverse map
-        idMap.forEach((k, v) -> {
-            reverseIdMap.put(v, k);
-        });
+        idMap.forEach((k, v) -> reverseIdMap.put(v, k));
 
         handleLinks(userId, vocabulary);
 
         // Handle DIAG-elements and create collections from them
         List<DIAG> DIAGList = l.stream()
-                .filter(o -> o instanceof DIAG)
+                .filter(DIAG.class::isInstance)
                 .map(o -> (DIAG) o)
                 .collect(Collectors.toList());
 
@@ -287,7 +285,9 @@ public class NtrfMapper {
         // Add DIAG-list to vocabulary
         operation = new GenericDeleteAndSave(emptyList(), addNodeListReferences);
 
-        logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+        if (logger.isDebugEnabled()) {
+            logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
+        }
 
         if (!updateAndDeleteInternalNodes(userId, operation, true)) {
             logger.error("Diag termed error");
@@ -302,7 +302,7 @@ public class NtrfMapper {
         // Add all status lines as individual members before
         statusList.forEach(m -> {
             response.addStatusMessage(new ImportStatusMessage(m.getLevel(), m.getRecord(), m.getMessage().toString()));
-            logger.info("Item: {} value: {}", m.getRecord(), m.getMessage().toString());
+            logger.info("Item: {} value: {}", m.getRecord(), m.getMessage());
         });
 
         response.setProcessingTotal(records.size());
@@ -313,7 +313,7 @@ public class NtrfMapper {
         if (errorCount > 0) {
             response.setStatus(ImportStatus.FAILURE);
 
-        } else if (statusList.size() > 0) {
+        } else if (!statusList.isEmpty()) {
             response.setStatus(ImportStatus.SUCCESS_WITH_ERRORS);
         } else {
             response.setStatus(ImportStatus.SUCCESS);
@@ -339,7 +339,7 @@ public class NtrfMapper {
                     gn = termedService.getConceptNode(vocabulary.getId(), sourceId);
                 } catch (NullPointerException nex) {
                     logger.warn("Can't found concept node: {} id: {} in vocabulary {}", key, sourceId,
-                            vocabulary.getId().toString());
+                            vocabulary.getId());
                 }
                 if (gn != null) {
                     Map<String, List<Identifier>> refMap = gn.getReferences();
@@ -383,7 +383,7 @@ public class NtrfMapper {
                         if (refId != null) {
                             ref.setTargetId(refId);
                         } else {
-                            logger.error("Can't resolve id for " + ref.getReferenceString());
+                            logger.error("Can't resolve id for {}", ref.getReferenceString());
                         }
 
                         // @TODO! Go through refList and add only if missing.
@@ -397,8 +397,7 @@ public class NtrfMapper {
                                 idref.add(new Identifier(ref.getTargetId(), typeMap.get("Concept").getDomain()));
                                 // Put back int the correct list
                                 refMap.put(refListName, idref);
-                                logger.error(refListName + "->" + ref.getReferenceString() + "  "
-                                        + ref.getTargetId().toString());
+                                logger.info("{} -> {} {}", refListName, ref.getReferenceString(), ref.getTargetId());
                             }
                         } else {
                             logger.error("Ref-target-id not found for :{}", ref.getCode());
@@ -418,11 +417,10 @@ public class NtrfMapper {
                 logger.error("Can't find source id: {}", key);
             }
         });
-        if (addNodeList.size() > 0) {
+        if (!addNodeList.isEmpty()) {
             // add (N/B/R)CON-changes as one big block
 
             GenericDeleteAndSave operation = new GenericDeleteAndSave(emptyList(), addNodeList);
-            logger.debug(JsonUtils.prettyPrintJsonAsString(operation));
             if (!updateAndDeleteInternalNodes(userId, operation, true)) {
                 logger.error("CONN link adding: Termed error ");
             }
@@ -437,18 +435,12 @@ public class NtrfMapper {
      * @param vocabulary
      */
     private void handleLinks(UUID userId, Graph vocabulary) {
-        if (nconList != null) {        
-            addConMap(nconList, "NCON", userId, vocabulary);
+        addConMap(nconList, "NCON", userId, vocabulary);
+        if (rconList.size() > 0) {
+            addConMap(rconList, "RCON", userId, vocabulary);
         }
-        if (rconList != null) {
-            if (rconList.size() > 0) {
-                addConMap(rconList, "RCON", userId, vocabulary);
-            }
-        }
-        if (bconList != null) {
-            if (bconList.size() > 0) {
-                addConMap(bconList, "BCON", userId, vocabulary);
-            }
+        if (bconList.size() > 0) {
+            addConMap(bconList, "BCON", userId, vocabulary);
         }
     }
 
@@ -465,10 +457,10 @@ public class NtrfMapper {
 
         // Create hashmap to store information between code/URI and UUID so that we can
         // update values upon same vocabulary
-        List<GenericNode> nodeList = termedService.getNodes(vocabularyId);
-        if (nodeList != null) {
+        try {
+            List<GenericNode> nodeList = termedService.getNodes(vocabularyId);
             nodeList.forEach(o -> {
-                logger.debug("Code: {}, UUID: {}, URI: {}", o.getCode(), o.getId().toString(), o.getUri());
+                logger.debug("Code: {}, UUID: {}, URI: {}", o.getCode(), o.getId(), o.getUri());
                 if (o.getCode() != null && !o.getCode().isEmpty()) {
                     idMap.put(o.getCode(), o.getId());
                 }
@@ -477,8 +469,10 @@ public class NtrfMapper {
                 }
             });
             return true;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return false;
         }
-        return false;
     }
 
     private void handleDIAG(Graph vocabularity, DIAG diag, List<GenericNode> addNodeList) {
@@ -522,12 +516,11 @@ public class NtrfMapper {
                 String msg = String.format("DIAG: %s LINK-target %s <%s>  not added into the collection",
                         diag.getNumb(),
                         li.getHref(),
-                        parseHrefText(li.getContent()));
+                        NtrfUtil.parseHrefText(li.getContent()));
 
                 logger.warn(msg);
                 statusList.add(new StatusMessage(currentRecord, msg));
             }
-
         });
 
         // Construct Node as Collection-type
@@ -552,7 +545,7 @@ public class NtrfMapper {
             HashMap<String, HashMap<String, String>> refMap) {
         referencesTypeList.forEach(reftypes -> {
             List<REF> refs = reftypes.getREFOrREFHEAD().stream()
-                    .filter(o -> o instanceof REF)
+                    .filter(REF.class::isInstance)
                     .map(o -> (REF) o)
                     .collect(Collectors.toList());
 
@@ -562,7 +555,7 @@ public class NtrfMapper {
                 List<JAXBElement> elems;
                 HashMap<String, String> fields = new HashMap<>();
                 String name = r.getREFNAME();
-                String url = r.getREFLINK();
+                String url;
                 String text;
 
                 // Text is a structured component
@@ -570,7 +563,7 @@ public class NtrfMapper {
                 // | BR | LINK)*>
                 REFTEXT rtx = r.getREFTEXT();
                 elems = rtx.getContent().stream()
-                        .filter(o -> o instanceof JAXBElement)
+                        .filter(JAXBElement.class::isInstance)
                         .map(o -> (JAXBElement) o)
                         .collect(Collectors.toList());
 
@@ -591,7 +584,7 @@ public class NtrfMapper {
                             fields.put("url", url);
                         }
                     }
-                    logger.debug(" Cache incoming external references: field={}", fields);
+                    logger.debug("Cache incoming external references: field={}", fields);
                 }
 
                 // add fields to referenceMap
@@ -605,8 +598,8 @@ public class NtrfMapper {
     /**
      * Remove orphan terms under given concept and graph
      */
-    private void cleanTerms(UUID graphId, UUID conceptId,  List<Identifier> deleteNodeList) {
-        logger.info("clearTerm from: {} concept: {}", graphId, conceptId.toString());
+    private void cleanReferences(UUID graphId, UUID conceptId, List<Identifier> deleteNodeList) {
+        logger.info("clearTerm from: {} concept: {}", graphId, conceptId);
         // Get concept
         GenericNode node = termedService.getConceptNode(graphId, conceptId);
         // get references and delete terms and synonyms
@@ -615,6 +608,11 @@ public class NtrfMapper {
         deleteNodeList.addAll(references.getOrDefault("prefLabelXl", new ArrayList<>()));
         deleteNodeList.addAll(references.getOrDefault("altLabelXl", new ArrayList<>()));
         deleteNodeList.addAll(references.getOrDefault("notRecommendedSynonym", new ArrayList<>()));
+        deleteNodeList.addAll(references.getOrDefault("exactMatch", new ArrayList<>()));
+        deleteNodeList.addAll(references.getOrDefault("closeMatch", new ArrayList<>()));
+        deleteNodeList.addAll(references.getOrDefault("broadMatch", new ArrayList<>()));
+        deleteNodeList.addAll(references.getOrDefault("relatedMatch", new ArrayList<>()));
+        deleteNodeList.addAll(references.getOrDefault("narrowMatch", new ArrayList<>()));
     }
 
     /**
@@ -674,7 +672,7 @@ public class NtrfMapper {
     void handleRECORD(Graph vocabulary, RECORD r, List<GenericNode> addNodeList, List<Identifier> deleteNodeList) {
         UUID currentId;
         String createdBy;
-        LocalDate lastModifiedDate = LocalDate.now();
+        LocalDate lastModifiedDate;
         // Attributes are stored to property-list
         Map<String, List<Attribute>> properties = new HashMap<>();
         // references synomyms and preferred tems and so on
@@ -683,13 +681,13 @@ public class NtrfMapper {
         String code = r.getNumb();
         // Check whether id exist and create id
         if (idMap.get(code) != null) {
-            logger.debug(" UPDATE operation!!!!!!!!! " + code);
+            logger.debug("UPDATE operation {}", code);
             currentId = idMap.get(code);
 
             // Delete terms from existing concept before updating content
-            cleanTerms(vocabulary.getId(), currentId, deleteNodeList);
+            cleanReferences(vocabulary.getId(), currentId, deleteNodeList);
         } else {
-            logger.debug(" CREATE NEW  operation!!!!!!!!! " + code);
+            logger.debug("CREATE NEW operation {}", code);
             currentId = UUID.randomUUID();
         }
 
@@ -715,7 +713,7 @@ public class NtrfMapper {
 
         if (r.getUpda() != null) {
             // Store that information to the modificationHistory
-            String upd[] = r.getUpda().split(",");
+            String[] upd = r.getUpda().split(",");
             if (upd.length == 2) {
                 DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                 try {
@@ -723,7 +721,7 @@ public class NtrfMapper {
                     editorialNote = editorialNote + " - Viimeksi muokattu, " + lastModifiedDate;
                 } catch (DateTimeParseException dex) {
                     statusList.add(new StatusMessage(currentRecord, "Parse error for date" + dex.getMessage()));
-                    logger.error("Parse error for date" + dex.getMessage());
+                    logger.error("Parse error for date", dex);
                 }
             }
         }
@@ -736,26 +734,21 @@ public class NtrfMapper {
         List<GenericNode> terms = new ArrayList<>();
         // Needs to be final for lambda
         final UUID concept = currentId;
-        // Filter LANG elemets as list.
+        // Filter LANG elements as list.
         List<LANG> langs = r.getLANG();
-        langs.forEach(o -> {
-            // RECORD/LANG/TE/TERM -> prefLabel
-            handleLANG(concept, terms, o, properties, references, vocabulary);
-        });
+        // RECORD/LANG/TE/TERM -> prefLabel
+        langs.forEach(o -> handleLANG(concept, terms, o, properties, references, vocabulary));
 
         // Handle Subject
         List<SUBJ> subjs = r.getSUBJ();
-        subjs.forEach(o -> {
-            handleSUBJ(o, properties);
-        });
+        subjs.forEach(o -> handleSUBJ(o, properties));
 
-        // Filter CLAS elemets as list
+        // Filter CLAS elements as list
         List<CLAS> clas = r.getCLAS();
-        clas.forEach(o -> {
-            // RECORD/CLAS ->
-            handleCLAS(o, properties);
-        });
-        // Filter CHECK elemets as list
+        // RECORD/CLAS ->
+        clas.forEach(o -> handleCLAS(o, properties));
+
+        // Filter CHECK elements as list
         if (r.getCHECK() != null && !r.getCHECK().isEmpty()) {
             // RECORD/CHECK ->
             handleCHECK(r.getCHECK(), r.getStat(), properties);
@@ -765,11 +758,9 @@ public class NtrfMapper {
         addStatusProperty(r.getStat(), properties);
 
         if (r.getREMK() != null) {
-            r.getREMK().forEach(o -> {
-                handleREMK(o, properties, vocabulary);
-            });
+            r.getREMK().forEach(o -> handleREMK(o, properties, vocabulary));
         }
-        // Filter BCON elemets as list
+        // Filter BCON elements as list
         List<BCON> bcon = r.getBCON();
         for (BCON o : bcon) {
             // RECORD/BCON
@@ -787,16 +778,86 @@ public class NtrfMapper {
         for (NCON o : ncon) {
             handleNCON(currentId, o);
         }
+
+        var conceptLinks = new ArrayList<GenericNode>();
+
+        for (ECON econ : r.getECON()) {
+            if (!Arrays.asList("exactMatch", "closeMatch").contains(econ.getTypr())) {
+                logger.warn("Invalid type of concept link: {}", econ.getTypr());
+                statusList.add(new StatusMessage(currentRecord, "Invalid reference type " + econ.getTypr()));
+                continue;
+            }
+            handleExternalConcepts(references, conceptLinks, econ.getHref(), econ.getTypr());
+        }
+
+        for (RCONEXT rConExt : r.getRCONEXT()) {
+            handleExternalConcepts(references, conceptLinks, rConExt.getHref(), "relatedMatch");
+        }
+
+        for (BCONEXT bConExt : r.getBCONEXT()) {
+            handleExternalConcepts(references, conceptLinks, bConExt.getHref(), "broadMatch");
+        }
+
+        for (NCONEXT nConExt : r.getNCONEXT()) {
+            handleExternalConcepts(references, conceptLinks, nConExt.getHref(), "narrowMatch");
+        }
+
         TypeId typeId = typeMap.get("Concept").getDomain();
         GenericNode node = new GenericNode(currentId, code, vocabulary.getUri() + code, 0L, createdBy, new Date(), "", new Date(),
                 typeId, properties, references, emptyMap());
         // Send item to termed-api
         // First add terms
-        terms.forEach(t -> {
-            addNodeList.add(t);
-        });
+        addNodeList.addAll(terms);
+        // Add concept link nodes
+        addNodeList.addAll(conceptLinks);
         // then concept itself
         addNodeList.add(node);
+    }
+
+    private void handleExternalConcepts(Map<String, List<Identifier>> references, ArrayList<GenericNode> conceptLinks,
+                                        String uri, String refType) {
+        var conceptLinkType = typeMap.get("ConceptLink").getDomain();
+        var id = UUID.randomUUID();
+
+        try {
+            var resolvedResource = resolveService.resolveResource(uri);
+            var conceptNode = termedService.getConcept(resolvedResource.getGraphId(), resolvedResource.getId());
+            var terminology = termedService.getVocabulary(resolvedResource.getGraphId());
+
+            var conceptLinkProperties = Map.of(
+                    "prefLabel", getPrefLabel(conceptNode),
+                    "targetId", List.of(new Attribute("", conceptNode.getId().toString())),
+                    "targetGraph", List.of(new Attribute("", conceptNode.getType().getGraphId().toString())),
+                    "vocabularyLabel", getPrefLabel(terminology)
+            );
+
+            conceptLinks.add(
+                    new GenericNode(id, "concept-link-" + id, terminology.getUri() + "/concept-link-" + id,
+                            0L, "", new Date(), "", new Date(), conceptLinkType,
+                            conceptLinkProperties, emptyMap(), emptyMap())
+            );
+            var refs = references.getOrDefault(refType, new ArrayList<>());
+            refs.add(new Identifier(id, conceptLinkType));
+            references.put(refType, refs);
+        } catch (Exception e) {
+            logger.warn("Error handling external concepts {}, {}", uri, e.getMessage());
+            statusList.add(new StatusMessage(currentRecord, "Related concept not found " + uri));
+        }
+    }
+
+    private List<Attribute> getPrefLabel(GenericNodeInlined node) {
+        List<Attribute> attributes;
+        if (node.getType().getId().equals(NodeType.Concept)) {
+            attributes = node.getReferences()
+                    .get("prefLabelXl").get(0)
+                    .getProperties().get("prefLabel");
+        } else {
+            attributes = node.getProperties().get("prefLabel");
+        }
+
+        return attributes.stream()
+                .map(prop -> new Attribute(prop.getLang(), prop.getValue()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -853,17 +914,17 @@ public class NtrfMapper {
         List<DEF> def = o.getDEF();
         // Definition is complex multi-line object which needs to be resolved
         for (DEF d : def) {
-            handleDEF(currentConcept, d, o.getValue().value(), parentProperties, parentReferences, properties,
+            handleDEF(currentConcept, d, o.getValue().value(), parentProperties, properties,
                     vocabulary);
         }
         // NOTE
         List<NOTE> notes = o.getNOTE();
         for (NOTE n : notes) {
-            handleNOTE(currentConcept, n, o.getValue().value(), parentProperties, parentReferences, properties,
+            handleNOTE(currentConcept, n, o.getValue().value(), parentProperties, properties,
                     vocabulary);
         }
 
-        Consumer<Termcontent> parentReferencesConsumer = (obj) -> {
+        Consumer<Termcontent> parentReferencesConsumer = obj -> {
             String propertyName;
 
             if (obj instanceof SY) {
@@ -932,7 +993,7 @@ public class NtrfMapper {
     }
 
     private void handleTERM(TERM term, String lang, Map<String, List<Attribute>> properties) {
-        logger.debug("Handle Term: {}", term.toString());
+        logger.debug("Handle Term: {}", term);
 
         String termName = "";
         List<Object> content = term.getContent();
@@ -946,7 +1007,7 @@ public class NtrfMapper {
                 logger.info("Handle Term with GRAM: {}", prefLabel);
                 termName = termName.concat(prefLabel+" ");
             } else {
-                logger.error(" TERM: unhandled contentclass=" + li.getClass().getName() + " value=" + li);
+                logger.error("TERM: unhandled contentclass={} value={}", li.getClass().getName(), li);
             }
         }
         if (!termName.isEmpty()) {
@@ -957,7 +1018,7 @@ public class NtrfMapper {
 
     private void handleTE(TE te, String lang, Map<String, List<Attribute>> properties,
                           Map<String, List<Attribute>> parentProperties, Graph vocabularity) {
-        logger.debug("Handle Te: {}", te.toString());
+        logger.debug("Handle Te: {}", te);
         // If GEOG used
         if (te.getGEOG() != null) {
             lang = (lang.toLowerCase() + "-" + te.getGEOG().toUpperCase());
@@ -1003,13 +1064,13 @@ public class NtrfMapper {
         for (Object o : content) {
             if (o instanceof String) {
                 editorialNote = editorialNote + o;
-                editorialNote = escapeStringContent(editorialNote);
+                editorialNote = NtrfUtil.escapeStringContent(editorialNote);
             } else if (o instanceof JAXBElement) {
                 JAXBElement elem = (JAXBElement) o;
                 editorialNote = editorialNote + elem.getValue().toString();
             } else if (o instanceof LINK) {
                 LINK l = (LINK) o;
-                String linkRef = parseLinkRef(l, vocabulary);
+                String linkRef = NtrfUtil.parseLinkRef(l, vocabulary);
                 editorialNote = editorialNote
                         .concat("<a href='" + l.getHref() + "' data-type='external'>" + linkRef + "</a>");
             } else if (o instanceof SOURF) {
@@ -1017,12 +1078,11 @@ public class NtrfMapper {
             } else {
                 statusList.add(new StatusMessage(currentRecord,
                         " REMK: unhandled contentclass=" + o.getClass().getName() + " value=" + o));
-                logger.error(" REMK: unhandled contentclass=" + o.getClass().getName() + " value=" + o);
+                logger.error("REMK: unhandled contentclass={} value={}", o.getClass().getName(), o);
             }
         }
 
         if (!editorialNote.isEmpty()) {
-            logger.debug("REMK  Editorial note!!!" + editorialNote);
             Attribute att = new Attribute("fi", editorialNote);
             addProperty("editorialNote", properties, att);
         }
@@ -1037,7 +1097,7 @@ public class NtrfMapper {
             eqvalue = "<";
         if (equi.getValue().equalsIgnoreCase("near-equivalent"))
             eqvalue = "~";
-        Attribute att = new Attribute(null, equi.getValue());
+        Attribute att = new Attribute(null, eqvalue);
         addProperty("termEquivalency", properties, att);
     }
 
@@ -1047,11 +1107,10 @@ public class NtrfMapper {
     }
 
     private void handleSCOPE(SCOPE scope, Map<String, List<Attribute>> properties) {
-        logger.debug("HandleScope = {}", scope.getContent().toString());
+        logger.debug("HandleScope = {}", scope.getContent());
         scope.getContent().forEach(li -> {
             if (li instanceof String) {
                 Attribute att = new Attribute(null, li.toString());
-                // Attribute att = new Attribute(lang, li.toString());
                 addProperty("scope", properties, att);
             } else if (li instanceof LINK) {
                 // <SCOPE>yliopistolain <LINK
@@ -1152,7 +1211,7 @@ public class NtrfMapper {
      * @param o
      */
     private void handleBCON(UUID currentConcept, BCON o) {
-        logger.debug("handleBCON:" + o.getHref());
+        logger.debug("handleBCON: {}", o.getHref());
 
         String brefId = o.getHref();
         // Remove #
@@ -1189,14 +1248,14 @@ public class NtrfMapper {
      * @param o
      */
     private void handleRCON(UUID currentConcept, RCON o) {
-        logger.debug("handleRCON:" + o.getHref());
+        logger.debug("handleRCON: {}", o.getHref());
         String brefId = o.getHref();
         // Remove #
         if (brefId.startsWith("#")) {
             brefId = o.getHref().substring(1);
         }
 
-        logger.info("handleRCON add item from source record:" + currentRecord + "--> target:" + brefId);
+        logger.info("handleRCON add item from source record: {} --> target: {}", currentRecord, brefId);
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1223,9 +1282,8 @@ public class NtrfMapper {
      * <RCON href="#tmpOKSAID456">lukiokoulutuksen</RCON>*
      * 
      * @param rc
-     * @param references
      */
-    private void handleRCONRef(UUID currentConcept, RCON rc, Map<String, List<Identifier>> references) {
+    private void handleRCONRef(UUID currentConcept, RCON rc) {
         logger.debug("handleRCON ref: {}", rc.getHref());
         String rrefId = rc.getHref();
         // Remove #
@@ -1259,9 +1317,8 @@ public class NtrfMapper {
      * <BCON href="#tmpOKSAID436">Eurooppa-koulujen</RCON>
      * <BCON href="#tmpOKSAID456">lukiokoulutuksen</RCON>*
      * 
-     * @param references
      */
-    private void handleBCONRef(UUID currentConcept, BCON bc, Map<String, List<Identifier>> references) {
+    private void handleBCONRef(UUID currentConcept, BCON bc) {
         logger.debug("handleBCON ref: {}", bc.getHref());
         String rrefId = bc.getHref();
         // Remove #
@@ -1269,7 +1326,7 @@ public class NtrfMapper {
             rrefId = bc.getHref().substring(1);
         }
 
-        logger.info("handleBCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        logger.info("handleBCONRef add item from source record: {} --> target: {}", currentRecord, rrefId);
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1295,10 +1352,9 @@ public class NtrfMapper {
      * reference <NCON href="#tmpOKSAID564">ylioppilastutkintoa</NCON>
      * <NCON href="#tmpOKSAID436">Eurooppa-koulujen</NCON>
      * <NCON href="#tmpOKSAID456">lukiokoulutuksen</NCON>*
-     * 
-     * @param references
+     *
      */
-    private void handleNCONRef(UUID currentConcept, NCON nc, Map<String, List<Identifier>> references) {
+    private void handleNCONRef(UUID currentConcept, NCON nc) {
         logger.debug("handleNCON ref: {}", nc.getHref());
         String rrefId = nc.getHref();
         // Remove #
@@ -1306,7 +1362,7 @@ public class NtrfMapper {
             rrefId = nc.getHref().substring(1);
         }
 
-        logger.info("handleNCONRef add item from source record:" + currentRecord + "--> target:" + rrefId);
+        logger.info("handleNCONRef add item from source record: {} --> target: {}", currentRecord, rrefId);
         ConnRef conRef = new ConnRef();
         // Use delayed resolving, so save record id for logging purposes
         conRef.setCode(currentRecord);
@@ -1340,7 +1396,7 @@ public class NtrfMapper {
             if (nrefId.startsWith("#")) {
                 nrefId = o.getHref().substring(1);
             }
-            logger.info("handleNCON add item from source record:" + currentRecord + "--> target:" + nrefId);
+            logger.info("handleNCON add item from source record: {} --> target: {}", currentRecord, nrefId);
             ConnRef conRef = new ConnRef();
             // Use delayed resolving, so save record id for logging purposes
             conRef.setCode(currentRecord);
@@ -1369,7 +1425,7 @@ public class NtrfMapper {
      * @param properties
      */
     private void handleCLAS(CLAS o, Map<String, List<Attribute>> properties) {
-        if (o.getContent().size() > 0) {
+        if (!o.getContent().isEmpty()) {
             List<String> clasList = new ArrayList<>();
             o.getContent().forEach(obj -> {
                 clasList.add(obj.toString());
@@ -1382,336 +1438,134 @@ public class NtrfMapper {
     }
 
     private Attribute handleDEF(UUID currentConcept, DEF def, String lang,
-            Map<String, List<Attribute>> parentProperties, Map<String, List<Identifier>> parentReferences,
+            Map<String, List<Attribute>> parentProperties,
             Map<String, List<Attribute>> termProperties, Graph vocabulary) {
-        logger.debug("handleDEF-part: {)", def.getContent());
 
-        String defString = "";
-
-        List<?> defItems = def.getContent();
-        for (Object de : defItems) {
-            if (de instanceof String) {
-                String str = (String) de;
-                str = escapeStringContent(str);
-                // trim and add space
-                if (defString.isEmpty()) {
-                    defString = defString.concat(str.trim() + " ");
-                } else if (defString.endsWith(" ")) {
-                    defString = defString.concat(str.trim() + " ");
-                } else { // Add space befor and after if
-                    defString = defString.concat(" " + str.trim() + " ");
-                }
-            } else {
-                if (de instanceof RCON) {
-                    // <NCON href="#tmpOKSAID122" typr="partitive">koulutuksesta (2)</NCON> ->
-                    // <a href="http://uri.suomi.fi/terminology/oksa/tmpOKSAID122"
-                    // data-typr="partitive">koulutuksesta (2)</a>
-                    // <DEF>suomalaista <RCON href="#tmpOKSAID564">ylioppilastutkintoa</RCON>
-                    // vastaava <RCON href="#tmpOKSAID436">Eurooppa-koulujen</RCON> <BCON
-                    // href="#tmpOKSAID1401" typr="generic">tutkinto</BCON>, joka suoritetaan
-                    // kaksivuotisen <RCON href="#tmpOKSAID456">lukiokoulutuksen</RCON>
-                    // päätteeksi<SOURF>opintoluotsi + rk + tr34</SOURF></DEF>
-                    RCON rc = (RCON) de;
-                    defString = defString.concat("<a href='" + vocabulary.getUri());
-                    // Remove # from uri
-                    defString = defString.concat(getCleanRef(rc.getHref(), "related"));
-                    String hrefText = parseHrefText(rc.getContent());
-                    // Remove newlines
-                    hrefText = hrefText.replaceAll("\n", "");
-
-                    hrefText = hrefText.trim();
-                    defString = defString.concat(">" + hrefText + "</a>");
-                    logger.debug("handleDEF RCON:" + defString);
-                    // Add also reference
-                    handleRCONRef(currentConcept, rc, parentReferences);
-                } else if (de instanceof BCON) {
-                    // <DEF><RCON href="#tmpOKSAID162">yliopiston</RCON> <BCON href="#tmpOKSAID187"
-                    // typr="partitive"
-                    // >opetus- ja tutkimushenkilöstön</BCON> osa, jonka tehtävissä suunnitellaan,
-                    // koordinoidaan ja johdetaan erittäin laajoja kokonaisuuksia, tehtäviin
-                    // sisältyy kokonaisvaltaista
-                    // vastuuta organisaation toiminnasta ja taloudesta sekä kansallisen tai
-                    // kansainvälisen
-                    // tason kehittämistehtävistä ja tehtävissä vaikutetaan huomattavasti koko
-                    // tutkimusjärjestelmään
-                    // <SOURF>neliport + tr40</SOURF></DEF>
-
-                    BCON bc = (BCON) de;
-                    defString = defString.concat("<a href='" + vocabulary.getUri());
-                    String typr = bc.getTypr();
-                    if (typr == null) { // default when not set up
-                        typr = "broader";
-                    } else if (typr.equalsIgnoreCase("partitive")) {
-                        typr = "isPartOf";
-                    } else { // default
-                        typr = "broader";
-                    }
-
-                    // Remove # from uri
-                    defString = defString.concat(getCleanRef(bc.getHref(), typr));
-                    String hrefText = parseHrefText(bc.getContent());
-                    defString = defString.concat(">" + hrefText.trim() + "</a>");
-                    // Add also reference
-                    handleBCONRef(currentConcept, bc, parentReferences);
-                } else if (de instanceof NCON) {
-                    // TODO! proper support for narrover concepts, currently just rip links
-                    // <DEF><RCON href="#tmpOKSAID162">yliopiston</RCON> <BCON href="#tmpOKSAID187"
-                    // typr="partitive"
-                    // >opetus- ja tutkimushenkilöstön</BCON> osa, jonka tehtävissä suunnitellaan,
-                    // koordinoidaan ja johdetaan erittäin laajoja kokonaisuuksia, tehtäviin
-                    // sisältyy kokonaisvaltaista
-                    // vastuuta organisaation toiminnasta ja taloudesta sekä kansallisen tai
-                    // kansainvälisen
-                    // tason kehittämistehtävistä ja tehtävissä vaikutetaan huomattavasti koko
-                    // tutkimusjärjestelmään
-                    // <SOURF>neliport + tr40</SOURF>
-                    // <NCON href="#tmpOKSAID450" typr="generic">esiopetusta</NCON></DEF>
-
-                    NCON nc = (NCON) de;
-                    defString = defString.concat("<a href='" + vocabulary.getUri());
-                    String typr = nc.getTypr();
-                    if (typr == null) { // default when not set up
-                        typr = "narrower";
-                    } else if (typr.equalsIgnoreCase("partitive")) {
-                        typr = "hasPart";
-                    } else { // default
-                        typr = "narrower";
-                    }
-
-                    // Remove # from uri
-                    defString = defString.concat(getCleanRef(nc.getHref(), typr));
-                    String hrefText = parseHrefText(nc.getContent());
-                    defString = defString.concat(">" + hrefText.trim() + "</a>");
-                    // Add also reference
-                    handleNCONRef(currentConcept, nc, parentReferences);
-                } else if (de instanceof SOURF) {
-                    handleSOURF((SOURF) de, null, termProperties, vocabulary);
-                    // Add refs as sources-part.
-                    updateSources(((SOURF) de).getContent(), lang, termProperties);
-                } else if (de instanceof REMK) {
-                    handleREMK((REMK) de, termProperties, vocabulary);
-                } else if (de instanceof LINK) {
-                    LINK lc = (LINK) de;
-                    if (lc.getContent() != null && lc.getContent().size() > 0) {
-                        // Remove "href:" from string
-                        // "href:https://www.finlex.fi/fi/laki/ajantasa/1973/19730036"
-                        String linkRef = lc.getHref();
-
-                        linkRef = parseLinkRef(lc, vocabulary);
-                        if (linkRef.startsWith("href:")) {
-                            linkRef = linkRef.substring(5);
-                        }
-                        defString = defString.concat("<a href='" + linkRef + "' data-type='external'>"
-                                + escapeStringContent(lc.getContent().get(0).toString().trim()) + "</a> ");
-                    }
-                } else if (de instanceof JAXBElement) {
-                    // HOGR
-                    JAXBElement el = (JAXBElement) de;
-                    if (el.getName().toString().equalsIgnoreCase("HOGR")) {
-                        defString = defString.trim() + " (" + el.getValue().toString() + ")";
-                    } else if (de instanceof String) {
-                        defString = defString + (String) de;
-                    }
-                } else {
-                    logger.error("DEF, unhandled CLASS={}", de.getClass().getName());
-                    statusList.add(new StatusMessage(currentRecord, "DEF, unhandled CLASS=" + de.getClass().getName()));
-                }
-            }
-        }
+        String defString = getContentWithLinks(def.getContent(), currentConcept,
+                termProperties, vocabulary, lang);
         logger.debug("Definition={}", defString);
-        // Add definition if exist.
+
+        // Add definition if exists.
         if (!defString.isEmpty()) {
-            // clean commans and points
-            defString = defString.replaceAll(" , ", ", ");
-            defString = defString.replaceAll(" \\. ", ". ");
-            Attribute att = new Attribute(lang, defString.trim());
+            Attribute att = new Attribute(lang, defString);
             addProperty("definition", parentProperties, att);
             return att;
-        } else
-            return null;
+        }
+        return null;
     }
 
-    private String parseHrefText(List<Serializable> content) {
-        String hrefText = "";
-        for (Serializable c : content) {
-            if (c instanceof JAXBElement) {
-                JAXBElement el = (JAXBElement) c;
-                if (el.getName().toString().equalsIgnoreCase("HOGR")) {
-                    hrefText = hrefText.trim() + " (" + el.getValue().toString() + ")";
-                }
-            } else if (c instanceof String) {
-                hrefText = hrefText + c;
-            }
-        }
-        // Remove newlines just in case
-        hrefText = hrefText.replaceAll("\n", "");
-        return escapeStringContent(hrefText);
-    }
-
-    private String parseLinkRef(LINK li, Graph vocabulary) {
-        String linkRef = li.getHref();
-        // Remove "href:" from string
-        if (linkRef.startsWith("href:")) {
-            linkRef = linkRef.substring(5);
-        }
-        if (linkRef.startsWith("#")) {
-            // internal reference, generate url for it.
-            if (vocabulary.getUri().endsWith("/")) {
-                linkRef = vocabulary.getUri() + linkRef.substring(1);
-            } else {
-                linkRef = vocabulary.getUri() + "/" + linkRef.substring(1);
-            }
-        }
-        return linkRef;
-    }
-
-    private String getCleanRef(String refString, String datatype) {
-        String ref = "";
-        if (refString.startsWith("#")) {
-            String hrefid = refString.substring(1);
-            ref = ref.concat(hrefid + "'");
-        } else
-            ref = ref.concat(refString + "'");
-        if (datatype != null && !datatype.isEmpty()) {
-            ref = ref.concat(" property ='" + datatype + "'");
-        }
-        return ref;
-    }
-
-    private Attribute handleNOTE(UUID currentConcept, NOTE note, String lang,
-            Map<String, List<Attribute>> parentProperties, Map<String, List<Identifier>> parentReferences,
-            Map<String, List<Attribute>> termProperties, Graph vocabulary) {
-        logger.debug("handleNOTE-part" + note.getContent());
-
-        String noteString = "";
-        for (Object de : note.getContent()) {
-            if (de instanceof String) {
-                logger.debug("  Parsing note-string:" + de.toString());
-                String str = (String) de;
-                str = escapeStringContent(str);
-
-                // trim and add space
-                if (noteString.isEmpty()){
-                    noteString = str;
-                } else {
-                    noteString = noteString.concat(str);
-                }
-                // Remove newline from string
-                noteString = noteString.replace("\n", "");
-            } else if (de instanceof SOURF) {
-                if (((SOURF) de).getContent() != null && ((SOURF) de).getContent().size() > 0) {
-                    handleSOURF((SOURF) de, null, termProperties, vocabulary);
-                    // handleSOURF((SOURF)de, lang, termProperties,vocabulary);
-                    // Don't add sourf-string into the note-field, just add them to the sources-list
-                    // noteString=noteString.concat(((SOURF)de).getContent().toString().trim());
-                    // Add refs as string and construct lines for sources-part.
-                    updateSources(((SOURF) de).getContent(), lang, termProperties);
-                }
-            } else if (de instanceof RCON) {
-                RCON rc = (RCON) de;
-                noteString = noteString.concat("<a href='" + vocabulary.getUri());
-                // Remove # from uri
-                noteString = noteString.concat(getCleanRef(rc.getHref(), "related"));
-                String hrefText = parseHrefText(rc.getContent());
-                noteString = noteString.concat(">" + hrefText.trim() + "</a>");
-
-                logger.debug("handleNOTE RCON:" + noteString.trim());
+    private String getContentWithLinks(List<Object> content, UUID currentConcept,
+                                              Map<String, List<Attribute>> termProperties,
+                                              Graph vocabulary, String lang) {
+        String result = "";
+        for (Object element : content) {
+            if (element instanceof String) {
+                result = result.concat(getStringContent(result, (String) element));
+            } else if (element instanceof RCON) {
+                RCON rc = (RCON) element;
+                result = result.concat(
+                        NtrfUtil.getLink(vocabulary.getUri(), rc.getHref(), rc.getContent(), "related"));
                 // Add also reference
-                handleRCONRef(currentConcept, rc, parentReferences);
-            } else if (de instanceof BCON) {
-                BCON bc = (BCON) de;
-                if (bc.getContent() != null && bc.getContent().size() > 0) {
-                    noteString = noteString.concat("<a href='" + vocabulary.getUri());
-                    String typr = bc.getTypr();
-                    if (typr == null) { // default when not set up
-                        typr = "broader";
-                    } else if (typr.equalsIgnoreCase("partitive")) {
-                        typr = "isPartOf";
-                    } else { // default
-                        typr = "broader";
-                    }
-                    // Remove # from uri
-                    noteString = noteString.concat(getCleanRef(bc.getHref(), typr));
-                    String hrefText = parseHrefText(bc.getContent());
-                    noteString = noteString.concat(">" + hrefText.trim() + "</a>");
-                    logger.debug("handleDEF BCON: {}", noteString);
-                    // Add also reference
-                    handleBCONRef(currentConcept, bc, parentReferences);
-                }
-            } else if (de instanceof NCON) {
-                NCON nc = (NCON) de;
-                if (nc.getContent() != null && nc.getContent().size() > 0) {
-                    noteString = noteString.concat("<a href='" + vocabulary.getUri());
-                    String typr = nc.getTypr();
-                    if (typr == null) { // default when not set up
-                        typr = "narrower";
-                    } else if (typr.equalsIgnoreCase("partitive")) {
-                        typr = "hasPart";
-                    } else { // default
-                        typr = "narrower";
-                    }
-
-                    // Remove # from uri
-                    noteString = noteString.concat(getCleanRef(nc.getHref(), typr));
-                    String hrefText = parseHrefText(nc.getContent());
-                    noteString = noteString.concat(">" + hrefText.trim() + "</a>");
-                    logger.debug("handleDEF NCON: {}", noteString);
-                    // Add also reference
-                    handleNCONRef(currentConcept, nc, parentReferences);
-                }
-            } else if (de instanceof LINK) {
-                LINK lc = (LINK) de;
-                if (lc.getContent() != null && lc.getContent().size() > 0) {
-                    // Remove "href:" from string
-                    // "href:https://www.finlex.fi/fi/laki/ajantasa/1973/19730036"
-                    String linkRef = lc.getHref();
-
-                    linkRef = parseLinkRef(lc, vocabulary);
+                handleRCONRef(currentConcept, rc);
+            } else if (element instanceof BCON) {
+                BCON bc = (BCON) element;
+                result = result.concat(
+                        NtrfUtil.getLink(vocabulary.getUri(), bc.getHref(), bc.getContent(), getLinkTypr(bc)));
+                // Add also reference
+                handleBCONRef(currentConcept, bc);
+            } else if (element instanceof NCON) {
+                NCON nc = (NCON) element;
+                result = result.concat(
+                        NtrfUtil.getLink(vocabulary.getUri(), nc.getHref(), nc.getContent(), getLinkTypr(nc)));
+                // Add also reference
+                handleNCONRef(currentConcept, nc);
+            } else if (element instanceof ECON) {
+                ECON econ = (ECON) element;
+                result = result.concat(
+                        NtrfUtil.getLink(econ.getHref(), "", econ.getContent(), null));
+            } else if (element instanceof RCONEXT) {
+                RCONEXT rconext = (RCONEXT) element;
+                result = result.concat(
+                        NtrfUtil.getLink(rconext.getHref(), "", rconext.getContent(), null));
+            } else if (element instanceof BCONEXT) {
+                BCONEXT bconext = (BCONEXT) element;
+                result = result.concat(
+                        NtrfUtil.getLink(bconext.getHref(), "", bconext.getContent(), null));
+            } else if (element instanceof NCONEXT) {
+                NCONEXT nconext = (NCONEXT) element;
+                result = result.concat(
+                        NtrfUtil.getLink(nconext.getHref(), "", nconext.getContent(), null));
+            } else if (element instanceof SOURF) {
+                handleSOURF((SOURF) element, null, termProperties, vocabulary);
+                // Add refs as sources-part.
+                updateSources(((SOURF) element).getContent(), lang, termProperties);
+            } else if (element instanceof REMK) {
+                handleREMK((REMK) element, termProperties, vocabulary);
+            } else if (element instanceof LINK) {
+                LINK lc = (LINK) element;
+                if (lc.getContent() != null && !lc.getContent().isEmpty()) {
+                    String linkRef = NtrfUtil.parseLinkRef(lc, vocabulary);
                     if (linkRef.startsWith("href:")) {
                         linkRef = linkRef.substring(5);
                     }
-
-                    noteString = noteString.concat("<a href='" + linkRef + "' data-type='external'>"
-                            + escapeStringContent(lc.getContent().get(0).toString().trim()) + "</a>");
-
-                    logger.info("Add LINK:" + linkRef);
+                    result = result.concat("<a href='" + linkRef + "' data-type='external'>"
+                            + NtrfUtil.escapeStringContent(lc.getContent().get(0).toString().trim()) + "</a> ");
                 }
-            } else if (de instanceof JAXBElement) {
-                JAXBElement j = (JAXBElement) de;
-                logger.debug("  Parsing note-elem: {}", j.getName());
-                if (j.getName().toString().equalsIgnoreCase("HOGR")) {
-                    noteString = noteString.trim() + " (" + j.getValue().toString() + ")";
-                } else if (j.getName().toString().equalsIgnoreCase("B")
-                        || j.getName().toString().equalsIgnoreCase("I")) {
-                    // Remove Bold and Italics
-                    noteString = noteString + j.getValue().toString();
-                } else if (j.getName().toString().equalsIgnoreCase("BR")) {
-                    // Add newline
-                    noteString = noteString + "\n";
-                } else {
-                    logger.error("  JABX-element Unhandled note-class {}", j.getName().toString());
-                    statusList.add(new StatusMessage(currentRecord, "Unhandled note-class " + j.getName().toString()));
+            } else if (element instanceof JAXBElement) {
+                // HOGR
+                JAXBElement el = (JAXBElement) element;
+                if (el.getName().toString().equalsIgnoreCase("HOGR")) {
+                    result = result.trim() + " (" + el.getValue().toString() + ")";
                 }
             } else {
-                logger.error("Unhandled note-class {}", de.getClass().getTypeName());
+                logger.error("DEF, unhandled CLASS={}", element.getClass().getName());
+                statusList.add(new StatusMessage(currentRecord, "DEF, unhandled CLASS=" + element.getClass().getName()));
             }
-
-            logger.debug("note-String={}", noteString);
         }
 
-        // Add note if exist.
-        if (!noteString.isEmpty()) {
-            // Remove extra spaces around
-            noteString = noteString.trim();
-            // Replace multiple spaces with one
-            noteString = noteString.replaceAll("( )+", " ");
-            logger.debug("handleNote() Adding note:" + noteString);
+        return result
+                .replaceAll(" , ", ", ")
+                .replaceAll(" \\. ", ". ")
+                .replaceAll("( )+", " ")
+                .trim();
+    }
 
+    private static String getLinkTypr(Object obj) {
+        if (obj instanceof BCON) {
+            return "partitive".equalsIgnoreCase(((BCON)obj).getTypr()) ? "isPartOf" : "broader";
+        } else if (obj instanceof NCON) {
+            return "partitive".equalsIgnoreCase(((NCON)obj).getTypr()) ? "hasPart" : "narrower";
+        }
+        return null;
+    }
+
+    @NotNull
+    private static String getStringContent(String content, String strElement) {
+        strElement = NtrfUtil.escapeStringContent(strElement).trim();
+
+        // Add space after and before if not the first content or element is not empty
+        if (content.isEmpty()) {
+            return strElement + " ";
+        } else if (strElement.isEmpty() && !content.endsWith(" ")) {
+            return " ";
+        } else if (!strElement.isEmpty()) {
+            return " " + strElement + " ";
+        }
+        return "";
+    }
+
+    private void handleNOTE(UUID currentConcept, NOTE note, String lang,
+            Map<String, List<Attribute>> parentProperties,
+            Map<String, List<Attribute>> termProperties, Graph vocabulary) {
+
+        String noteString = getContentWithLinks(note.getContent(), currentConcept, termProperties, vocabulary, lang);
+
+        // Add note if exists.
+        if (!noteString.isEmpty()) {
+            logger.debug("handleNote() Adding note: {}", noteString);
             Attribute att = new Attribute(lang, noteString);
             addProperty("note", parentProperties, att);
-            return att;
-        } else
-            return null;
+        }
     }
 
     /**
@@ -1724,7 +1578,7 @@ public class NtrfMapper {
      */
 
     private GenericNode handleSY(Termcontent synonym, String lang, Graph vocabularity) {
-        logger.debug("handleSY-part:" + synonym.toString());
+        logger.debug("handleSY-part: {}", synonym.toString());
         // Synonym fields
         String equi;
         // Attributes are stored to property-list
@@ -1813,18 +1667,20 @@ public class NtrfMapper {
      * @param vocabularity
      * @return
      */
-    private Attribute handleSOURF(SOURF source, String lang, Map<String, List<Attribute>> properties,
+    private void handleSOURF(SOURF source, String lang, Map<String, List<Attribute>> properties,
             Graph vocabularity) {
         logger.debug("handleSOURF-part {}", source.getContent());
 
         String sourceString = "";
 
+        // TODO: SOURF should not contain only LINK elements or plain text
         List<?> sourceItems = source.getContent();
         for (Object se : sourceItems) {
             if (se instanceof String) {
                 sourceString = sourceString.concat(se.toString());
-                sourceString = escapeStringContent(sourceString);
-            } else if (se instanceof NCON) {
+                sourceString = NtrfUtil.escapeStringContent(sourceString);
+            }
+            else if (se instanceof NCON) {
                 NCON rc = (NCON) se;
                 sourceString = sourceString.concat("<a href='" + vocabularity.getUri());
                 if (rc.getTypr() != null && !rc.getTypr().isEmpty()) {
@@ -1846,10 +1702,11 @@ public class NtrfMapper {
                     sourceString = sourceString.concat(" data-typr ='" + rc.getTypr() + "'");
                 }
                 sourceString = sourceString.concat(">" + rc.getContent().toString() + "</a>");
-            } else {
+            }
+            else {
                 if (se instanceof JAXBElement) {
                     JAXBElement j = (JAXBElement) se;
-                    if (j.getName().toString().equalsIgnoreCase("SOURF")) {
+                    if (j.getName().toString().equalsIgnoreCase("RCON")) {
                         RCON rc = (RCON) j.getValue();
                         sourceString = sourceString.concat("<a href='" + vocabularity.getUri());
                         if (rc.getTypr() != null && !rc.getTypr().isEmpty()) {
@@ -1858,7 +1715,7 @@ public class NtrfMapper {
                         sourceString = sourceString.concat(">" + rc.getContent().get(0) + "</a>");
                     } else if (j.getName().toString().equalsIgnoreCase("SOURF")) {
                         SOURF sf = (SOURF) j.getValue();
-                        if (sf.getContent() != null && sf.getContent().size() > 0) {
+                        if (sf.getContent() != null && !sf.getContent().isEmpty()) {
                             sourceString = sourceString.concat(" " + sf.getContent());
                             // Add refs as string and construct lines four sources-part.
                             updateSources(sf.getContent(), lang, properties);
@@ -1872,14 +1729,11 @@ public class NtrfMapper {
             }
         }
 
-        // Add definition if exist.
-
+        // Add definition if exists.
         if (!sourceString.isEmpty()) {
             Attribute att = new Attribute(lang, sourceString);
             addProperty("source", properties, att);
-            return att;
         }
-        return null;
     }
 
     /**
@@ -1904,7 +1758,7 @@ public class NtrfMapper {
      * @param properties
      */
     private void updateSources(String srefs, String lang, Map<String, List<Attribute>> properties) {
-        String fields[] = srefs.split("\\+");
+        String[] fields = srefs.split("\\+");
         for (String s : fields) {
             s = s.trim();
             String sourcesString = "[" + s + "]";
@@ -1917,7 +1771,7 @@ public class NtrfMapper {
                     sourcesString = sourcesString.concat(m.get("url"));
                 }
             } else {
-                logger.warn("Not matching reference found for:" + s);
+                logger.warn("Not matching reference found for: {}", s);
                 statusList.add(new StatusMessage(currentRecord, "Not matching reference found for :" + s));
             }
             if (!sourcesString.isEmpty()) {
@@ -1943,18 +1797,6 @@ public class NtrfMapper {
         } else {
             properties.get(attributeName).add(att);
         }
-    }
-
-    private static String escapeStringContent(String s) {
-        Escaper escaper = Escapers.builder()
-                .addEscape('&', "&amp;")
-                .addEscape('\"', "&quot;")
-                .addEscape('\'', "&apos;")
-                .addEscape('<', "&lt;")
-                .addEscape('>', "&gt;")
-                .build();
-
-        return escaper.escape(s);
     }
 
     private void addStatusProperty(String value, Map<String, List<Attribute>> properties) {

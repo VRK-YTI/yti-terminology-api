@@ -9,6 +9,8 @@ import fi.vm.yti.terminology.api.frontend.Status;
 import fi.vm.yti.terminology.api.model.ntrf.VOCABULARY;
 
 import fi.vm.yti.terminology.api.model.termed.*;
+import fi.vm.yti.terminology.api.resolve.ResolveService;
+import fi.vm.yti.terminology.api.resolve.ResolvedResource;
 import fi.vm.yti.terminology.api.util.Parameters;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,9 @@ public class NtrfTest {
     @MockBean
     YtiMQService ytiMQService;
 
+    @MockBean
+    ResolveService resolveService;
+
     @Autowired
     NtrfMapper mapper;
 
@@ -68,7 +73,7 @@ public class NtrfTest {
     }
 
     @Test
-    public void testMapTermInfo() throws Exception {
+    void testMapTermInfo() throws Exception {
         VOCABULARY vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("term-and-concept-info.xml"));
 
         mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
@@ -85,9 +90,9 @@ public class NtrfTest {
         var nodes = deleteAndSaveArgumentCaptor.getAllValues().get(0).getSave();
 
         var concept = getConceptNode(nodes, "c100");
-        var recommendedTerm = getTerm(concept, nodes, "prefLabelXl");
-        var synonym = getTerm(concept, nodes, "altLabelXl");
-        var searchTerm = getTerm(concept, nodes, "searchTerm");
+        var recommendedTerm = getReference(concept, nodes, "prefLabelXl");
+        var synonym = getReference(concept, nodes, "altLabelXl");
+        var searchTerm = getReference(concept, nodes, "searchTerm");
 
         // Concept properties
         assertEquals("Käsitteen luokka", getPropertyValue(concept, "conceptClass"));
@@ -111,7 +116,7 @@ public class NtrfTest {
         assertEquals("1", getPropertyValue(recommendedTerm, "termHomographNumber"));
         assertEquals("Termin lisätieto", getPropertyValue(recommendedTerm, "termInfo"));
         assertEquals("ylläpitäjän muistiinpano", getPropertyValue(recommendedTerm, "editorialNote"));
-        assertEquals("broader", getPropertyValue(recommendedTerm, "termEquivalency"));
+        assertEquals(">", getPropertyValue(recommendedTerm, "termEquivalency"));
         assertEquals("wordClass", getPropertyValue(recommendedTerm, "wordClass"));
         assertEquals("feminiini", getPropertyValue(recommendedTerm, "termFamily"));
         assertEquals("monikko", getPropertyValue(recommendedTerm, "termConjugation"));
@@ -121,7 +126,7 @@ public class NtrfTest {
     }
 
     @Test
-    public void testMapStatus() throws Exception {
+    void testMapStatus() throws Exception {
         VOCABULARY vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("term-and-concept-with-status.xml"));
 
         mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
@@ -138,9 +143,9 @@ public class NtrfTest {
         var nodes = deleteAndSaveArgumentCaptor.getAllValues().get(0).getSave();
 
         var conceptNode = getConceptNode(nodes, "c100");
-        var recommendedTerm = getTerm(conceptNode, nodes, "prefLabelXl");
-        var synonym = getTerm(conceptNode, nodes, "altLabelXl");
-        var notRecommendedSynonym = getTerm(conceptNode, nodes, "notRecommendedSynonym");
+        var recommendedTerm = getReference(conceptNode, nodes, "prefLabelXl");
+        var synonym = getReference(conceptNode, nodes, "altLabelXl");
+        var notRecommendedSynonym = getReference(conceptNode, nodes, "notRecommendedSynonym");
 
         assertEquals(Status.VALID.name(), getPropertyValue(conceptNode, "status"));
         assertEquals(Status.VALID.name(), getPropertyValue(recommendedTerm, "status"));
@@ -149,7 +154,7 @@ public class NtrfTest {
     }
 
     @Test
-    public void testMapType() throws Exception {
+    void testMapType() throws Exception {
         VOCABULARY vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("concept-type.xml"));
 
         mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
@@ -175,14 +180,102 @@ public class NtrfTest {
         assertEquals(Status.RETIRED.name(), getPropertyValue(c200, "status"));
     }
 
-    private GenericNode getConceptNode(List<GenericNode> nodes, String conceptId) {
+    @Test
+    void mapConceptLinks() throws Exception {
+        var graphId = UUID.randomUUID();
+        var conceptId = UUID.randomUUID();
+        var terminologyNodeId = UUID.randomUUID();
+
+        var vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("external-concept-mapping.xml"));
+
+        when(resolveService.resolveResource(anyString())).thenReturn(
+                new ResolvedResource(graphId, ResolvedResource.Type.CONCEPT, conceptId)
+        );
+
+        var termNode = new GenericNodeInlined(UUID.randomUUID(),
+                "term-1", null, 0L, "", new Date(), "", new Date(), new TypeId(NodeType.Term, new GraphId(graphId)),
+                Map.of("prefLabel", List.of(new Attribute("en", "External concept"))), emptyMap(), emptyMap());
+
+        when(termedService.getConcept(eq(graphId), eq(conceptId))).thenReturn(
+                new GenericNodeInlined(conceptId, null, null,
+                    0L, "", new Date(), "", new Date(), new TypeId(NodeType.Concept, new GraphId(graphId)),
+                    emptyMap(), Map.of("prefLabelXl", List.of(termNode)), emptyMap())
+        );
+
+        when(termedService.getVocabulary(eq(graphId))).thenReturn(new GenericNodeInlined(terminologyNodeId, null, null,
+                0L, "", new Date(), "", new Date(), new TypeId(NodeType.TerminologicalVocabulary, new GraphId(graphId)),
+                Map.of("prefLabel", List.of(new Attribute("en", "External terminology"))), emptyMap(), emptyMap()));
+
+        mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
+
+        verify(termedRequester, times(2)).exchange(
+                eq("/nodes"),
+                eq(HttpMethod.POST),
+                any(Parameters.class),
+                eq(String.class),
+                deleteAndSaveArgumentCaptor.capture(),
+                anyString(),
+                anyString());
+
+        var nodes = deleteAndSaveArgumentCaptor.getAllValues().get(0).getSave();
+
+        var conceptNode = getConceptNode(nodes, "concept-104");
+        assertEquals(1, conceptNode.getReferences().get("exactMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("closeMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("relatedMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("broadMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("narrowMatch").size());
+
+        var exactMatch = getReference(conceptNode, nodes, "exactMatch");
+        assertEquals("External concept", getPropertyValue(exactMatch, "prefLabel"));
+        assertEquals(conceptId.toString(), getPropertyValue(exactMatch, "targetId"));
+        assertEquals(graphId.toString(), getPropertyValue(exactMatch, "targetGraph"));
+        assertEquals("External terminology", getPropertyValue(exactMatch, "vocabularyLabel"));
+    }
+
+    @Test
+    void mapDefinitionAndNote() throws Exception {
+        var vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("concept-definition-and-note.xml"));
+
+        mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
+
+        var prefixDef = "Definition ";
+        var prefixNote = "Note ";
+        var expected = "test links: <a href='http://uri.suomi.fi/terminology/rak/concept-1'>econ link</a> " +
+                "<a href='http://uri.suomi.fi/terminology/rak/concept-1'>rconext link</a> " +
+                "<a href='http://uri.suomi.fi/terminology/rak/concept-1'>bconext link</a> " +
+                "<a href='http://uri.suomi.fi/terminology/rak/concept-1'>nconext link</a> " +
+                "<a href='https://uri.suomi.fi/terminology/test/concept-1' property ='narrower'>ncon link</a> " +
+                "<a href='https://uri.suomi.fi/terminology/test/concept-1' property ='related'>rcon link</a> " +
+                "<a href='https://uri.suomi.fi/terminology/test/concept-1' property ='broader'>bcon link</a>.";
+
+        verify(termedRequester, times(2)).exchange(
+                eq("/nodes"),
+                eq(HttpMethod.POST),
+                any(Parameters.class),
+                eq(String.class),
+                deleteAndSaveArgumentCaptor.capture(),
+                anyString(),
+                anyString());
+
+        var nodes = deleteAndSaveArgumentCaptor.getAllValues().get(0).getSave();
+        var conceptNode = getConceptNode(nodes, "concept-100");
+
+        var definition = getPropertyValue(conceptNode, "definition");
+        var note = getPropertyValue(conceptNode, "note");
+
+        assertEquals(prefixDef + expected, definition);
+        assertEquals(prefixNote + expected, note);
+    }
+
+    private GenericNode getConceptNode(List<GenericNode> nodes, String code) {
         return nodes.stream()
-                .filter(n -> n.getCode().equals(conceptId))
+                .filter(n -> code.equals(n.getCode()))
                 .findFirst()
                 .orElseGet(null);
     }
 
-    private GenericNode getTerm(GenericNode concept, List<GenericNode> nodes, String reference) {
+    private GenericNode getReference(GenericNode concept, List<GenericNode> nodes, String reference) {
         UUID id = concept.getReferences().get(reference).get(0).getId();
         return nodes.stream()
             .filter(n -> n.getId().equals(id))
@@ -201,7 +294,7 @@ public class NtrfTest {
     private List<String> getPropertyValues(GenericNode node, String property) {
         return node.getProperties().get(property)
                 .stream()
-                .map(p -> p.getValue())
+                .map(Attribute::getValue)
                 .collect(Collectors.toList());
     }
 
@@ -221,7 +314,7 @@ public class NtrfTest {
                 .thenReturn(new Graph(
                         UUID.randomUUID(),
                         "test",
-                        "https://uri.suomi.fi/terminology/test",
+                        "https://uri.suomi.fi/terminology/test/",
                         emptyList(),
                         emptyMap(),
                         emptyMap()

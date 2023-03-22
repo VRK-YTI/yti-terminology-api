@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <RECORD numb="concept-100" stat="DRAFT">
+        <LANG value="fi">
+            <TE stat="DRAFT">
+                <TERM>huoneisto</TERM>
+            </TE>
+            <DEF>
+                Definition test links:
+                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1">econ link</ECON>
+                    <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
+                    <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
+                    <NCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">nconext link</NCONEXT>
+                    <NCON href="#concept-1">ncon link</NCON>
+                    <RCON href="#concept-1">rcon link</RCON>
+                    <BCON href="#concept-1">bcon link</BCON>
+                .
+            </DEF>
+            <NOTE>
+                Note test links:
+                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1">econ link</ECON>
+                    <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
+                    <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
+                    <NCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">nconext link</NCONEXT>
+                    <NCON href="#concept-1">ncon link</NCON>
+                    <RCON href="#concept-1">rcon link</RCON>
+                    <BCON href="#concept-1">bcon link</BCON>
+                .
+            </NOTE>
+        </LANG>
+    </RECORD>
+</VOCABULARY>

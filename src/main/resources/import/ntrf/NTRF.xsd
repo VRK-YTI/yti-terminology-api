@@ -165,6 +165,9 @@
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="SCON"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="RCON"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="ECON"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="RCONEXT"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="BCONEXT"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="NCONEXT"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="ILLU"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="REMK"/>
                 <xs:group ref="admin"/>
@@ -191,6 +194,9 @@
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="SCON"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="RCON"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="ECON"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="RCONEXT"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="BCONEXT"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="NCONEXT"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="ILLU"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="REMK"/>
                 <xs:group ref="admin"/>
@@ -338,6 +344,9 @@
                 <xs:element ref="SCON"/>
                 <xs:element ref="RCON"/>
                 <xs:element ref="ECON"/>
+                <xs:element ref="RCONEXT"/>
+                <xs:element ref="BCONEXT"/>
+                <xs:element ref="NCONEXT"/>
                 <xs:element ref="SOURF"/>
                 <xs:element ref="STAT"/>
                 <xs:element ref="ADD"/>
@@ -358,6 +367,9 @@
                 <xs:element ref="SCON"/>
                 <xs:element ref="RCON"/>
                 <xs:element ref="ECON"/>
+                <xs:element ref="RCONEXT"/>
+                <xs:element ref="BCONEXT"/>
+                <xs:element ref="NCONEXT"/>
                 <xs:element ref="SOURF"/>
                 <xs:element ref="STAT"/>
                 <xs:element ref="ADD"/>
@@ -378,6 +390,9 @@
                 <xs:element ref="SCON"/>
                 <xs:element ref="RCON"/>
                 <xs:element ref="ECON"/>
+                <xs:element ref="RCONEXT"/>
+                <xs:element ref="BCONEXT"/>
+                <xs:element ref="NCONEXT"/>
                 <xs:element ref="SOURF"/>
                 <xs:element ref="STAT"/>
                 <xs:element ref="ADD"/>
@@ -399,6 +414,9 @@
                 <xs:element ref="SCON"/>
                 <xs:element ref="RCON"/>
                 <xs:element ref="ECON"/>
+                <xs:element ref="RCONEXT"/>
+                <xs:element ref="BCONEXT"/>
+                <xs:element ref="NCONEXT"/>
                 <xs:element ref="SOURF"/>
                 <xs:element ref="STAT"/>
                 <xs:element ref="ADD"/>
@@ -419,6 +437,9 @@
                 <xs:element ref="SCON"/>
                 <xs:element ref="RCON"/>
                 <xs:element ref="ECON"/>
+                <xs:element ref="RCONEXT"/>
+                <xs:element ref="BCONEXT"/>
+                <xs:element ref="NCONEXT"/>
                 <xs:element ref="SOURF"/>
                 <xs:element ref="STAT"/>
                 <xs:element ref="ADD"/>
@@ -505,6 +526,32 @@
         </xs:complexType>
     </xs:element>
     <xs:element name="ECON">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="HOGR"/>
+            </xs:sequence>
+            <xs:attribute name="typr"/>
+            <xs:attribute name="href" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="RCONEXT">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="HOGR"/>
+            </xs:sequence>
+            <xs:attribute name="href" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="BCONEXT">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="HOGR"/>
+            </xs:sequence>
+            <xs:attribute name="typr"/>
+            <xs:attribute name="href" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="NCONEXT">
         <xs:complexType mixed="true">
             <xs:sequence>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="HOGR"/>

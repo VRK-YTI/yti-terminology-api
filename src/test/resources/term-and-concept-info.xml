@@ -16,7 +16,7 @@
                 <REMK>ylläpitäjän muistiinpano</REMK>
             </TE>
             <SY>
-                <EQUI value="broader"></EQUI>
+                <EQUI value="broader" />
                 <TERM>testisynonyymi</TERM>
                 <SOURF>Lähde 2</SOURF>
             </SY>

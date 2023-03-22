@@ -1,6 +1,7 @@
 
 package fi.vm.yti.terminology.api.model.ntrf;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.xml.bind.JAXBElement;
@@ -8,9 +9,9 @@ import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElementRef;
-import jakarta.xml.bind.annotation.XmlElementRefs;
 import jakarta.xml.bind.annotation.XmlMixed;
 import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlSchemaType;
 import jakarta.xml.bind.annotation.XmlType;
 
 
@@ -23,13 +24,11 @@ import jakarta.xml.bind.annotation.XmlType;
  * &lt;complexType&gt;
  *   &lt;complexContent&gt;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
- *       &lt;choice maxOccurs="unbounded" minOccurs="0"&gt;
- *         &lt;element ref="{}styling"/&gt;
- *         &lt;element ref="{}REMK"/&gt;
- *         &lt;element ref="{}ADD"/&gt;
- *         &lt;element ref="{}LINK"/&gt;
- *       &lt;/choice&gt;
- *       &lt;attribute name="lang" type="{}languages" /&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element ref="{}HOGR" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *       &lt;attribute name="typr" type="{http://www.w3.org/2001/XMLSchema}anySimpleType" /&gt;
+ *       &lt;attribute name="href" use="required" type="{http://www.w3.org/2001/XMLSchema}anySimpleType" /&gt;
  *     &lt;/restriction&gt;
  *   &lt;/complexContent&gt;
  * &lt;/complexType&gt;
@@ -41,19 +40,18 @@ import jakarta.xml.bind.annotation.XmlType;
 @XmlType(name = "", propOrder = {
     "content"
 })
-@XmlRootElement(name = "SOURC")
-public class SOURC {
+@XmlRootElement(name = "BCONEXT")
+public class BCONEXT {
 
-    @XmlElementRefs({
-        @XmlElementRef(name = "styling", type = JAXBElement.class, required = false),
-        @XmlElementRef(name = "REMK", type = REMK.class, required = false),
-        @XmlElementRef(name = "ADD", type = JAXBElement.class, required = false),
-        @XmlElementRef(name = "LINK", type = LINK.class, required = false)
-    })
+    @XmlElementRef(name = "HOGR", type = JAXBElement.class, required = false)
     @XmlMixed
-    protected List<Object> content;
-    @XmlAttribute(name = "lang")
-    protected Languages lang;
+    protected List<Serializable> content;
+    @XmlAttribute(name = "typr")
+    @XmlSchemaType(name = "anySimpleType")
+    protected String typr;
+    @XmlAttribute(name = "href", required = true)
+    @XmlSchemaType(name = "anySimpleType")
+    protected String href;
 
     /**
      * Gets the value of the content property.
@@ -73,48 +71,64 @@ public class SOURC {
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link LINK }
-     * {@link REMK }
-     * {@link JAXBElement }{@code <}{@link BR }{@code >}
-     * {@link JAXBElement }{@code <}{@link Object }{@code >}
-     * {@link JAXBElement }{@code <}{@link String }{@code >}
-     * {@link JAXBElement }{@code <}{@link String }{@code >}
-     * {@link JAXBElement }{@code <}{@link String }{@code >}
-     * {@link JAXBElement }{@code <}{@link String }{@code >}
      * {@link JAXBElement }{@code <}{@link String }{@code >}
      * {@link String }
      * 
      * 
      */
-    public List<Object> getContent() {
+    public List<Serializable> getContent() {
         if (content == null) {
-            content = new ArrayList<Object>();
+            content = new ArrayList<Serializable>();
         }
         return this.content;
     }
 
     /**
-     * Gets the value of the lang property.
+     * Gets the value of the typr property.
      * 
      * @return
      *     possible object is
-     *     {@link Languages }
+     *     {@link String }
      *     
      */
-    public Languages getLang() {
-        return lang;
+    public String getTypr() {
+        return typr;
     }
 
     /**
-     * Sets the value of the lang property.
+     * Sets the value of the typr property.
      * 
      * @param value
      *     allowed object is
-     *     {@link Languages }
+     *     {@link String }
      *     
      */
-    public void setLang(Languages value) {
-        this.lang = value;
+    public void setTypr(String value) {
+        this.typr = value;
+    }
+
+    /**
+     * Gets the value of the href property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getHref() {
+        return href;
+    }
+
+    /**
+     * Sets the value of the href property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setHref(String value) {
+        this.href = value;
     }
 
 }

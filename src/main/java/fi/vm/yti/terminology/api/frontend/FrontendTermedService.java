@@ -221,7 +221,7 @@ public class FrontendTermedService {
     }
 
     @NotNull
-    GenericNodeInlined getConcept(UUID graphId, UUID conceptId) {
+    public GenericNodeInlined getConcept(UUID graphId, UUID conceptId) {
 
         Parameters params = new Parameters();
         params.add("select", "id");
