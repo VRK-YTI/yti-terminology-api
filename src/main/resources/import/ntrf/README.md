@@ -1,4 +1,1 @@
-Regenerate classes
-```
-xjc -d ../../../java -p fi.vm.yti.terminology.api.model.ntrf -b bindings.xjb -extension NTRF.xsd
-```
+For regenerating classes, see gradle task `jaxb` in build.gradle

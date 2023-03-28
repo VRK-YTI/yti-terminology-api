@@ -654,24 +654,6 @@ public final class AttributeIndex {
         );
     }
 
-    @NotNull
-    public static AttributeMeta termEquivalencyRelation(TypeId domain, long index) {
-        return new AttributeMeta(
-                "termEquivalencyRelation",
-                "http://uri.suomi.fi/datamodel/ns/term#termEquivalencyRelation",
-                index,
-                domain,
-                emptyMap(),
-                merge(
-                        PropertyUtil.prefLabel(
-                                "Termi, johon vastaavuus liittyy",
-                                "Term equivalency is related to"
-                        ),
-                        type("string:single")
-                )
-        );
-    }
-
     // prevent construction
     private AttributeIndex() {
     }

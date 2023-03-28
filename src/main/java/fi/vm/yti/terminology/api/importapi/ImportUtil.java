@@ -12,7 +12,7 @@ public class ImportUtil {
 
     static List<String> termReferenceProperties = List.of("prefLabelXl", "altLabelXl", "notRecommendedSynonym", "hiddenTerm", "searchTerm");
     static List<String> conceptReferenceProperties = List.of("broader", "narrower", "hasPart", "isPartOf", "related");
-    static List<String> externalReferenceProperties = List.of("closeMatch", "exactMatch", "relatedMatch");
+    static List<String> externalReferenceProperties = List.of("closeMatch", "exactMatch", "relatedMatch", "broadMatch", "narrowMatch");
 
     /**
      * Split node list to smaller batches. Eventual batch size might be greater than defined one,

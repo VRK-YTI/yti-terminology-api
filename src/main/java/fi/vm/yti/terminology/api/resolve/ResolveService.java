@@ -44,7 +44,7 @@ public class ResolveService {
         this.namespaceRoot = namespaceRoot;
     }
 
-    ResolvedResource resolveResource(String uri) {
+    public ResolvedResource resolveResource(String uri) {
 
         if (!uri.startsWith(namespaceRoot)) {
             logger.error("Unsupported URI namespace URI: " + uri);
