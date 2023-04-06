@@ -5,9 +5,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-final class ResolvedResource {
+public final class ResolvedResource {
 
-    enum Type {
+    public enum Type {
         VOCABULARY,
         CONCEPT,
         COLLECTION
@@ -25,7 +25,7 @@ final class ResolvedResource {
         this(graphId, type, null);
     }
 
-    ResolvedResource(@NotNull UUID graphId,
+    public ResolvedResource(@NotNull UUID graphId,
                      @NotNull Type type,
                      @Nullable UUID id) {
         this.graphId = graphId;

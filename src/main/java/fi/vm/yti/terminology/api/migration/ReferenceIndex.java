@@ -275,6 +275,44 @@ public final class ReferenceIndex {
         );
     }
 
+    @NotNull
+    public static ReferenceMeta narrowMatch(TypeId domain, TypeId externalLinkDomain, long index) {
+        return new ReferenceMeta(
+                externalLinkDomain,
+                "narrowMatch",
+                "http://www.w3.org/2004/02/skos/core#narrowMatch",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        prefLabel(
+                                "Alakäsite toisessa sanastossa",
+                                "Narrower concept in other vocabulary"
+                        ),
+                        type("link")
+                )
+        );
+    }
+
+    @NotNull
+    public static ReferenceMeta broadMatch(TypeId domain, TypeId externalLinkDomain, long index) {
+        return new ReferenceMeta(
+                externalLinkDomain,
+                "broadMatch",
+                "http://www.w3.org/2004/02/skos/core#broadMatch",
+                index,
+                domain,
+                emptyMap(),
+                merge(
+                        prefLabel(
+                                "Yläkäsite toisessa sanastossa",
+                                "Broader concept in other vocabulary"
+                        ),
+                        type("link")
+                )
+        );
+    }
+
     // prevent construction
     private ReferenceIndex() {
     }

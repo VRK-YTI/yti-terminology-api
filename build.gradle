@@ -9,6 +9,7 @@ plugins {
     id 'org.owasp.dependencycheck' version '7.4.4'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'com.gorylenko.gradle-git-properties' version '2.3.1'
+    id 'com.intershop.gradle.jaxb' version '5.1.0'
 }
 
 artifactoryPublish.skip = true
@@ -139,3 +140,22 @@ dependencyCheck {
         directory = System.getenv('OWASP_DATA_DIR')
     }
 }
+
+
+jaxb {
+    // generate java code from schema (skipped from default build)
+    // Regenerate classes by running ./gradlew build -PntrfGenerate
+    if (project.hasProperty('ntrfGenerate')) {
+        javaGen {
+            ntrf {
+                binding = file('src/main/resources/import/ntrf/bindings.xjb')
+                schema = file('src/main/resources/import/ntrf/NTRF.xsd')
+                outputDir = file('src/main/java')
+                packageName = 'fi.vm.yti.terminology.api.model.ntrf.foow'
+                args = List.of("-no-header")
+            }
+        }
+    }
+}
+
+

@@ -29,10 +29,10 @@ part of the NTRF standard
 <!ELEMENT VOCABULARY (HEADER?, (RECORD?,HEAD?,DIAG?,RDIAG?,PICT?,P?,COMM?,REMK?)*, REFERENCES?)>
 
 <!-- Each RECORD element contain one terminological concept -->
-<!ELEMENT RECORD ( NUMB?, POSI*, SUBJ*, GRAM?, LANG*, BCON*, NCON*, SCON*, RCON*, ECON*, ILLU*, REMK*, %admin; ,COMM* ,DEVREC?)>
+<!ELEMENT RECORD ( NUMB?, POSI*, SUBJ*, GRAM?, LANG*, BCON*, NCON*, SCON*, RCON*, ECON*, RCONEXT*, NCONEXT*, BCONEXT*, ILLU*, REMK*, %admin; ,COMM* ,DEVREC?)>
 
 <!-- Each DEVREC element contains development version of the parent concept -->
-<!ELEMENT DEVREC (( NUMB?, POSI*, SUBJ*, GRAM?, LANG*, BCON*, NCON*, SCON*, RCON*, ECON*, ILLU*, REMK*, %admin; ,COMM*))>
+<!ELEMENT DEVREC (( NUMB?, POSI*, SUBJ*, GRAM?, LANG*, BCON*, NCON*, SCON*, RCON*, ECON*, RCONEXT*, NCONEXT*, BCONEXT*, ILLU*, REMK*, %admin; ,COMM*))>
 
 <!-- Language elements contain the language specific data -->
 <!ELEMENT LANG (TE?, SY*, (DTE* ,DTE1* , DTE2* ,DTEA* , DTEB*) , EXTE* , DES* , ACRO*, RCON* ,( DEF* | EXPLAN*), NOTE*, EXAMP*, CX*,  STE*, ASTE*, REMK*, SOURC*, APDAT?)>
@@ -74,19 +74,19 @@ part of the NTRF standard
 <!ELEMENT TERM (#PCDATA | GRAM | SUB | SUP | POS | GEND | INFL)*>
 
 <!-- definition : Text in this field should conform with the rules of proper definitions. -->
-<!ELEMENT DEF     (#PCDATA | BCON | NCON | SCON | RCON | ECON | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | FORMULA )* >
+<!ELEMENT DEF     (#PCDATA | BCON | NCON | SCON | RCON | ECON | RCONEXT | NCONEXT | BCONEXT | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | FORMULA )* >
 
 <!-- explanation : Explanatory text which does not conform with the rules of proper definitions. -->
-<!ELEMENT EXPLAN  (#PCDATA | BCON | NCON | SCON | RCON | ECON | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | FORMULA )* >
+<!ELEMENT EXPLAN  (#PCDATA | BCON | NCON | SCON | RCON | ECON | RCONEXT | NCONEXT | BCONEXT | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | FORMULA )* >
                                                                    
 <!-- note : Additional information about the concept. -->
-<!ELEMENT NOTE    (#PCDATA | BCON | NCON | SCON | RCON | ECON | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | ILLU | FORMULA)* >
+<!ELEMENT NOTE    (#PCDATA | BCON | NCON | SCON | RCON | ECON | RCONEXT | NCONEXT | BCONEXT | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | ILLU | FORMULA)* >
 
 <!-- example : Example information connected to the concept. -->
-<!ELEMENT EXAMP      (#PCDATA | BCON | NCON | SCON | RCON | ECON | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | EXNO )* >
+<!ELEMENT EXAMP      (#PCDATA | BCON | NCON | SCON | RCON | ECON | RCONEXT | NCONEXT | BCONEXT | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | EXNO )* >
 
 <!-- context : Authentic context from running text. -->
-<!ELEMENT CX      (#PCDATA | BCON | NCON | SCON | RCON | ECON | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | EXNO )* >
+<!ELEMENT CX      (#PCDATA | BCON | NCON | SCON | RCON | ECON | RCONEXT | NCONEXT | BCONEXT | SOURF | STAT | ADD | REMK | %styling; | LINK | HOGR | EXNO )* >
 
 
 <!-- boarder concept : Term designating a broader concept. eg. superordinate concept, subclass-of relation -->
@@ -100,7 +100,17 @@ part of the NTRF standard
 <!--related concept : Term designating a related concept. eg. associative concept -->
 <!ELEMENT RCON  (#PCDATA | HOGR)*>
 
+<!-- Exact match or close match in other terminology (distinguished by typr attribute) -->
 <!ELEMENT ECON  (#PCDATA | HOGR)*>
+
+<!-- Related concept in other terminology -->
+<!ELEMENT RCONEXT  (#PCDATA | HOGR)*>
+
+<!-- Broader concept in other terminology -->
+<!ELEMENT BCONEXT  (#PCDATA | HOGR)*>
+
+<!-- Narrower concept in other terminology -->
+<!ELEMENT NCONEXT  (#PCDATA | HOGR)*>
 
 <!-- link : link to another concept or web, does not indicate any relation type -->
 <!ELEMENT LINK  (#PCDATA | HOGR)*>
@@ -261,6 +271,13 @@ part of the NTRF standard
 <!ATTLIST ECON typr        CDATA   #IMPLIED
                href  CDATA   #REQUIRED>
 
+<!ATTLIST RCONEXT href  CDATA   #REQUIRED>
+
+<!ATTLIST BCONEXT typr        CDATA   #IMPLIED
+		href  CDATA   #REQUIRED>
+
+<!ATTLIST NCONEXT typr        CDATA   #IMPLIED
+		href  CDATA   #REQUIRED>
 
 <!ATTLIST GRAM value CDATA #IMPLIED
                gend (m | n | f) #IMPLIED

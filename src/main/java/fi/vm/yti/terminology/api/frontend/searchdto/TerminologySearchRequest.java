@@ -10,6 +10,8 @@ public class TerminologySearchRequest {
 
     private String[] groups;
 
+    private String[] groupNotations;
+
     private String[] types;
 
     private String[] organizations;
@@ -20,6 +22,8 @@ public class TerminologySearchRequest {
 
     private Integer pageSize;
     private Integer pageFrom;
+
+    private boolean hideHighlights;
 
     public String getQuery() {
         return query;
@@ -51,6 +55,14 @@ public class TerminologySearchRequest {
 
     public void setGroups(String[] groups) {
         this.groups = groups;
+    }
+
+    public String[] getGroupNotations() {
+        return groupNotations;
+    }
+
+    public void setGroupNotations(String[] groupNotations) {
+        this.groupNotations = groupNotations;
     }
 
     public String[] getTypes() {
@@ -100,6 +112,14 @@ public class TerminologySearchRequest {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public boolean getHideHighlights() {
+        return hideHighlights;
+    }
+
+    public void setHideHighlights(boolean hideHighlights) {
+        this.hideHighlights = hideHighlights;
     }
 
     @Override
