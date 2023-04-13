@@ -256,7 +256,7 @@ public class FrontendTermedService {
             if(!isPartOfOrganization){
                 node.getProperties().remove("editorialNote");
             }
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+            return userNameToDisplayName(node, new UserIdToDisplayNameMapper(),
                     isPartOfOrganization);
         }
     }
