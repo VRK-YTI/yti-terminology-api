@@ -223,7 +223,7 @@ public class FrontendTermedService {
     @NotNull
     public GenericNodeInlined getConcept(UUID graphId, UUID conceptId) {
 
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
         params.add("select", "code");
@@ -246,11 +246,18 @@ public class FrontendTermedService {
                 new ParameterizedTypeReference<List<GenericNodeInlined>>() {
                 }));
 
-        if (result.size() == 0) {
+
+
+        if (result.isEmpty()) {
             throw new NodeNotFoundException(graphId, conceptId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
-                    authorizationManager.isUserPartOfOrganization(graphId));
+            var node = result.get(0);
+            var isPartOfOrganization = authorizationManager.isUserPartOfOrganization(graphId);
+            if(!isPartOfOrganization){
+                node.getProperties().remove("editorialNote");
+            }
+            return userNameToDisplayName(node, new UserIdToDisplayNameMapper(),
+                    isPartOfOrganization);
         }
     }
 
