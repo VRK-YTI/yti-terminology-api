@@ -2,7 +2,6 @@ package fi.vm.yti.terminology.api.resolve;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -34,7 +33,7 @@ public class ResolveService {
     private final TermedRequester termedRequester;
     private final String namespaceRoot;
 
-    private static final Pattern PREFIX_PATTERN = Pattern.compile("^(?<prefix>[\\w\\-]+)/$");
+    private static final Pattern PREFIX_PATTERN = Pattern.compile("^(?<prefix>[\\w\\-]+)/?$");
     private static final Pattern PREFIX_AND_RESOURCE_PATTERN = Pattern.compile("^(?<prefix>[\\w\\-]+)/(?<resource>[\\w\\-]+)$");
 
     @Autowired
@@ -47,29 +46,28 @@ public class ResolveService {
     public ResolvedResource resolveResource(String uri) {
 
         if (!uri.startsWith(namespaceRoot)) {
-            logger.error("Unsupported URI namespace URI: " + uri);
-            throw new RuntimeException("Unsupported URI namespace: " + uri);
+            throw new ResolveException("Unsupported URI namespace: " + uri);
         }
 
-        String uriWithoutParameters = uri.replaceFirst("\\?.*$", "");
-        String path = uriWithoutParameters.substring(namespaceRoot.length());
+        var uriWithoutParameters = uri.replaceFirst("\\?.*$", "");
+        var path = uriWithoutParameters.substring(namespaceRoot.length());
 
-        Matcher prefixMatcher = PREFIX_PATTERN.matcher(path);
+        var prefixMatcher = PREFIX_PATTERN.matcher(path);
         if (prefixMatcher.matches()) {
-            String prefix = prefixMatcher.group("prefix");
-            UUID graphId = findGraphIdForPrefix(prefix);
+            var prefix = prefixMatcher.group("prefix");
+            var graphId = findGraphIdForPrefix(prefix);
             return new ResolvedResource(graphId, Type.VOCABULARY);
         }
 
-        Matcher prefixAndResourceMatcher = PREFIX_AND_RESOURCE_PATTERN.matcher(path);
+        var prefixAndResourceMatcher = PREFIX_AND_RESOURCE_PATTERN.matcher(path);
         if (prefixAndResourceMatcher.matches()) {
-            String prefix = prefixAndResourceMatcher.group("prefix");
-            String resource = prefixAndResourceMatcher.group("resource");
+            var prefix = prefixAndResourceMatcher.group("prefix");
+            var resource = prefixAndResourceMatcher.group("resource");
 
-            UUID graphId = findGraphIdForPrefix(prefix);
-            List<GenericNode> nodes = findNodes(graphId, resource);
+            var graphId = findGraphIdForPrefix(prefix);
+            var nodes = findNodes(graphId, resource);
             if (nodes.size() > 1) {
-                logger.debug("Found " + nodes.size() + " matching nodes for URI: " + uri);
+                logger.debug("Found {} matching nodes for URI: {}", nodes.size(), uri);
             }
             for (GenericNode node : nodes) {
                 switch (node.getType().getId()) {
@@ -80,21 +78,20 @@ public class ResolveService {
                     case Collection:
                         return new ResolvedResource(graphId, Type.COLLECTION, node.getId());
                     default:
-                        logger.debug("Found node of type " + node.getType().getId() + " for URI: " + uri);
+                        logger.debug("Found node of type {} for URI: {}", node.getType().getId(), uri);
                 }
             }
 
-            logger.error("Resource not found URI: " + uri);
+            logger.error("Resource not found URI: {}", uri);
             throw new ResourceNotFoundException(prefix, resource);
         }
 
-        logger.error("Unsupported URI: " + uri);
-        throw new RuntimeException("Unsupported URI: " + uri);
+        throw new ResolveException("Unsupported URI: " + uri);
     }
 
     private List<GenericNode> findNodes(UUID graphId,
                                         String code) {
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
         params.add("select", "code");
@@ -102,20 +99,17 @@ public class ResolveService {
         params.add("where", "code:" + code);
         params.add("max", "-1");
 
-        List<GenericNode> result =
-            requireNonNull(termedRequester.exchange("/node-trees", GET, params, new ParameterizedTypeReference<List<GenericNode>>() {
-            }));
+        return requireNonNull(termedRequester.exchange(TermedRequester.PATH_NODE_TREES, GET, params, new ParameterizedTypeReference<List<GenericNode>>() {}));
 
-        return result;
     }
 
     // FIXME inefficient implementation but termed doesn't provide better way (afaik)
     private @NotNull UUID findGraphIdForPrefix(String prefix) {
 
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("max", "-1");
 
-        return requireNonNull(termedRequester.exchange("/graphs", GET, params, new ParameterizedTypeReference<List<Graph>>() {
+        return requireNonNull(termedRequester.exchange(TermedRequester.PATH_GRAPHS, GET, params, new ParameterizedTypeReference<List<Graph>>() {
         }))
             .stream()
             .filter(g -> g.getCode().equalsIgnoreCase(prefix))
@@ -129,30 +123,30 @@ public class ResolveService {
                        TermedContentType contentType,
                        @Nullable UUID resourceId) {
 
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("select", "*");
         params.add("select", "properties.*");
         params.add("select", "references.*");
         params.add("where", formatWhereClause(graphId, types, resourceId));
         params.add("pretty", "true");
 
-        return requireNonNull(termedRequester.exchange("/node-trees", GET, params, String.class, contentType));
+        return requireNonNull(termedRequester.exchange(TermedRequester.PATH_NODE_TREES, GET, params, String.class, contentType));
     }
 
     String getTerminology(@NotNull UUID id, TermedContentType contentType) {
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("select", "*");
         //params.add("select", "references.prefLabelXl:1");
         params.add("max", "-1");
         params.add("pretty", "true");
-        return requireNonNull(termedRequester.exchange("/graphs/" + id + "/node-trees", GET, params, String.class, contentType));
+        return requireNonNull(termedRequester.exchange("/graphs/" + id + TermedRequester.PATH_NODE_TREES, GET, params, String.class, contentType));
     }
 
     private static @NotNull String formatWhereClause(@NotNull UUID graphId,
                                                      @NotNull List<NodeType> types,
                                                      @Nullable UUID resourceId) {
 
-        if (types.size() == 0) {
+        if (types.isEmpty()) {
             throw new IllegalArgumentException("Must include at least one type");
         }
 
@@ -160,5 +154,13 @@ public class ResolveService {
 
         return "graph.id:" + graphId +
             " AND (" + typeClause + ")" + (resourceId != null ? " AND id:" + resourceId : "");
+    }
+
+    public static class ResolveException extends RuntimeException {
+
+        ResolveException(String message) {
+            super(message);
+            logger.error(message);
+        }
     }
 }

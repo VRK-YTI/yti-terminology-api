@@ -1,7 +1,6 @@
 package fi.vm.yti.terminology.api.frontend;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import fi.vm.yti.terminology.api.exception.NamespaceInUseException;
 import fi.vm.yti.terminology.api.exception.VocabularyNotFoundException;
@@ -48,7 +47,6 @@ import static fi.vm.yti.terminology.api.validation.ValidationConstants.TEXT_FIEL
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
-import static fi.vm.yti.terminology.api.util.CollectionUtils.mapToSet;
 
 @RestController
 @RequestMapping("/api/v1/frontend")
@@ -199,13 +197,12 @@ public class FrontendController {
             @RequestBody GenericNode vocabularyNode) {
 
         try {
-            logger.info("POST /vocabulary requested with params: templateGraphId: " +
-                templateGraphId.toString() + ", prefix: " + prefix + ", vocabularyNode.id: " + vocabularyNode.getId().toString());
+            logger.info("POST /vocabulary requested with params: templateGraphId: {}, prefix: {}, vocabularyNode.id: {}", templateGraphId, prefix, vocabularyNode.getId());
 
-            UUID predefinedOrGeneratedGraphId = graphId != null ? graphId : UUID.randomUUID();
+            var predefinedOrGeneratedGraphId = graphId != null ? graphId : UUID.randomUUID();
 
             termedService.createVocabulary(templateGraphId, prefix, vocabularyNode, predefinedOrGeneratedGraphId, sync);
-            logger.debug("Vocabulary with prefix \"" + prefix + "\" created");
+            logger.debug("Vocabulary with prefix \"{}\" created", prefix);
 
             return predefinedOrGeneratedGraphId;
         } catch (RuntimeException | Error e) {
