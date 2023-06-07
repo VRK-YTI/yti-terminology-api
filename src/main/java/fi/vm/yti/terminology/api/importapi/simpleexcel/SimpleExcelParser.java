@@ -162,11 +162,15 @@ public class SimpleExcelParser {
 
                     //Multiline properties can have multiple properties per cell
                     if (Arrays.asList(CONCEPT_MULTILINE_PROPERTIES).contains((propertyName))) {
-                        cellValue.lines()
+                        var lines = cellValue.lines()
                         //lines() can output empty lines but not null lines
                             .filter(line -> !line.trim().isEmpty())
-                            //Add all lines as a new attribute
-                            .forEach(value -> addAttribute(attributes, propertyName, value, lang, row, entry.getValue()));
+                            .collect(Collectors.toList());
+
+                        // reverse order so the first one in the cell will be on top of the list on the site
+                        Collections.reverse(lines);
+                        //Add all lines as a new attribute
+                        lines.forEach(value -> addAttribute(attributes, propertyName, value, lang, row, entry.getValue()));
                     } else {
                         //Add the whole string as attribute
                         addAttribute(attributes, propertyName, cellValue, lang, row, entry.getValue());
@@ -221,9 +225,11 @@ public class SimpleExcelParser {
                     if(termType.equals("prefLabel")){
                         termList.add(createTerm(headerValues[1], cellValue, status, terminologyId));
                     }else{
-                        cellValue.lines()
+                        var lines = cellValue.lines()
                             .filter(line -> !line.isEmpty())
-                            .forEach(value -> termList.add(createTerm(headerValues[1], value, status, terminologyId)));
+                            .collect(Collectors.toList());
+                        Collections.reverse(lines);
+                        lines.forEach(value -> termList.add(createTerm(headerValues[1], value, status, terminologyId)));
                     }
 
                     terms.put(termType, termList);
