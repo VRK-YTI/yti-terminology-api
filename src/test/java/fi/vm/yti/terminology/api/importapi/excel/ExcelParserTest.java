@@ -34,7 +34,7 @@ public class ExcelParserTest {
         assertEquals(NodeType.TerminologicalVocabulary, dto.getTerminologyNode().getType().getId());
         assertEquals("terminological-vocabulary-0", dto.getTerminologyNode().getCode());
         assertEquals("testdev", dto.getNamespace());
-        assertEquals("http://uri.suomi.fi/terminology/testdev/terminological-vocabulary-0",
+        assertEquals("http://uri.suomi.fi/terminology/testdev",
                 dto.getTerminologyNode().getUri());
 
         // properties

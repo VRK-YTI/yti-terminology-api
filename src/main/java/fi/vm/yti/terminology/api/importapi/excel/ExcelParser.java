@@ -404,9 +404,12 @@ public class ExcelParser {
             } else {
                 identifier = null;
             }
-        } else {
+        }
+         else {
             identifier = getCellValue(row, columnMap, Fields.IDENTIFIER, true);
-            uri = getURI(identifier, namespace);
+            uri = typeId.getId().equals(NodeType.TerminologicalVocabulary)
+                    ? getURI(null, namespace)
+                    : getURI(identifier, namespace);
         }
 
         return new GenericNode(
@@ -422,11 +425,9 @@ public class ExcelParser {
     }
 
     private String getURI(String identifier, String namespace) {
-        return String.format("%s/%s/%s",
-                URI_PREFIX,
-                namespace,
-                identifier
-        );
+        return identifier != null
+                ? String.format("%s/%s/%s", URI_PREFIX, namespace, identifier)
+                : String.format("%s/%s", URI_PREFIX, namespace);
     }
 
     private UUID getUUID(Row row, int uuidColumn, boolean createNew) throws ExcelParseException {

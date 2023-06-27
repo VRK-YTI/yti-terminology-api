@@ -127,7 +127,7 @@ public class ImportServiceTest {
                 stringCaptor.capture(),
                 batchesCaptor.capture());
 
-        assertEquals("http://uri.suomi.fi/terminology/testdev/terminological-vocabulary-0", stringCaptor.getValue());
+        assertEquals("http://uri.suomi.fi/terminology/testdev", stringCaptor.getValue());
         assertEquals(2, batchesCaptor.getValue().size());
 
         // terminology, concepts, concept links and terms
