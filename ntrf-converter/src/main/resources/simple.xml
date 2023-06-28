@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VOCABULARY>
+    <RECORD>
+        <NUMB>3</NUMB>
+        <SOURC>Hallintosanasto (2023)</SOURC>
+        <TE LANG='fi'>alkuperäisyys</TE>
+        <ADD LANG='fi'>test add <LINK KEY="@@alkuperäisyys WITH LANG='fi'">add osion linkki</LINK> fi</ADD>
+        <SOURF LANG='fi'>Hallintolaki 434/2003, 22 §</SOURF>
+        <DEF LANG='fi'>se, että on alkuperäinen <LINK KEY="@@selvitys WITH LANG='fi'">testilinkki</LINK> test more content
+        </DEF>
+        <EXPLAN LANG='fi'>Alkuperäinen: sellainen, joka on ollut alun perin tai alkuaan, synnynnäinen; aito, oikea;
+            alkuperään liittyvä [fi.wiktionary.org - alkuperäinen; https://fi.wiktionary.org/wiki/alkuperäinen
+            (8.6.2018)]
+        </EXPLAN>
+        <TE LANG='fi'>alkuperäisyys ei suositettava</TE>
+        <ADD LANG='fi'>test add ei suositettava</ADD>
+        <TE LANG='sv'>autenticitet</TE>
+        <ADD LANG='sv'>test add sv</ADD>
+        <SOURF LANG='sv'>Lag om elektronisk kommunikation i myndigheternas verksamhet 13/2003, 9 §; Förvaltningslag
+            434/2003, 22 §
+        </SOURF>
+        <TE LANG='en'>authenticity</TE>
+        <SOURF LANG='en'>Administrative Procedure Act 434/2003,
+            https://www.finlex.fi/fi/laki/kaannokset/2003/en20030434.pdf; Valtioneuvoston kanslia, kieliasiantuntijat
+            18.12.2017
+        </SOURF>
+    </RECORD>
+    <RECORD>
+        <NUMB>215</NUMB>
+        <SOURC>Hallintosanasto (2023)</SOURC>
+        <TE LANG='fi'>selvitys</TE>
+        <SOURF LANG='fi'>Hallintolaki 434/2003</SOURF>
+        <EXPLAN LANG='fi'>Viranomaisen on huolehdittava asian riittävästä ja asianmukaisesta selvittämisestä hankkimalla
+            asian ratkaisemiseksi tarpeelliset tiedot sekä selvitykset. Asianosaisen on esitettävä selvitystä
+            vaatimuksensa perusteista. Asianosaisen on muutoinkin myötävaikutettava vireille panemansa asian
+            selvittämiseen. [434/2003, 31 §]
+        </EXPLAN>
+        <ADD LANG='fi'>Selvityksella tarkoitetaan tässä viranomaisen hankkimaa tai asianosaisen antamaa tietoa.
+            Asianosaisen antama selvitys vaatimustensa perusteista voi tarkoittaa tietoja, asiakirjoja, lausuntoja jne.
+            [Valtioneuvoston kanslia, kieliasiantuntijat 18.12.2017]
+        </ADD>
+        <TE LANG='sv'>utredning</TE>
+        <SOURF LANG='sv'>Slaf 2017; Förvaltningslag 434/2003</SOURF>
+        <EXPLAN LANG='sv'>En myndighet skall se till att ett ärende utreds tillräckligt och på behörigt sätt.
+            Myndigheten skall i detta syfte skaffa den information och den utredning som behövs för att ärendet skall
+            kunna avgöras. En part skall lägga fram utredning om grunderna för sina yrkanden. Parten skall också i
+            övrigt medverka till utredningen av ett ärende som han eller hon har inlett. [434/2003]
+        </EXPLAN>
+        <ADD LANG='sv'>Selvityksella tarkoitetaan tässä viranomaisen hankkimaa tai asianosaisen antamaa tietoa. Tässä
+            yhteydessä selvityksen vastine on utredning, mutta muissa yhteyksissä selvitys voidaan Slaf 2017:n mukaan
+            kääntää ruotsiksi esimerkiksi vastineilla: upplysningar, uppgifter, redogörelse, rapport, sammanställning,
+            studie, analys, bevis, intyg, dokumentation, verifikation.
+        </ADD>
+        <TE LANG='en'>evidence</TE>
+        <SOURF LANG='en'>Administrative Procedure Act 434/2003; Valtioneuvoston kanslia, kieliasiantuntijat 18.12.2017
+        </SOURF>
+        <DEF LANG='en'>information drawn from personal testimony, a document, or a material object, used to establish
+            facts in a legal investigation or admissible as testimony in a law court [Oxford dictionary of English]
+        </DEF>
+    </RECORD>
+</VOCABULARY>
