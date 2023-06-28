@@ -184,24 +184,27 @@ public class FrontendTermedService {
     }
 
     public void createVocabulary(UUID templateGraphId, String prefix, GenericNode vocabularyNode, UUID graphId, boolean sync) {
-
         check(authorizationManager.canCreateVocabulary(vocabularyNode));
 
+        //We have to set uri for vocabulary node by ourselves
+        // otherwise termed will create a uri appending terminological-vocabulary-0
+        vocabularyNode.setUri(namespaceRoot + prefix);
+
         try {
-            List<MetaNode> templateMetaNodes = getTypes(templateGraphId);
-            List<Property> prefLabel = mapToList(vocabularyNode.getProperties().get("prefLabel"), Attribute::asProperty);
+            var templateMetaNodes = getTypes(templateGraphId);
+            var prefLabel = mapToList(vocabularyNode.getProperties().get("prefLabel"), Attribute::asProperty);
 
-            logger.debug("Creating graph for \"" + prefix + "\"");
+            logger.debug("Creating graph for \"{}\"", prefix);
             createGraph(prefix, prefLabel, graphId);
-            logger.debug("Graph created for \"" + prefix + "\"");
-            List<MetaNode> graphMetaNodes = mapToList(templateMetaNodes, node -> node.copyToGraph(graphId));
+            logger.debug("Graph created for \"{}\"", prefix);
+            var graphMetaNodes = mapToList(templateMetaNodes, node -> node.copyToGraph(graphId));
 
-            logger.debug("Updating types for \"" + prefix + "\"");
+            logger.debug("Updating types for \"{}\"", prefix);
             updateTypes(graphId, graphMetaNodes);
-            logger.debug("Handling nodes for \"" + prefix + "\"");
+            logger.debug("Handling nodes for \"{}\"", prefix);
             updateAndDeleteInternalNodes(
                     new GenericDeleteAndSave(emptyList(), singletonList(vocabularyNode.copyToGraph(graphId))), sync, null);
-            logger.debug("Finished for \"" + prefix + "\"");
+            logger.debug("Finished for \"{}\"", prefix);
         } catch (Exception e) {
             logger.error("Error occurred while creating terminology " + graphId, e);
 
@@ -223,7 +226,7 @@ public class FrontendTermedService {
     @NotNull
     public GenericNodeInlined getConcept(UUID graphId, UUID conceptId) {
 
-        Parameters params = new Parameters();
+        var params = new Parameters();
         params.add("select", "id");
         params.add("select", "type");
         params.add("select", "code");
@@ -246,11 +249,18 @@ public class FrontendTermedService {
                 new ParameterizedTypeReference<List<GenericNodeInlined>>() {
                 }));
 
-        if (result.size() == 0) {
+
+
+        if (result.isEmpty()) {
             throw new NodeNotFoundException(graphId, conceptId);
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
-                    authorizationManager.isUserPartOfOrganization(graphId));
+            var node = result.get(0);
+            var isPartOfOrganization = authorizationManager.isUserPartOfOrganization(graphId);
+            if(!isPartOfOrganization){
+                node.getProperties().remove("editorialNote");
+            }
+            return userNameToDisplayName(node, new UserIdToDisplayNameMapper(),
+                    isPartOfOrganization);
         }
     }
 

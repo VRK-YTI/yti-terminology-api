@@ -60,7 +60,7 @@ public class JSONWrapper {
 
     public String getNamespace() {
         String uri = this.json.get("uri").textValue();
-        Pattern p = Pattern.compile("uri.suomi.fi/terminology/(\\w+)/");
+        Pattern p = Pattern.compile("uri.suomi.fi/terminology/(\\w+)");
         Matcher m = p.matcher(uri);
         if (m.find()) {
             return m.group(1);

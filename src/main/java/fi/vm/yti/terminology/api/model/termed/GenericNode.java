@@ -143,6 +143,10 @@ public final class GenericNode implements Node, Serializable {
         return uri;
     }
 
+    public void setUri(String uri) {
+        this.uri = uri;
+    }
+
     public Long getNumber() {
         return number;
     }

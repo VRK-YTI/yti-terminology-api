@@ -45,6 +45,7 @@ public class ConceptSearchRequest {
     private String query;
     private String[] conceptId;
     private String[] terminologyId;
+    private String[] terminologyUri;
     private String[] notInTerminologyId;
     private String[] broaderConceptId;
     private Boolean onlyTopConcepts;
@@ -167,6 +168,14 @@ public class ConceptSearchRequest {
 
     public void setOptions(final Options options) {
         this.options = options;
+    }
+
+    public String[] getTerminologyUri() {
+        return terminologyUri;
+    }
+
+    public void setTerminologyUri(String[] terminologyUri) {
+        this.terminologyUri = terminologyUri;
     }
 
     @Override

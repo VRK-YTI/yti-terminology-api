@@ -26,6 +26,9 @@ public class TermedRequester {
     private static final String API_PW = "API_PW";
     private static TermedContentType DEFAULT_CONTENT_TYPE = TermedContentType.JSON;
 
+    public static final String PATH_NODE_TREES = "/node-trees";
+    public static final String PATH_GRAPHS = "/graphs";
+
     private final String termedUser;
     private final String termedPassword;
     private final String termedUrl;

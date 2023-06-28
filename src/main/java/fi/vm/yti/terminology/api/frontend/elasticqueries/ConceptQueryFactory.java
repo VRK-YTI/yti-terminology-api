@@ -83,6 +83,9 @@ public class ConceptQueryFactory {
         if (directTerminologiesGiven) {
             QueryBuilder terminologyIdQuery = QueryBuilders.termsQuery("vocabulary.id", request.getTerminologyId());
             mustParts.add(terminologyIdQuery);
+        } else if (request.getTerminologyUri() != null && request.getTerminologyUri().length > 0) {
+            QueryBuilder terminologyUriQuery = QueryBuilders.termsQuery("vocabulary.uri", request.getTerminologyUri());
+            mustParts.add(terminologyUriQuery);
         }
 
         if (request.getNotInTerminologyId() != null && request.getNotInTerminologyId().length > 0) {
@@ -128,20 +131,20 @@ public class ConceptQueryFactory {
                 QueryBuilder contributorQuery = QueryBuilders.termsQuery("vocabulary.id", incompleteFromTerminologies);
                 BoolQueryBuilder statusQuery = QueryBuilders.boolQuery();
                 if (checkConceptState) {
-                    statusQuery.mustNot(QueryBuilders.termQuery("status", "INCOMPLETE"));
+                    statusQuery.mustNot(QueryBuilders.termQuery("status", Status.INCOMPLETE.name()));
                 }
                 if (checkTerminologyState) {
-                    statusQuery.mustNot(QueryBuilders.termQuery("vocabulary.status", "INCOMPLETE"));
+                    statusQuery.mustNot(QueryBuilders.termQuery("vocabulary.status", Status.INCOMPLETE.name()));
                 }
                 mustParts.add(QueryBuilders.boolQuery().should(contributorQuery).should(statusQuery).minimumShouldMatch(1));
             }
         } else if (options.operationMode == ConceptSearchRequest.Options.OperationMode.NO_INCOMPLETE) {
-            mustNotParts.add(QueryBuilders.termQuery("status", "INCOMPLETE"));
-            mustNotParts.add(QueryBuilders.termQuery("vocabulary.status", "INCOMPLETE"));
+            mustNotParts.add(QueryBuilders.termQuery("status", Status.INCOMPLETE.name()));
+            mustNotParts.add(QueryBuilders.termQuery("vocabulary.status", Status.INCOMPLETE.name()));
         }
         // else: ALL_INCOMPLETE
 
-        QueryBuilder combinedQuery = null;
+        QueryBuilder combinedQuery;
         if (mustParts.isEmpty() && mustNotParts.isEmpty()) {
             combinedQuery = QueryBuilders.matchAllQuery();
         } else if (mustParts.size() == 1 && mustNotParts.isEmpty()) {

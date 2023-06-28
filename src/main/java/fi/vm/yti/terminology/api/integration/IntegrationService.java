@@ -329,14 +329,9 @@ public class IntegrationService {
             respItem.setModified(source.get("lastModifiedDate").asText());
         }
 
-        // http://uri.suomi.fi/terminology/2/terminological-vocabulary-0
-        // Get uri and remove last part after /
-        // TODO! after 1 graph change, reve this part
         String uri = null;
         if (source.get("uri") != null) {
             uri = source.get("uri").asText();
-            // Remove code from uri so
-            uri = uri.substring(0, uri.lastIndexOf("/")) + "/";
         }
         respItem.setUri(uri);
 
