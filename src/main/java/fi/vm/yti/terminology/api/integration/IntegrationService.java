@@ -331,7 +331,7 @@ public class IntegrationService {
 
         String uri = null;
         if (source.get("uri") != null) {
-            uri = source.get("uri").asText();
+            uri = source.get("uri").asText() + "/";
         }
         respItem.setUri(uri);
 
