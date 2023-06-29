@@ -24,7 +24,8 @@ public class NtrfConverter {
 
     private static final Map<String, String> LINK_MAP = new HashMap<>();
     private static final Pattern LINK_PATTERN = Pattern.compile("@@(.*?)\\sWITH LANG(.*)$");
-    private static final List<String> IGNORED = List.of(Elements.TYPT.name(),
+    private static final List<String> IGNORED = List.of(
+            Elements.TYPT.name(),
             Elements.SOURC.name(),
             Elements.GRAM.name(),
             Elements.TYPR.name());
@@ -95,8 +96,17 @@ public class NtrfConverter {
                     // TODO: this is not supported by NTRF importer
                     var note = handleContentWithLinks(result, item, Elements.EXAMP);
                     langElement.appendChild(note);
-                }
-                else {
+                } else if (item.getNodeName().equals(Elements.RCON.name())) {
+                    var links = item.getChildNodes();
+                    for (var d=0; d<links.getLength(); d++) {
+                        var l = links.item(d);
+                        if (l.getNodeType() == Node.ELEMENT_NODE && l.getNodeName().equals(Elements.LINK.name())) {
+                            var rcon = result.createElement(Elements.RCON.name());
+                            rcon.setAttribute("href", getLinkTarget(l));
+                            rec.appendChild(rcon);
+                        }
+                    }
+                } else {
                     System.out.println("Unhandled element: " + item.getNodeName());
                 }
             }
@@ -133,21 +143,23 @@ public class NtrfConverter {
                 contentElement.appendChild(result.createTextNode(formatText(node.getTextContent())));
             } else if (node.getNodeName().equals(Elements.LINK.name())) {
                 var link = result.createElement(Elements.LINK.name());
-                var href = node.getAttributes().getNamedItem("KEY").getTextContent();
-                link.setTextContent(node.getTextContent());
-
-                var matcher = LINK_PATTERN.matcher(href);
-                if (matcher.matches()) {
-                    var key = matcher.group(1);
-                    link.setAttribute("href", "#" + LINK_MAP.get(key));
-                    contentElement.appendChild(link);
-                }
-
+                var href = getLinkTarget(node);
+                link.setAttribute("href", href);
+                contentElement.appendChild(link);
             } else {
                 System.out.println("Unknown element " + node.getNodeName());
             }
         }
         return contentElement;
+    }
+
+    private static String getLinkTarget(Node node) {
+        var href = node.getAttributes().getNamedItem("KEY").getTextContent();
+        var matcher = LINK_PATTERN.matcher(href);
+        if (matcher.matches()) {
+            return "#" + LINK_MAP.getOrDefault(matcher.group(1), "");
+        }
+        return "";
     }
 
     private static void handleTerm(Document result, Element langElement, Node item, Map<String, List<Element>> terms) {
@@ -207,7 +219,7 @@ public class NtrfConverter {
         var ntrf = new NtrfConverter();
 
         var builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        var data = builder.parse(ntrf.getClass().getResourceAsStream("/Hallintosanasto_20230216_A.xml"));
+        var data = builder.parse(ntrf.getClass().getResourceAsStream("/simple.xml"));
         ntrf.constructLinkMap(data);
         ntrf.convert(data);
     }
