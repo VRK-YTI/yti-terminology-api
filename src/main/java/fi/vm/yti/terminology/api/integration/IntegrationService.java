@@ -107,7 +107,7 @@ public class IntegrationService {
         this.elasticSearchService = elasticSearchService;
         this.userProvider = userProvider;
         this.indexName = indexName;
-        this.namespacePattern = Pattern.compile(Pattern.quote(namespaceRoot) + "[a-z0-9][^/]+/");
+        this.namespacePattern = Pattern.compile(Pattern.quote(namespaceRoot) + "[a-z0-9][^/]+");
     }
 
     ResponseEntity<String> handleContainers(IntegrationContainerRequest request) {
@@ -198,9 +198,7 @@ public class IntegrationService {
             terminologyNsUris = new HashSet<>();
             BoolQueryBuilder uriBoolQuery = QueryBuilders.boolQuery();
             for (String uriFromRequest : request.getUri()) {
-                if (!uriFromRequest.endsWith("/")) {
-                    uriFromRequest = uriFromRequest + "/";
-                }
+                uriFromRequest = uriFromRequest.replaceAll("/$", "");
                 if (namespacePattern.matcher(uriFromRequest).matches()) {
                     uriBoolQuery.should(QueryBuilders.prefixQuery("uri", uriFromRequest));
                 } else {
@@ -489,9 +487,7 @@ public class IntegrationService {
             terminologyNsUris = new HashSet<>();
             BoolQueryBuilder uriBoolQuery = QueryBuilders.boolQuery();
             for (String uriFromRequest : request.getContainer()) {
-                if (!uriFromRequest.endsWith("/")) {
-                    uriFromRequest = uriFromRequest + "/";
-                }
+                uriFromRequest = uriFromRequest.replaceAll("/$", "");
                 if (namespacePattern.matcher(uriFromRequest).matches()) {
                     uriBoolQuery.should(QueryBuilders.prefixQuery("uri", uriFromRequest));
                 } else {
