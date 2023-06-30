@@ -19,7 +19,6 @@ Source
     <TE LANG='fi'>hallintotehtävä</TE>
     <ADD LANG='fi'>Hallintolaissa ja perustuslaissa termiä hallintotehtävä on käytetty julkisen
         hallintotehtävän synonyyminä, esimerkiksi pykälän otsikossa.</ADD>
-    <TYPT>vanhentunut</TYPT>
     <TE LANG='sv'>offentlig förvaltningsuppgift</TE>
     <DEF LANG='sv'>some definition sv</DEF>
     <SOURF LANG='sv'>Finlands grundlag 731/1999, 124 §; Förvaltningslag 434/2003, 2 §</SOURF>
