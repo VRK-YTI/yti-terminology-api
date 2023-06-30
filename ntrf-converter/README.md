@@ -57,7 +57,7 @@ Modified
 
 ## Converting files
 
-- Move ntrf file to src/main/resources
+- Move NTRF file to `src/main/resources`
 - Change resource's name in main method (getResourceAsStream)
 - Run class
-- Formatted ntrf file is printed to console
+- Formatted NTRF file content is printed to the console
