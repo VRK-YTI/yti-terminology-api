@@ -35,12 +35,11 @@ Modified
             <TERM>julkinen hallintotehtävä</TERM>
             <SOURF>Suomen perustuslaki 731/1999, 124 §; Hallintolaki 434/2003, 2 §</SOURF>
         </TE>
-        <DEF>some definition</DEF>
+        <DEF>some definition fi</DEF>
         <DTE>
             <TERM>hallintotehtävä</TERM>
             <ADD>Hallintolaissa ja perustuslaissa termiä hallintotehtävä on käytetty julkisenhallintotehtävän synonyyminä, esimerkiksi pykälän otsikossa.</ADD>
         </DTE>
-        <DEF>some definition</DEF>
     </LANG>
     <LANG value="sv">
         <TE>
@@ -51,6 +50,7 @@ Modified
             <TERM>förvaltningsuppgift</TERM>
             <SOURF>Finlands grundlag 731/1999, 124 §; Förvaltningslag 434/2003, 10 §</SOURF>
         </DTE>
+        <DEF>some definition sv</DEF>
     </LANG>
 </RECORD>
 ```
