@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public class NtrfConverter {
 
     enum Elements {
-        VOCABULARY, NUMB, DEF, RECORD, TE, TERM, LANG, DTE, CX, SOURF, ADD, LINK, EQUI,
+        VOCABULARY, NUMB, DEF, RECORD, TE, TERM, LANG, DTE, SY, CX, SOURF, ADD, LINK, EQUI,
         EXPLAN, EXAMP, NOTE, RCON, TYPT, TYPR, SOURC, GRAM, TIT, TBLE, POSI, STE, IMG
     }
 
@@ -34,6 +34,7 @@ public class NtrfConverter {
             Elements.IMG.name());
     public static final String CONCEPT_ID_PREFIX = "concept-";
     public static final List<String> TERM_FAMILY_VALUES = List.of("m", "f", "n");
+    public static final List<String> NOT_RECOMMENDED_TYPES = List.of("hylättävä", "vanhahtava", "vanhentunut");
 
     /**
      * Concepts are linked based on term's name, e.g. <LINK KEY='@@selvitys WITH LANG=fi'>selvitys</LINK>, where "selvitys"
@@ -70,7 +71,6 @@ public class NtrfConverter {
         var root = result.createElement(Elements.VOCABULARY.name());
 
         var records = document.getElementsByTagName(Elements.RECORD.name());
-
         for (var i = 0; i < records.getLength(); i++) {
             var createdLanguages = new LinkedHashMap<String, Element>();
             var terms = new HashMap<String, List<Element>>();
@@ -171,7 +171,16 @@ public class NtrfConverter {
         if (langElement.getElementsByTagName(Elements.TE.name()).getLength() == 0) {
             termElement = result.createElement(Elements.TE.name());
         } else {
-            termElement = result.createElement(Elements.DTE.name());
+            // check if next sibling element is TYPT (type of the term)
+            var sibling = item.getNextSibling();
+            while (sibling.getNodeType() != Node.ELEMENT_NODE) {
+                sibling = sibling.getNextSibling();
+            }
+            if (sibling.getNodeName().equals(Elements.TYPT.name()) && NOT_RECOMMENDED_TYPES.contains(sibling.getTextContent())) {
+                termElement = result.createElement(Elements.DTE.name());
+            } else {
+                termElement = result.createElement(Elements.SY.name());
+            }
         }
 
         var term = result.createElement(Elements.TERM.name());
