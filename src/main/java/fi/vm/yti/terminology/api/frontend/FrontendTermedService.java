@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static fi.vm.yti.security.AuthorizationException.check;
 import static fi.vm.yti.terminology.api.model.termed.VocabularyNodeType.TerminologicalVocabulary;
@@ -123,7 +124,9 @@ public class FrontendTermedService {
         if (result.isEmpty()) {
             throw new NodeNotFoundException(graphId, asList(NodeType.Vocabulary, NodeType.TerminologicalVocabulary));
         } else {
-            return userNameToDisplayName(result.get(0), new UserIdToDisplayNameMapper(),
+            GenericNodeInlined vocabulary = result.get(0);
+            handleChildOrganizations(vocabulary);
+            return userNameToDisplayName(vocabulary, new UserIdToDisplayNameMapper(),
                     authorizationManager.isUserPartOfOrganization(graphId));
         }
     }
@@ -191,6 +194,8 @@ public class FrontendTermedService {
         vocabularyNode.setUri(namespaceRoot + prefix);
 
         try {
+            handleChildOrganizations(vocabularyNode);
+
             var templateMetaNodes = getTypes(templateGraphId);
             var prefLabel = mapToList(vocabularyNode.getProperties().get("prefLabel"), Attribute::asProperty);
 
@@ -212,6 +217,64 @@ public class FrontendTermedService {
             deleteGraph(graphId);
             throw new RuntimeException(e);
         }
+    }
+
+    private void handleChildOrganizations(GenericNodeInlined vocabularyNode) {
+        List<GenericNodeInlined> contributors = vocabularyNode.getReferences().get("contributor");
+
+        JsonNode organizations = getOrganizations("fi", true);
+
+        Set<GenericNodeInlined> parents = new HashSet<>();
+        for (GenericNodeInlined contributor : contributors) {
+            JsonNode org = StreamSupport.stream(organizations.spliterator(), false)
+                    .filter(o -> o.get("id").asText().equals(contributor.getId().toString()))
+                    .findFirst().orElseThrow();
+
+            if (org.get("references").has("parent")) {
+                JsonNode parent = org.get("references").get("parent").iterator().next();
+
+                UUID id = UUID.fromString(parent.get("id").asText());
+                if (contributors.stream().noneMatch(c -> c.getId().equals(id))) {
+                    Iterator<JsonNode> labelsIterator = parent.get("properties").get("prefLabel").iterator();
+
+                    List<Attribute> labels = new ArrayList<>();
+                    while (labelsIterator.hasNext()) {
+                        JsonNode label = labelsIterator.next();
+                        labels.add(new Attribute(label.get("lang").asText(), label.get("value").asText()));
+                    }
+                    parents.add(new GenericNodeInlined(id,
+                            "", "", 0L, "", new Date(), "", new Date(),
+                            DomainIndex.ORGANIZATION_DOMAIN,
+                            Map.of("prefLabel", labels),
+                            emptyMap(),
+                            emptyMap()
+                    ));
+                }
+            }
+        }
+        vocabularyNode.getReferences().get("contributor").addAll(parents);
+    }
+
+    private void handleChildOrganizations(GenericNode vocabularyNode) {
+        List<Identifier> contributors = vocabularyNode.getReferences().get("contributor");
+        JsonNode organizations = getOrganizations("fi", true);
+
+        Set<Identifier> parents = new HashSet<>();
+        for (Identifier contributor : contributors) {
+            JsonNode org = StreamSupport.stream(organizations.spliterator(), false)
+                    .filter(o -> o.get("id").asText().equals(contributor.getId().toString()))
+                    .findFirst().orElseThrow();
+
+            if (org.get("references").has("parent")) {
+                String parent = org.get("references").get("parent").iterator().next().get("id").asText();
+                Identifier parentIdentifier = new Identifier(UUID.fromString(parent), DomainIndex.ORGANIZATION_DOMAIN);
+
+                if (!contributors.contains(parentIdentifier)) {
+                    parents.add(parentIdentifier);
+                }
+            }
+        }
+        vocabularyNode.getReferences().get("contributor").addAll(parents);
     }
 
     void deleteVocabulary(UUID graphId) {
@@ -365,8 +428,21 @@ public class FrontendTermedService {
         return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
     }
 
+    JsonNode getOrganizations(String language, boolean showChildOrganizations) {
+        JsonNode organizations = getNodeListWithoutReferrersV2(NodeType.Organization, language);
+        if (!showChildOrganizations) {
+            ObjectMapper mapper = new ObjectMapper();
+            List<JsonNode> jsonNodeStream = StreamSupport.stream(organizations.spliterator(), false)
+                    .filter(org -> !org.has("references")
+                                   || !org.get("references").iterator().hasNext())
+                    .collect(Collectors.toList());
+            return mapper.valueToTree(jsonNodeStream);
+        }
+        return organizations;
+    }
+
     @NotNull
-    JsonNode getNodeListWithoutReferencesOrReferrersV2(NodeType nodeType, String language) {
+    JsonNode getNodeListWithoutReferrersV2(NodeType nodeType, String language) {
         final String[] validLanguages = {"fi", "en", "sv"};
 
         if (!Arrays.asList(validLanguages).contains(language)) {
@@ -387,6 +463,7 @@ public class FrontendTermedService {
         params.add("select", "code");
         params.add("select", "uri");
         params.add("select", "properties.*");
+        params.add("select", "references.*");
         params.add("where", "type.id:" + nodeType);
         params.add("max", "-1");
 
@@ -402,6 +479,12 @@ public class FrontendTermedService {
 
         check(authorizationManager.canModifyNodes(deleteAndSave.getSave()));
         check(authorizationManager.canRemoveNodes(deleteAndSave.getDelete()));
+        Optional<GenericNode> vocabularyNode = deleteAndSave.getSave()
+                .stream()
+                .filter(this::isVocabulary)
+                .findFirst();
+
+        vocabularyNode.ifPresent(this::handleChildOrganizations);
 
         updateAndDeleteInternalNodes(deleteAndSave, sync, null);
     }
