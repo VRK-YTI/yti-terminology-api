@@ -96,8 +96,9 @@ public class NtrfTest {
 
         // Concept properties
         assertEquals("Käsitteen luokka", getPropertyValue(concept, "conceptClass"));
-        assertEquals("Käyttöala", getPropertyValue(concept, "conceptScope"));
+        assertEquals("Käyttöala", getPropertyValue(concept, "subjectArea"));
         assertEquals(Arrays.asList("Huomautus 1", "Huomautus 2"), getPropertyValues(concept, "note"));
+        assertEquals(Arrays.asList("Esimerkki 1", "Esimerkki 2"), getPropertyValues(concept, "example"));
         assertEquals("Käsitteen määritelmä", getPropertyValue(concept, "definition"));
         assertEquals(Arrays.asList(" - Viimeksi muokattu, 2022-03-30", "Editorial note concept"),
                 getPropertyValues(concept, "editorialNote"));
