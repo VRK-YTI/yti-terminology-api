@@ -918,7 +918,9 @@ public class NtrfMapper {
                     vocabulary);
         }
         // NOTE
+        // reverse the order, because notes are displayed in the UI newest (=last one in the list) first.
         List<NOTE> notes = o.getNOTE();
+        Collections.reverse(notes);
         for (NOTE n : notes) {
             handleNOTE(currentConcept, n, o.getValue().value(), parentProperties, properties,
                     vocabulary);
