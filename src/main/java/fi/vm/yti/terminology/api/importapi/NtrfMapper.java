@@ -926,6 +926,12 @@ public class NtrfMapper {
                     vocabulary);
         }
 
+        List<EXAMP> examples = o.getEXAMP();
+        for (EXAMP ex : examples) {
+            handleEXAMP(currentConcept, ex, o.getValue().value(), parentProperties, properties,
+                    vocabulary);
+        }
+
         Consumer<Termcontent> parentReferencesConsumer = obj -> {
             String propertyName;
 
@@ -1195,7 +1201,7 @@ public class NtrfMapper {
             subj.getContent().forEach(o -> {
                 if (o instanceof String) {
                     Attribute att = new Attribute(null, o.toString());
-                    addProperty("conceptScope", properties, att);
+                    addProperty("subjectArea", properties, att);
                 } else {
                     logger.error("SUBJ unknown instance type: {}", o.getClass().getName());
                     statusList.add(
@@ -1454,6 +1460,19 @@ public class NtrfMapper {
             return att;
         }
         return null;
+    }
+
+    private void handleEXAMP(UUID currentConcept, EXAMP examp, String lang,
+                             Map<String, List<Attribute>> parentProperties,
+                             Map<String, List<Attribute>> termProperties, Graph vocabulary) {
+
+        String exampleString = getContentWithLinks(examp.getContent(), currentConcept,
+                termProperties, vocabulary, lang);
+
+        if (!exampleString.isEmpty()) {
+            Attribute att = new Attribute(lang, exampleString);
+            addProperty("example", parentProperties, att);
+        }
     }
 
     private String getContentWithLinks(List<Object> content, UUID currentConcept,

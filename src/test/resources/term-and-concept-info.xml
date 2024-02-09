@@ -24,6 +24,8 @@
             <DEF>Käsitteen määritelmä</DEF>
             <NOTE>Huomautus 1</NOTE>
             <NOTE>Huomautus 2</NOTE>
+            <EXAMP>Esimerkki 1</EXAMP>
+            <EXAMP>Esimerkki 2</EXAMP>
             <STE>
                 <TERM>hakutermi</TERM>
             </STE>
