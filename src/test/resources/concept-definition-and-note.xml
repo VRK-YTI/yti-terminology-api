@@ -8,7 +8,7 @@
             </TE>
             <DEF>
                 Definition test links:
-                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1">econ link</ECON>
+                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1" typr="closeMatch">econ link</ECON>
                     <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
                     <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
                     <NCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">nconext link</NCONEXT>
@@ -19,7 +19,7 @@
             </DEF>
             <NOTE>
                 Note test links:
-                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1">econ link</ECON>
+                    <ECON href="http://uri.suomi.fi/terminology/rak/concept-1" typr="exactMatch">econ link</ECON>
                     <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
                     <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
                     <NCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">nconext link</NCONEXT>
@@ -29,5 +29,7 @@
                 .
             </NOTE>
         </LANG>
+        <!-- This should not have an effect because concept links are already created while handling NOTE and DEF elements-->
+        <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">redundant rconext link</RCONEXT>
     </RECORD>
 </VOCABULARY>

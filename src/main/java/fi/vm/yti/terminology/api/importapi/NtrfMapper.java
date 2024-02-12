@@ -76,6 +76,10 @@ public class NtrfMapper {
     private final Map<String, List<ConnRef>> nconList = new LinkedHashMap<>();
     private final Map<String, List<ConnRef>> rconList = new LinkedHashMap<>();
     private final Map<String, List<ConnRef>> bconList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> econList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> rconextList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> nconextList = new LinkedHashMap<>();
+    private final Map<String, List<ConnRef>> bconextList = new LinkedHashMap<>();
 
     private String currentRecord;
     private final List<StatusMessage> statusList = new ArrayList<>();
@@ -148,6 +152,10 @@ public class NtrfMapper {
         nconList.clear();
         bconList.clear();
         rconList.clear();
+        econList.clear();
+        rconextList.clear();
+        nconextList.clear();
+        bconextList.clear();
 
         // Get vocabulary
         try {
@@ -779,7 +787,19 @@ public class NtrfMapper {
             handleNCON(currentId, o);
         }
 
-        var conceptLinks = new ArrayList<GenericNode>();
+        var externalConceptLinks = new ArrayList<GenericNode>();
+
+        econList.getOrDefault(currentRecord, new ArrayList<>())
+                .forEach(e -> handleExternalConcepts(references, externalConceptLinks, e.getReferenceString(), e.getType()));
+
+        rconextList.getOrDefault(currentRecord, new ArrayList<>())
+                .forEach(e -> handleExternalConcepts(references, externalConceptLinks, e.getReferenceString(), e.getType()));
+
+        nconextList.getOrDefault(currentRecord, new ArrayList<>())
+                .forEach(e -> handleExternalConcepts(references, externalConceptLinks, e.getReferenceString(), e.getType()));
+
+        bconextList.getOrDefault(currentRecord, new ArrayList<>())
+                .forEach(e -> handleExternalConcepts(references, externalConceptLinks, e.getReferenceString(), e.getType()));
 
         for (ECON econ : r.getECON()) {
             if (!Arrays.asList("exactMatch", "closeMatch").contains(econ.getTypr())) {
@@ -787,19 +807,19 @@ public class NtrfMapper {
                 statusList.add(new StatusMessage(currentRecord, "Invalid reference type " + econ.getTypr()));
                 continue;
             }
-            handleExternalConcepts(references, conceptLinks, econ.getHref(), econ.getTypr());
+            handleExternalConcepts(references, externalConceptLinks, econ.getHref(), econ.getTypr());
         }
 
         for (RCONEXT rConExt : r.getRCONEXT()) {
-            handleExternalConcepts(references, conceptLinks, rConExt.getHref(), "relatedMatch");
+            handleExternalConcepts(references, externalConceptLinks, rConExt.getHref(), "relatedMatch");
         }
 
         for (BCONEXT bConExt : r.getBCONEXT()) {
-            handleExternalConcepts(references, conceptLinks, bConExt.getHref(), "broadMatch");
+            handleExternalConcepts(references, externalConceptLinks, bConExt.getHref(), "broadMatch");
         }
 
         for (NCONEXT nConExt : r.getNCONEXT()) {
-            handleExternalConcepts(references, conceptLinks, nConExt.getHref(), "narrowMatch");
+            handleExternalConcepts(references, externalConceptLinks, nConExt.getHref(), "narrowMatch");
         }
 
         TypeId typeId = typeMap.get("Concept").getDomain();
@@ -809,7 +829,7 @@ public class NtrfMapper {
         // First add terms
         addNodeList.addAll(terms);
         // Add concept link nodes
-        addNodeList.addAll(conceptLinks);
+        addNodeList.addAll(externalConceptLinks);
         // then concept itself
         addNodeList.add(node);
     }
@@ -823,22 +843,29 @@ public class NtrfMapper {
             var resolvedResource = resolveService.resolveResource(uri);
             var conceptNode = termedService.getConcept(resolvedResource.getGraphId(), resolvedResource.getId());
             var terminology = termedService.getVocabulary(resolvedResource.getGraphId());
+            var conceptId = conceptNode.getId().toString();
 
             var conceptLinkProperties = Map.of(
                     "prefLabel", getPrefLabel(conceptNode),
-                    "targetId", List.of(new Attribute("", conceptNode.getId().toString())),
+                    "targetId", List.of(new Attribute("", conceptId)),
                     "targetGraph", List.of(new Attribute("", conceptNode.getType().getGraphId().toString())),
                     "vocabularyLabel", getPrefLabel(terminology)
             );
-
-            conceptLinks.add(
-                    new GenericNode(id, "concept-link-" + id, terminology.getUri() + "/concept-link-" + id,
-                            0L, "", new Date(), "", new Date(), conceptLinkType,
-                            conceptLinkProperties, emptyMap(), emptyMap())
-            );
             var refs = references.getOrDefault(refType, new ArrayList<>());
-            refs.add(new Identifier(id, conceptLinkType));
-            references.put(refType, refs);
+            var refIds = refs.stream().map(Identifier::getId).collect(Collectors.toList());
+            var exists = conceptLinks.stream()
+                    .filter(link -> refIds.contains(link.getId()))
+                    .anyMatch(l -> l.getProperties().get("targetId").get(0).getValue().equals(conceptId));
+
+            if (!exists) {
+                conceptLinks.add(
+                        new GenericNode(id, "concept-link-" + id, terminology.getUri() + "/concept-link-" + id,
+                                0L, "", new Date(), "", new Date(), conceptLinkType,
+                                conceptLinkProperties, emptyMap(), emptyMap())
+                );
+                refs.add(new Identifier(id, conceptLinkType));
+                references.put(refType, refs);
+            }
         } catch (Exception e) {
             logger.warn("Error handling external concepts {}, {}", uri, e.getMessage());
             statusList.add(new StatusMessage(currentRecord, "Related concept not found " + uri));
@@ -1426,6 +1453,44 @@ public class NtrfMapper {
         }
     }
 
+    private void handleECONExtRef(UUID currentConcept, ECON econ) {
+        handleConceptReference(econ.getHref(), econ.getTypr(), currentConcept, econList);
+    }
+
+    private void handleBCONExtRef(UUID currentConcept, BCONEXT bconext) {
+        handleConceptReference(bconext.getHref(), "broadMatch", currentConcept, bconextList);
+    }
+
+    private void handleRCONExtRef(UUID currentConcept, RCONEXT rconext) {
+        handleConceptReference(rconext.getHref(), "relatedMatch", currentConcept, rconextList);
+    }
+
+    private void handleNCONExtRef(UUID currentConcept, NCONEXT nconext) {
+        handleConceptReference(nconext.getHref(), "narrowMatch", currentConcept, nconextList);
+    }
+
+    private void handleConceptReference(String href, String type, UUID currentConcept, Map<String, List<ConnRef>> conceptRefList) {
+        if (href == null) {
+            return;
+        }
+        if (href.startsWith("#")) {
+            href = href.substring(1);
+        }
+        logger.info("handle {} add item from source record: {} --> target: {}", type, currentRecord, href);
+        ConnRef conRef = new ConnRef();
+        // Use delayed resolving, so save record id for logging purposes
+        conRef.setCode(currentRecord);
+        conRef.setReferenceString(href);
+        // Null id, as a placeholder for target
+        conRef.setId(currentConcept);
+        conRef.setType(type);
+        conRef.setTargetId(NULL_ID);
+
+        List<ConnRef> reflist = conceptRefList.getOrDefault(currentRecord, new ArrayList<>());
+        reflist.add(conRef);
+        conceptRefList.put(currentRecord, reflist);
+    }
+
     /**
      * Set up ConceptClass with CLAS-element data.
      * 
@@ -1476,8 +1541,8 @@ public class NtrfMapper {
     }
 
     private String getContentWithLinks(List<Object> content, UUID currentConcept,
-                                              Map<String, List<Attribute>> termProperties,
-                                              Graph vocabulary, String lang) {
+                                       Map<String, List<Attribute>> termProperties,
+                                       Graph vocabulary, String lang) {
         String result = "";
         for (Object element : content) {
             if (element instanceof String) {
@@ -1504,18 +1569,22 @@ public class NtrfMapper {
                 ECON econ = (ECON) element;
                 result = result.concat(
                         NtrfUtil.getLink(econ.getHref(), "", econ.getContent(), null));
+                handleECONExtRef(currentConcept, econ);
             } else if (element instanceof RCONEXT) {
                 RCONEXT rconext = (RCONEXT) element;
                 result = result.concat(
                         NtrfUtil.getLink(rconext.getHref(), "", rconext.getContent(), null));
+                handleRCONExtRef(currentConcept, rconext);
             } else if (element instanceof BCONEXT) {
                 BCONEXT bconext = (BCONEXT) element;
                 result = result.concat(
                         NtrfUtil.getLink(bconext.getHref(), "", bconext.getContent(), null));
+                handleBCONExtRef(currentConcept, bconext);
             } else if (element instanceof NCONEXT) {
                 NCONEXT nconext = (NCONEXT) element;
                 result = result.concat(
                         NtrfUtil.getLink(nconext.getHref(), "", nconext.getContent(), null));
+                handleNCONExtRef(currentConcept, nconext);
             } else if (element instanceof SOURF) {
                 handleSOURF((SOURF) element, null, termProperties, vocabulary);
                 // Add refs as sources-part.
