@@ -65,6 +65,8 @@ public class NtrfTest {
     @Captor
     ArgumentCaptor<GenericDeleteAndSave> deleteAndSaveArgumentCaptor;
 
+    UUID importedGraphId = UUID.randomUUID();
+
     @BeforeEach
     public void setUp() {
         mockUser();
@@ -189,23 +191,7 @@ public class NtrfTest {
 
         var vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("external-concept-mapping.xml"));
 
-        when(resolveService.resolveResource(anyString())).thenReturn(
-                new ResolvedResource(graphId, ResolvedResource.Type.CONCEPT, conceptId)
-        );
-
-        var termNode = new GenericNodeInlined(UUID.randomUUID(),
-                "term-1", null, 0L, "", new Date(), "", new Date(), new TypeId(NodeType.Term, new GraphId(graphId)),
-                Map.of("prefLabel", List.of(new Attribute("en", "External concept"))), emptyMap(), emptyMap());
-
-        when(termedService.getConcept(eq(graphId), eq(conceptId))).thenReturn(
-                new GenericNodeInlined(conceptId, null, null,
-                    0L, "", new Date(), "", new Date(), new TypeId(NodeType.Concept, new GraphId(graphId)),
-                    emptyMap(), Map.of("prefLabelXl", List.of(termNode)), emptyMap())
-        );
-
-        when(termedService.getVocabulary(eq(graphId))).thenReturn(new GenericNodeInlined(terminologyNodeId, null, null,
-                0L, "", new Date(), "", new Date(), new TypeId(NodeType.TerminologicalVocabulary, new GraphId(graphId)),
-                Map.of("prefLabel", List.of(new Attribute("en", "External terminology"))), emptyMap(), emptyMap()));
+        mockGetExternalConcept(graphId, conceptId, terminologyNodeId);
 
         mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
 
@@ -237,6 +223,11 @@ public class NtrfTest {
     @Test
     void mapDefinitionAndNote() throws Exception {
         var vocabulary = NtrfUtil.unmarshallXmlDocument(getContent("concept-definition-and-note.xml"));
+        var extGraphId = UUID.randomUUID();
+        var extConceptId = UUID.randomUUID();
+        var terminologyNodeId = UUID.randomUUID();
+
+        mockGetExternalConcept(extGraphId, extConceptId, terminologyNodeId);
 
         mapper.mapNtrfDocument("xyz", UUID.randomUUID(), vocabulary, UUID.randomUUID());
 
@@ -267,6 +258,12 @@ public class NtrfTest {
 
         assertEquals(prefixDef + expected, definition);
         assertEquals(prefixNote + expected, note);
+
+        assertEquals(1, conceptNode.getReferences().get("closeMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("exactMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("relatedMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("narrowMatch").size());
+        assertEquals(1, conceptNode.getReferences().get("broadMatch").size());
     }
 
     private GenericNode getConceptNode(List<GenericNode> nodes, String code) {
@@ -313,7 +310,7 @@ public class NtrfTest {
     private void mockTermedGetGraph() {
         when(termedService.getGraph(any(UUID.class)))
                 .thenReturn(new Graph(
-                        UUID.randomUUID(),
+                        importedGraphId,
                         "test",
                         "https://uri.suomi.fi/terminology/test/",
                         emptyList(),
@@ -359,5 +356,24 @@ public class NtrfTest {
                         null,
                         null
                 ));
+    }
+
+    private void mockGetExternalConcept(UUID extGraphId, UUID extConceptId, UUID terminologyNodeId) {
+        var termNode = new GenericNodeInlined(UUID.randomUUID(),
+                "term-1", null, 0L, "", new Date(), "", new Date(), new TypeId(NodeType.Term, new GraphId(extGraphId)),
+                Map.of("prefLabel", List.of(new Attribute("en", "External concept"))), emptyMap(), emptyMap());
+
+        when(termedService.getConcept(extGraphId, extConceptId)).thenReturn(
+                new GenericNodeInlined(extConceptId, null, null,
+                        0L, "", new Date(), "", new Date(), new TypeId(NodeType.Concept, new GraphId(extGraphId)),
+                        emptyMap(), Map.of("prefLabelXl", List.of(termNode)), emptyMap())
+        );
+
+        when(termedService.getVocabulary(extGraphId)).thenReturn(new GenericNodeInlined(terminologyNodeId, null, null,
+                0L, "", new Date(), "", new Date(), new TypeId(NodeType.TerminologicalVocabulary, new GraphId(extGraphId)),
+                Map.of("prefLabel", List.of(new Attribute("en", "External terminology"))), emptyMap(), emptyMap()));
+
+        when(resolveService.resolveResource("http://uri.suomi.fi/terminology/rak/concept-1"))
+                .thenReturn(new ResolvedResource(extGraphId, ResolvedResource.Type.CONCEPT, extConceptId));
     }
 }
