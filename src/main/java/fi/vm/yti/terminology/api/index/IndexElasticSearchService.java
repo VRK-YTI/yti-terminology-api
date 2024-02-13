@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fi.vm.yti.terminology.api.exception.ElasticEndpointException;
+import fi.vm.yti.terminology.api.frontend.FrontendTermedService;
+import fi.vm.yti.terminology.api.util.JsonUtils;
 import fi.vm.yti.terminology.api.util.RestHighLevelClientWrapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -58,6 +60,7 @@ public class IndexElasticSearchService {
 
     private final IndexTermedService termedApiService;
     private final ObjectMapper objectMapper;
+    private final FrontendTermedService frontendTermedService;
 
     @Autowired
     public IndexElasticSearchService(@Value("${search.host.url}") String searchHostUrl,
@@ -69,7 +72,8 @@ public class IndexElasticSearchService {
             @Value("${search.index.deleteIndexOnAppRestart}") boolean deleteIndexOnAppRestart,
             IndexTermedService termedApiService,
             ObjectMapper objectMapper,
-            final RestHighLevelClientWrapper esHiLvClient) {
+            final RestHighLevelClientWrapper esHiLvClient,
+            FrontendTermedService frontendTermedService) {
         this.createIndexFilename = createIndexFilename;
         this.createMappingsFilename = createMappingsFilename;
         this.indexName = indexName;
@@ -79,6 +83,7 @@ public class IndexElasticSearchService {
         this.objectMapper = objectMapper;
         this.esRestClient = esHiLvClient.getLowLevelClient();
         this.esHiLvClient = esHiLvClient; // Use that for resource api
+        this.frontendTermedService = frontendTermedService;
     }
 
     public void initIndex() {
@@ -141,10 +146,24 @@ public class IndexElasticSearchService {
         if (vocabularies.isEmpty()) {
             return; // Nothing to do
         }
+
+        List<String> mainOrganizationIds = JsonUtils.asStream(frontendTermedService
+                        .getOrganizations("fi", false))
+                .map(n -> n.get("id").textValue())
+                .collect(toList());
+
         ObjectMapper mapper = new ObjectMapper();
         List<String> indexLines = new ArrayList<>();
         vocabularies.forEach(o -> {
             try {
+                Iterator<JsonNode> contributors = o.get("references").get("contributor").iterator();
+                while (contributors.hasNext()) {
+                    JsonNode contributor = contributors.next();
+                    if (!mainOrganizationIds.contains(contributor.get("id").asText())) {
+                        contributors.remove();
+                    }
+                }
+
                 String line = "{\"index\":{\"_index\": \"vocabularies\", \"_type\": \"vocabulary" + "\", \"_id\":"
                           + o.get("id") + "}}\n" + Vocabulary.toElasticSearchVocabularyIndexObject(mapper, o) + "\n";
                 indexLines.add(line);
