@@ -428,7 +428,7 @@ public class FrontendTermedService {
         return requireNonNull(termedRequester.exchange("/node-trees", GET, params, JsonNode.class));
     }
 
-    JsonNode getOrganizations(String language, boolean showChildOrganizations) {
+    public JsonNode getOrganizations(String language, boolean showChildOrganizations) {
         JsonNode organizations = getNodeListWithoutReferrersV2(NodeType.Organization, language);
         if (!showChildOrganizations) {
             ObjectMapper mapper = new ObjectMapper();
