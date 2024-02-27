@@ -331,9 +331,10 @@ public class FrontendController {
     @Operation(summary = "Get organization list for v2", description = "Get organizations available at YTI Group Management Service")
     @ApiResponse(responseCode = "200", description = "The basic info for organizations in unprocessed Termed JSON format")
     @GetMapping(path = "/v2/organizations", produces = APPLICATION_JSON_VALUE)
-    JsonNode getOrganizationListV2(@RequestParam(required = false, defaultValue = "fi") String language) {
+    JsonNode getOrganizationListV2(@RequestParam(required = false, defaultValue = "fi") String language,
+                                   @RequestParam(required = false) boolean showChildOrganizations) {
         logger.info("GET /organizations requested");
-        return termedService.getNodeListWithoutReferencesOrReferrersV2(Organization, language);
+        return termedService.getOrganizations(language, showChildOrganizations);
     }
 
     @Operation(summary = "Get information domain list for v2")
@@ -341,7 +342,7 @@ public class FrontendController {
     @GetMapping(path = "/v2/groups", produces = APPLICATION_JSON_VALUE)
     JsonNode getGroupListV2(@RequestParam(required = false, defaultValue = "fi") String language) {
         logger.info("GET /groups requested");
-        return termedService.getNodeListWithoutReferencesOrReferrersV2(Group, language);
+        return termedService.getNodeListWithoutReferrersV2(Group, language);
     }
 
     @Operation(summary = "Make a bulk modification request", description = "Update and/or delete several nodes")
