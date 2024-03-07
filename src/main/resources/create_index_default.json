@@ -1,9 +1,0 @@
-{
-  "analysis": {
-    "analyzer": {
-      "termed": {
-        "type": "standard"
-      }
-    }
-  }
-}
