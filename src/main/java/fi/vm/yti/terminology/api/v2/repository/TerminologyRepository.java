@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class TerminologyRepository extends BaseRepository {
 
-    public TerminologyRepository(@Value(("${endpoint}")) String endpoint){
+    public TerminologyRepository(@Value(("${fuseki.url}")) String endpoint){
         super(RDFConnection.connect(endpoint + "/terminology/get"),
                 RDFConnection.connect(endpoint + "/terminology/data"),
                 RDFConnection.connect(endpoint + "/terminology/sparql"),

@@ -1,4 +1,4 @@
-FROM yti-docker-java-base:corretto-11.0.22
+FROM yti-docker-java-base:corretto-17.0.10
 
 ADD build/libs/yti-terminology-api.jar yti-terminology-api.jar
 

@@ -15,4 +15,12 @@ public class TerminologyDTO extends ModelMetaData {
     public void setPrefix(String prefix) {
         this.prefix = prefix;
     }
+
+    public Set<String> getLanguages() {
+        return languages;
+    }
+
+    public void setLanguages(Set<String> languages) {
+        this.languages = languages;
+    }
 }

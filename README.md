@@ -45,7 +45,7 @@ Get started:
 
 To develop the code:
 
-  - Run java class `fi.vm.yti.terminology.api.Application` with parameter `-Dspring.profiles.active=local` to start up Spring Boot web application at [http://localhost:9103](http://localhost:9103).
+  - Run java class `fi.vm.yti.terminology.api.v2.Application` with parameter `-Dspring.profiles.active=local` to start up Spring Boot web application at [http://localhost:9103](http://localhost:9103).
 
 Now you can start hacking the code normally.
 

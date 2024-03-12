@@ -7,6 +7,21 @@ import fi.vm.yti.common.dto.ResourceBaseDTO;
 
 public class ConceptDTO extends ResourceBaseDTO {
     private Map<String, String> definition;
-
     private List<TermDTO> terms;
+
+    public Map<String, String> getDefinition() {
+        return definition;
+    }
+
+    public void setDefinition(Map<String, String> definition) {
+        this.definition = definition;
+    }
+
+    public List<TermDTO> getTerms() {
+        return terms;
+    }
+
+    public void setTerms(List<TermDTO> terms) {
+        this.terms = terms;
+    }
 }
