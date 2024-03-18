@@ -61,7 +61,7 @@ dependencies {
 
     implementation "fi.vm.yti:yti-spring-security:0.4.0"
     implementation "fi.vm.yti:yti-spring-migration:0.2.0"
-    implementation "fi.vm.yti:yti-common-backend:1.0-SNAPSHOT"
+    implementation "fi.vm.yti:yti-common-backend:1.0.0-SNAPSHOT"
 
     implementation "org.springframework.cloud:spring-cloud-starter-config"
 
