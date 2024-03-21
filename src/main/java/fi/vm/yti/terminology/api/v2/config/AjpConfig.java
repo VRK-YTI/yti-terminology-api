@@ -12,7 +12,7 @@ import java.net.UnknownHostException;
 
 @Configuration
 public class AjpConfig {
-    @Value(value = "${server.servlet.context-path}")
+    @Value(value = "${server.context-path}")
     private String contextPath;
 
     @Bean
