@@ -1,10 +1,10 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
-import fi.vm.yti.common.dto.ModelMetaData;
+import fi.vm.yti.common.dto.ModelMetaDataDTO;
 
 import java.util.Set;
 
-public class TerminologyDTO extends ModelMetaData {
+public class TerminologyDTO extends ModelMetaDataDTO {
     private String prefix;
     private Set<String> languages;
 

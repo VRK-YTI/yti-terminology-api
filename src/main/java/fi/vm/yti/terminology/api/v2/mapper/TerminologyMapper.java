@@ -1,8 +1,10 @@
 package fi.vm.yti.terminology.api.v2.mapper;
 
+import fi.vm.yti.common.mapper.MapperUtils;
 import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
+import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -33,5 +35,17 @@ public class TerminologyMapper {
         dto.setUri(terminologyURI.getGraphURI());
 
         return dto;
+    }
+
+    public static IndexTerminology toIndexDocument(Model model) {
+        var terminologyURI = TerminologyURI.createTerminologyURI(model);
+        var terminologyResource = model.getResource(terminologyURI.getGraphURI());
+
+        var index = new IndexTerminology();
+        index.setUri(terminologyURI.getGraphURI());
+        index.setId(terminologyURI.getGraphURI());
+        index.setLabel(MapperUtils.localizedPropertyToMap(terminologyResource, RDFS.label));
+
+        return index;
     }
 }

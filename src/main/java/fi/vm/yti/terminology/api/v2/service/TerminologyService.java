@@ -3,6 +3,7 @@ package fi.vm.yti.terminology.api.v2.service;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
+import fi.vm.yti.terminology.api.v2.opensearch.OpenSearchIndexer;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -19,11 +20,14 @@ public class TerminologyService {
 
     private final TerminologyRepository terminologyRepository;
     private final TerminologyAuthorizationManager authorizationManager;
+    private final OpenSearchIndexer openSearchIndexer;
 
     public TerminologyService(TerminologyRepository terminologyRepository,
-                              TerminologyAuthorizationManager authorizationManager) {
+                              TerminologyAuthorizationManager authorizationManager,
+                              OpenSearchIndexer openSearchIndexer) {
         this.terminologyRepository = terminologyRepository;
         this.authorizationManager = authorizationManager;
+        this.openSearchIndexer = openSearchIndexer;
     }
 
     public TerminologyInfoDTO getTerminology(String prefix) {
@@ -38,6 +42,7 @@ public class TerminologyService {
         var model = TerminologyMapper.dtoToModel(dto, graphURI);
         terminologyRepository.put(graphURI, model);
 
+        openSearchIndexer.addTerminologyToIndex(TerminologyMapper.toIndexDocument(model));
         return new URI(graphURI);
     }
 
