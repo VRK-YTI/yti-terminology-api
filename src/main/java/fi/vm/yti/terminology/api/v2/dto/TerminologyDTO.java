@@ -1,20 +1,11 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
-import fi.vm.yti.common.dto.ModelMetaDataDTO;
+import fi.vm.yti.common.dto.MetaDataDTO;
 
 import java.util.Set;
 
-public class TerminologyDTO extends ModelMetaDataDTO {
-    private String prefix;
+public class TerminologyDTO extends MetaDataDTO {
     private Set<String> languages;
-
-    public String getPrefix() {
-        return prefix;
-    }
-
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
-    }
 
     public Set<String> getLanguages() {
         return languages;

@@ -1,9 +1,10 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.common.security.AuditService;
+import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
-import fi.vm.yti.terminology.api.v2.opensearch.OpenSearchIndexer;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -20,14 +21,20 @@ public class TerminologyService {
 
     private final TerminologyRepository terminologyRepository;
     private final TerminologyAuthorizationManager authorizationManager;
-    private final OpenSearchIndexer openSearchIndexer;
+    private final AuthenticatedUserProvider userProvider;
+    private final IndexService indexService;
+    private final AuditService auditService;
 
     public TerminologyService(TerminologyRepository terminologyRepository,
                               TerminologyAuthorizationManager authorizationManager,
-                              OpenSearchIndexer openSearchIndexer) {
+                              AuthenticatedUserProvider userProvider,
+                              IndexService indexService) {
         this.terminologyRepository = terminologyRepository;
         this.authorizationManager = authorizationManager;
-        this.openSearchIndexer = openSearchIndexer;
+        this.indexService = indexService;
+        this.userProvider = userProvider;
+
+        this.auditService = new AuditService("TERMINOLOGY");
     }
 
     public TerminologyInfoDTO getTerminology(String prefix) {
@@ -42,7 +49,8 @@ public class TerminologyService {
         var model = TerminologyMapper.dtoToModel(dto, graphURI);
         terminologyRepository.put(graphURI, model);
 
-        openSearchIndexer.addTerminologyToIndex(TerminologyMapper.toIndexDocument(model));
+        indexService.addTerminologyToIndex(TerminologyMapper.toIndexDocument(model));
+        auditService.log(AuditService.ActionType.CREATE, graphURI, userProvider.getUser());
         return new URI(graphURI);
     }
 

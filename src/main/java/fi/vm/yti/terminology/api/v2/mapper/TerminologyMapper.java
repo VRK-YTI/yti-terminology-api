@@ -1,7 +1,7 @@
 package fi.vm.yti.terminology.api.v2.mapper;
 
-import fi.vm.yti.common.mapper.MapperUtils;
 import fi.vm.yti.common.properties.DCAP;
+import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
