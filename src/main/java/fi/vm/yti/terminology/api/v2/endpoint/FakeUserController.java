@@ -1,7 +1,7 @@
 package fi.vm.yti.terminology.api.v2.endpoint;
 
 import fi.vm.yti.common.dto.GroupManagementUserDTO;
-import fi.vm.yti.common.service.CommonGroupManagementService;
+import fi.vm.yti.common.service.GroupManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,9 +13,9 @@ import java.util.List;
 @RestController
 public class FakeUserController {
 
-    private final CommonGroupManagementService groupManagementService;
+    private final GroupManagementService groupManagementService;
 
-    FakeUserController(CommonGroupManagementService groupManagementService) {
+    FakeUserController(GroupManagementService groupManagementService) {
         this.groupManagementService = groupManagementService;
     }
 

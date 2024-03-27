@@ -2,9 +2,9 @@ package fi.vm.yti.terminology.api.v2.util;
 
 import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.exception.MappingError;
-import fi.vm.yti.common.mapper.MapperUtils;
 import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.util.GraphURI;
+import fi.vm.yti.common.util.MapperUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;

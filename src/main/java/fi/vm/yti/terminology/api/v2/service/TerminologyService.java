@@ -1,6 +1,6 @@
 package fi.vm.yti.terminology.api.v2.service;
 
-import fi.vm.yti.common.security.AuditService;
+import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
