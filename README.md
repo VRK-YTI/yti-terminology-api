@@ -1,56 +1,35 @@
-# YTI termonology API
+# YTI terminology API
 
-Terminology editor is a web-based vocabulary and metadata editor.
+## Requirements
+- Java 17
+- Gradle 8.5
+- Docker
 
-This modules purpose is to act as a backend for frontend project.
-It also handles updating of elastic search index. Complete reindexing is done periodically.
+## Running locally
 
-## Install dependencies
+#### Checkout and publish yti-spring-security and yti-common-backend libraries to local maven repository
 
-Use Java 8u121 or later
-
-Run with `./gradlew assemble` to download all dependencies.
-
-## Running
-
-Run with: `./gradlew bootRun`
-
-Terminology API should respond at port `9103`.
-
-### Using profile-specific properties
-
-To use different configurations based on Spring profile, such as *prod*, add a new property
-file if it does not exist:
+Check correct version from the [dependencies](build.gradle)
 ```
-/src/main/resources/application-prod.properties
+# In dependant library directory
+git checkout vX.X.X 
+./gradlew publishToMavenLocal
 ```
 
-and run:
+#### Create Fuseki image
+
+Checkout yti-fuseki project and run `build.sh` script
+
+#### Start Fuseki and OpenSearch containers from yti-compose
 ```
-./gradlew bootRun --args='--spring.profiles.active=prod'
+docker-compose up -d yti-fuseki-v4 yti-datamodel-opensearch
 ```
 
-## Stopping
+#### Properties
 
-Run in a separate terminal: `curl -X POST localhost:9103/terminology-api/actuator/shutdown`
-(Note that this is not probably exposed by default.)
+Create file `application-local.properties` to `src/main/resources/config` directory. Copy values from [template file](src/main/resources/config/application-template.properties) and adjust as needed. 
 
-## Development
-
-Get started:
-
-  - Copy `src/main/resources/config/application-template.properties` to `application-local.properties`
-    and adjust the settings.
-  - Run `./gradlew assemble` to download all dependencies.
-
-To develop the code:
-
-  - Run java class `fi.vm.yti.terminology.api.v2.Application` with parameter `-Dspring.profiles.active=local` to start up Spring Boot web application at [http://localhost:9103](http://localhost:9103).
-
-Now you can start hacking the code normally.
-
-## Build (executable) jar
-
-Run with: `./gradlew jar --args='--spring.profiles.active=prod'`
-
-The jar file is created into folder ./build/libs
+#### Run application
+```
+./gradlew bootRun  --args='--spring.profiles.active=local'
+```
