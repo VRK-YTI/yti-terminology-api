@@ -8,7 +8,7 @@ import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
-import org.apache.jena.atlas.lib.NotImplemented;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -48,7 +48,7 @@ public class TerminologyService extends AbstractGraphService<TerminologyReposito
 
     @Override
     public MetaDataInfoDTO get(String identifier, String version) {
-        throw new NotImplemented("Version not supported");
+        throw new NotImplementedException("Version not supported");
     }
 
     @Override
@@ -65,7 +65,7 @@ public class TerminologyService extends AbstractGraphService<TerminologyReposito
 
     @Override
     public void update(String prefix, MetaDataDTO dto) {
-        throw new NotImplemented();
+        throw new NotImplementedException("Update terminology not implemented yet");
     }
 
     @Override
@@ -77,6 +77,6 @@ public class TerminologyService extends AbstractGraphService<TerminologyReposito
 
     @Override
     public void delete(String identifier, String version) {
-        throw new NotImplemented("Version not supported");
+        throw new NotImplementedException("Version not supported");
     }
 }
