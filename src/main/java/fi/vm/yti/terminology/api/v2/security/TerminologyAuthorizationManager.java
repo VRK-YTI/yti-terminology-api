@@ -18,6 +18,9 @@ public class TerminologyAuthorizationManager extends BaseAuthorizationManagerImp
     }
 
     public boolean hasRightToAnyOrganization(Collection<UUID> organizations) {
+        if (organizations.isEmpty()) {
+            return false;
+        }
         return hasRightToAnyOrganization(organizations, Role.TERMINOLOGY_EDITOR);
     }
 
