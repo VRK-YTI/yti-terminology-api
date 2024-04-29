@@ -2,15 +2,14 @@ package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
 import fi.vm.yti.common.opensearch.OpenSearchInitializer;
+import fi.vm.yti.common.opensearch.OpenSearchUtil;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
-import org.opensearch.client.opensearch._types.mapping.*;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Map;
 
-import static fi.vm.yti.common.opensearch.OpenSearchUtil.*;
+import java.util.Map;
 
 @Service
 public class IndexService extends OpenSearchInitializer {
@@ -43,6 +42,14 @@ public class IndexService extends OpenSearchInitializer {
         client.putToIndex(TERMINOLOGY_INDEX, indexTerminology.getId(), indexTerminology);
     }
 
+    public void updateTerminologyToIndex(IndexTerminology indexTerminology) {
+        client.updateToIndex(TERMINOLOGY_INDEX, indexTerminology.getId(), indexTerminology);
+    }
+
+    public void deleteTerminologyFromIndex(String id) {
+        client.removeFromIndex(TERMINOLOGY_INDEX, id);
+    }
+
     private void initTerminologyIndex() {
         LOG.info("Init terminologies");
     }
@@ -53,31 +60,8 @@ public class IndexService extends OpenSearchInitializer {
 
     private TypeMapping getTerminologyMappings() {
         return new TypeMapping.Builder()
-                .dynamicTemplates(getTerminologyDynamicTemplates())
-                .properties(getTerminologyProperties())
+                .dynamicTemplates(OpenSearchUtil.getMetaDataDynamicTemplates())
+                .properties(OpenSearchUtil.getMetaDataProperties())
                 .build();
     }
-
-    private List<Map<String, DynamicTemplate>> getTerminologyDynamicTemplates() {
-        return List.of(
-                getDynamicTemplate("label", "label.*"),
-                getDynamicTemplate("description", "description.*")
-        );
-    }
-
-    private Map<String, Property> getTerminologyProperties() {
-        return Map.ofEntries(
-                Map.entry("id", getKeywordProperty()),
-                Map.entry("status", getKeywordProperty()),
-                Map.entry("type", getKeywordProperty()),
-                Map.entry("prefix", getKeywordProperty()),
-                Map.entry("contributor", getKeywordProperty()),
-                Map.entry("language", getKeywordProperty()),
-                Map.entry("uri", getKeywordProperty()),
-                Map.entry("created", getDateProperty()),
-                Map.entry("contentModified", getDateProperty())
-        );
-    }
-
-
 }

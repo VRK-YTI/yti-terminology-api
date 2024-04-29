@@ -1,0 +1,28 @@
+@prefix dcap:       <http://purl.org/ws-mmi-dc/terms/> .
+@prefix dcterms:    <http://purl.org/dc/terms/> .
+@prefix owl:        <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:         <http://www.w3.org/ns/shacl#> .
+@prefix skos:       <http://www.w3.org/2004/02/skos/core#> .
+@prefix suomi-meta: <https://iri.suomi.fi/model/suomi-meta/> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix term:       <https://iri.suomi.fi/model/term/> .
+
+<https://iri.suomi.fi/terminology/test/>
+        rdf:type                      skos:ConceptScheme;
+        rdfs:comment                  "Description en"@en , "Description fi"@fi;
+        dcterms:contributor           <urn:uuid:7d3a3c00-5a6b-489b-a3ed-63bb58c26a63>;
+        dcterms:created               "2024-04-26T11:45:00.000Z"^^xsd:dateTime;
+        dcterms:isPartOf              <http://urn.fi/URN:NBN:fi:au:ptvl:v1096>;
+        dcterms:language              "en" , "fi";
+        dcterms:modified              "2024-04-26T11:46:00.000Z"^^xsd:dateTime;
+        dcap:preferredXMLNamespace    "https://iri.suomi.fi/terminology/test/";
+        dcap:preferredXMLNamespacePrefix
+                "test";
+        skos:prefLabel                "Label fi"@fi , "Label en"@en;
+        suomi-meta:contact            "yhteentoimivuus@dvv.fi";
+        suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT";
+        term:terminologyType          "TERMINOLOGICAL_VOCABULARY" .

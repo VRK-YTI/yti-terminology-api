@@ -1,9 +1,8 @@
 package fi.vm.yti.terminology.api.v2.endpoint;
 
-import fi.vm.yti.common.dto.MetaDataDTO;
 import fi.vm.yti.common.dto.MetaDataInfoDTO;
+import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.service.TerminologyService;
-import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import fi.vm.yti.terminology.api.v2.validator.ValidTerminology;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,7 +50,7 @@ public class TerminologyController {
             @ApiResponse(responseCode = "401", description = "Current user does not have rights to create terminology"),
     })
     @PostMapping(consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> create(@RequestBody @ValidTerminology MetaDataDTO terminology) throws URISyntaxException {
+    public ResponseEntity<String> create(@RequestBody @ValidTerminology TerminologyDTO terminology) throws URISyntaxException {
         var uri = terminologyService.create(terminology);
         return ResponseEntity.created(uri).build();
     }
@@ -68,7 +67,7 @@ public class TerminologyController {
     @PutMapping(path = "/{prefix}", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> update(
             @PathVariable @Parameter(description = "Terminology prefix") String prefix,
-            @RequestBody @ValidTerminology(update = true) MetaDataDTO terminology) {
+            @RequestBody @ValidTerminology(update = true) TerminologyDTO terminology) {
         terminologyService.update(prefix, terminology);
         return ResponseEntity.noContent().build();
     }
@@ -90,7 +89,6 @@ public class TerminologyController {
     @ApiResponse(responseCode = "200", description = "Boolean value indicating whether prefix")
     @GetMapping(value = "/{prefix}/exists", produces = APPLICATION_JSON_VALUE)
     public Boolean exists(@PathVariable @Parameter(description = "Data model prefix") String prefix) {
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
-        return terminologyService.exists(graphURI);
+        return terminologyService.exists(prefix);
     }
 }
