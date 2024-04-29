@@ -1,14 +1,14 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.common.dto.*;
+import fi.vm.yti.common.service.AbstractGraphService;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.security.AuthenticatedUserProvider;
-import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
-import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
-import org.apache.jena.rdf.model.Model;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -17,7 +17,7 @@ import java.net.URISyntaxException;
 import static fi.vm.yti.security.AuthorizationException.check;
 
 @Service
-public class TerminologyService {
+public class TerminologyService extends AbstractGraphService<TerminologyRepository> {
 
     private final TerminologyRepository terminologyRepository;
     private final TerminologyAuthorizationManager authorizationManager;
@@ -29,6 +29,8 @@ public class TerminologyService {
                               TerminologyAuthorizationManager authorizationManager,
                               AuthenticatedUserProvider userProvider,
                               IndexService indexService) {
+        super(terminologyRepository);
+
         this.terminologyRepository = terminologyRepository;
         this.authorizationManager = authorizationManager;
         this.indexService = indexService;
@@ -37,13 +39,20 @@ public class TerminologyService {
         this.auditService = new AuditService("TERMINOLOGY");
     }
 
-    public TerminologyInfoDTO getTerminology(String prefix) {
+    @Override
+    public MetaDataInfoDTO get(String prefix) {
         var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
-        Model model = terminologyRepository.fetch(graphURI);
+        var model = terminologyRepository.fetch(graphURI);
         return TerminologyMapper.modelToDTO(model);
     }
 
-    public URI creteTerminology(TerminologyDTO dto) throws URISyntaxException {
+    @Override
+    public MetaDataInfoDTO get(String identifier, String version) {
+        throw new NotImplementedException("Version not supported");
+    }
+
+    @Override
+    public URI create(MetaDataDTO dto) throws URISyntaxException {
         check(authorizationManager.hasRightToAnyOrganization(dto.getOrganizations()));
         var graphURI = TerminologyURI.createTerminologyURI(dto.getPrefix()).getGraphURI();
         var model = TerminologyMapper.dtoToModel(dto, graphURI);
@@ -54,9 +63,20 @@ public class TerminologyService {
         return new URI(graphURI);
     }
 
-    public void deleteTerminology(String prefix) {
+    @Override
+    public void update(String prefix, MetaDataDTO dto) {
+        throw new NotImplementedException("Update terminology not implemented yet");
+    }
+
+    @Override
+    public void delete(String identifier) {
         check(authorizationManager.isSuperUser());
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.createTerminologyURI(identifier).getGraphURI();
         terminologyRepository.delete(graphURI);
+    }
+
+    @Override
+    public void delete(String identifier, String version) {
+        throw new NotImplementedException("Version not supported");
     }
 }

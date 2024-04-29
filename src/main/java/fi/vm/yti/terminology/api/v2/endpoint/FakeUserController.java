@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.endpoint;
 
 import fi.vm.yti.common.dto.GroupManagementUserDTO;
 import fi.vm.yti.common.service.GroupManagementService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,6 +21,7 @@ public class FakeUserController {
     }
 
     @GetMapping
+    @Hidden
     @Operation(description = "Get fake users")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of user objects")

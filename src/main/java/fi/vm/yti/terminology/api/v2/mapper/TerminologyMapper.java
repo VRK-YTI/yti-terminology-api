@@ -1,8 +1,8 @@
 package fi.vm.yti.terminology.api.v2.mapper;
 
+import fi.vm.yti.common.dto.MetaDataDTO;
 import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.util.MapperUtils;
-import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -18,12 +18,13 @@ public class TerminologyMapper {
         // only static methods
     }
 
-    public static Model dtoToModel(TerminologyDTO dto, String graph) {
+    public static Model dtoToModel(MetaDataDTO dto, String graph) {
         var model = ModelFactory.createDefaultModel();
-        model.createResource(graph)
+        var resource = model.createResource(graph)
                 .addProperty(DCAP.preferredXMLNamespacePrefix, dto.getPrefix())
-                .addProperty(RDF.type, SKOS.ConceptScheme)
-                .addProperty(RDFS.label, "Testisanasto");
+                .addProperty(RDF.type, SKOS.ConceptScheme);
+
+        MapperUtils.addLocalizedProperty(dto.getLanguages(), dto.getLabel(), resource, SKOS.prefLabel);
 
         return model;
     }
@@ -31,9 +32,10 @@ public class TerminologyMapper {
     public static TerminologyInfoDTO modelToDTO(Model model) {
         var dto = new TerminologyInfoDTO();
         var terminologyURI = TerminologyURI.createTerminologyURI(model);
+        var resource = model.getResource(terminologyURI.getModelResourceURI());
         dto.setPrefix(terminologyURI.getPrefix());
         dto.setUri(terminologyURI.getGraphURI());
-
+        dto.setLabel(MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel));
         return dto;
     }
 
