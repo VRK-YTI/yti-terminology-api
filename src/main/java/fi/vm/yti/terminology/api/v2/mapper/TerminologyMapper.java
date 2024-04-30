@@ -97,14 +97,14 @@ public class TerminologyMapper {
 
         var index = new IndexTerminology();
         index.setPrefix(model.getPrefix());
-        index.setUri(model.getGraphURI());
+        index.setUri(model.getModelResource().getURI());
         index.setId(model.getGraphURI());
         index.setLanguages(MapperUtils.arrayPropertyToList(terminologyResource, DCTerms.language));
         index.setLabel(MapperUtils.localizedPropertyToMap(terminologyResource, SKOS.prefLabel));
         index.setDescription(MapperUtils.localizedPropertyToMap(terminologyResource, RDFS.comment));
         index.setStatus(MapperUtils.getStatus(terminologyResource));
         index.setModified(terminologyResource.getProperty(DCTerms.modified).getString());
-        index.setCreated(terminologyResource.getProperty(DCTerms.modified).getString());
+        index.setCreated(terminologyResource.getProperty(DCTerms.created).getString());
 
         var organizations = MapperUtils.arrayPropertyToSet(terminologyResource, DCTerms.contributor)
                 .stream()
@@ -138,6 +138,7 @@ public class TerminologyMapper {
         MapperUtils.updateLocalizedProperty(dto.getLanguages(), dto.getDescription(), modelResource, RDFS.comment);
         MapperUtils.updateStringProperty(modelResource, SuomiMeta.contact, dto.getContact());
         MapperUtils.updateStringProperty(modelResource, Term.terminologyType, dto.getGraphType().name());
+        MapperUtils.updateStringProperty(modelResource, SuomiMeta.publicationStatus, MapperUtils.getStatusUri(dto.getStatus()));
 
         addOrganizations(dto, modelResource);
         addGroups(dto, categories, modelResource);

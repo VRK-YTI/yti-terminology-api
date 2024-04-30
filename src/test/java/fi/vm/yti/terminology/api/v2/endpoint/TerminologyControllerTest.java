@@ -141,6 +141,20 @@ class TerminologyControllerTest {
     }
 
     @Test
+    void shouldInvalidateOnUpdateNotExists() throws Exception {
+        var dto = getValidTerminologyMetadata();
+        dto.setPrefix(null);
+        this.mvc
+                .perform(put("/v2/terminology/test-not-exists")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(dto)))
+                .andExpect(content().string(containsString("graph-not-found")))
+                .andExpect(status().isBadRequest());
+
+        verifyNoMoreInteractions(this.terminologyService);
+    }
+
+    @Test
     void shouldGetTerminologyData() throws Exception {
         var dto = new TerminologyInfoDTO();
         dto.setPrefix("test");
@@ -180,6 +194,7 @@ class TerminologyControllerTest {
 
     private static Stream<Arguments> provideInvalidEditData() {
         var args = provideInvalidData();
+        args.forEach(a -> a.data().setPrefix(null));
 
         var dto = getValidTerminologyMetadata();
 

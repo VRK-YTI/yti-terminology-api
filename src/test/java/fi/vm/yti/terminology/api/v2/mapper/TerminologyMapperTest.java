@@ -75,6 +75,7 @@ class TerminologyMapperTest {
         dto.setGroups(Set.of("P10", "P11"));
         dto.setContact("new_email@dvv.fi");
         dto.setLanguages(Set.of("en"));
+        dto.setStatus(Status.VALID);
 
         var user = TestUtils.mockUser;
 
@@ -90,6 +91,7 @@ class TerminologyMapperTest {
         assertEquals("Test terminology modified", MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel).get("en"));
         assertEquals("Test terminology description modified", MapperUtils.localizedPropertyToMap(resource, RDFS.comment).get("en"));
         assertEquals("new_email@dvv.fi", MapperUtils.propertyToString(resource, SuomiMeta.contact));
+        assertEquals(Status.VALID, MapperUtils.getStatus(resource));
 
         assertEquals(1, organization.size());
         organization.forEach(o -> assertTrue(o.getObject().isResource()));

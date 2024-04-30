@@ -69,11 +69,11 @@ public class TerminologyService {
     }
 
     public void update(String prefix, TerminologyDTO dto) {
-        var model = terminologyRepository.fetchByPrefix(dto.getPrefix());
+        var model = terminologyRepository.fetchByPrefix(prefix);
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
         var user = authorizationManager.getUser();
-        var graphURI = TerminologyURI.createTerminologyURI(dto.getPrefix()).getGraphURI();
+        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
         var categories = frontendService.getServiceCategories();
 
         TerminologyMapper.toUpdateModel(model, dto, categories, user);
