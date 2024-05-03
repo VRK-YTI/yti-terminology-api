@@ -1,27 +1,28 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.dto.LinkDTO;
+import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ConceptDTO {
+public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String identifier;
-    private Map<String, String> definition = Map.of();
-    private Map<String, String> subjectArea = Map.of();
-    private List<LocalizedValueDTO> notes = List.of();
-    private List<LocalizedValueDTO> examples = List.of();
+    private Map<String, String> definition;
+    private Map<String, String> subjectArea;
+    private List<LocalizedValueDTO> notes;
+    private List<LocalizedValueDTO> examples;
     private Status status;
     private List<String> sources = List.of();
     private List<LinkDTO> links = List.of();
     private String changeNote;
     private String historyNote;
     private String conceptClass;
-    private List<String> editorialNotes = List.of();
-    private List<ConceptReferenceDTO> references = List.of();
-    private Set<TermDTO> terms = Set.of();
+    private List<String> editorialNotes;
+    private Set<ConceptReferenceInfoDTO> references;
+    private Set<TermDTO> terms;
 
     public String getIdentifier() {
         return identifier;
@@ -87,6 +88,14 @@ public class ConceptDTO {
         this.links = links;
     }
 
+    public String getChangeNote() {
+        return changeNote;
+    }
+
+    public void setChangeNote(String changeNote) {
+        this.changeNote = changeNote;
+    }
+
     public String getHistoryNote() {
         return historyNote;
     }
@@ -95,12 +104,12 @@ public class ConceptDTO {
         this.historyNote = historyNote;
     }
 
-    public String getChangeNote() {
-        return changeNote;
+    public String getConceptClass() {
+        return conceptClass;
     }
 
-    public void setChangeNote(String changeNote) {
-        this.changeNote = changeNote;
+    public void setConceptClass(String conceptClass) {
+        this.conceptClass = conceptClass;
     }
 
     public List<String> getEditorialNotes() {
@@ -111,11 +120,11 @@ public class ConceptDTO {
         this.editorialNotes = editorialNotes;
     }
 
-    public List<ConceptReferenceDTO> getReferences() {
+    public Set<ConceptReferenceInfoDTO> getReferences() {
         return references;
     }
 
-    public void setReferences(List<ConceptReferenceDTO> references) {
+    public void setReferences(Set<ConceptReferenceInfoDTO> references) {
         this.references = references;
     }
 
@@ -125,13 +134,5 @@ public class ConceptDTO {
 
     public void setTerms(Set<TermDTO> terms) {
         this.terms = terms;
-    }
-
-    public String getConceptClass() {
-        return conceptClass;
-    }
-
-    public void setConceptClass(String conceptClass) {
-        this.conceptClass = conceptClass;
     }
 }

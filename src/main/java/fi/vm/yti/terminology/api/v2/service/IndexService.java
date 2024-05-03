@@ -7,6 +7,7 @@ import fi.vm.yti.common.opensearch.OpenSearchUtil;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
+import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import org.apache.jena.arq.querybuilder.SelectBuilder;
@@ -58,6 +59,18 @@ public class IndexService extends OpenSearchInitializer {
 
     public void deleteTerminologyFromIndex(String id) {
         client.removeFromIndex(TERMINOLOGY_INDEX, id);
+    }
+
+    public void addConceptToIndex(IndexConcept indexConcept) {
+        client.putToIndex(CONCEPT_INDEX, indexConcept);
+    }
+
+    public void updateConceptToIndex(IndexConcept indexConcept) {
+        client.updateToIndex(CONCEPT_INDEX, indexConcept);
+    }
+
+    public void deleteConceptFromIndex(String id) {
+        client.removeFromIndex(CONCEPT_INDEX, id);
     }
 
     private void initTerminologyIndex() {
