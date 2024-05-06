@@ -1606,6 +1606,10 @@ public class NtrfMapper {
                 JAXBElement el = (JAXBElement) element;
                 if (el.getName().toString().equalsIgnoreCase("HOGR")) {
                     result = result.trim() + " (" + el.getValue().toString() + ")";
+                // B and I tags
+                } else if (el.getName().toString().equalsIgnoreCase("B") ||
+                        el.getName().toString().equalsIgnoreCase("I")) {
+                    result = result.trim() + " " + el.getValue().toString();
                 }
             } else {
                 logger.error("DEF, unhandled CLASS={}", element.getClass().getName());
