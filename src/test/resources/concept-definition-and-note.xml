@@ -7,7 +7,7 @@
                 <TERM>huoneisto</TERM>
             </TE>
             <DEF>
-                Definition test links:
+                Definition <I>test</I> links:
                     <ECON href="http://uri.suomi.fi/terminology/rak/concept-1" typr="closeMatch">econ link</ECON>
                     <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
                     <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
@@ -18,7 +18,7 @@
                 .
             </DEF>
             <NOTE>
-                Note test links:
+                Note <B>test</B> links:
                     <ECON href="http://uri.suomi.fi/terminology/rak/concept-1" typr="exactMatch">econ link</ECON>
                     <RCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">rconext link</RCONEXT>
                     <BCONEXT href="http://uri.suomi.fi/terminology/rak/concept-1">bconext link</BCONEXT>
