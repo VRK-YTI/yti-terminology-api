@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.enums.Status;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -133,5 +134,10 @@ public class ConceptDTO {
 
     public void setConceptClass(String conceptClass) {
         this.conceptClass = conceptClass;
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this);
     }
 }

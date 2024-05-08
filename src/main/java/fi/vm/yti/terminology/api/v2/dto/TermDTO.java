@@ -2,10 +2,12 @@ package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.enums.*;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Objects;
 
 public class TermDTO {
+    private String identifier;
     private TermType termType;
     private String language;
     private String label;
@@ -20,6 +22,14 @@ public class TermDTO {
     private TermConjugation termConjugation;
     private TermEquivalency termEquivalency;
     private WordClass wordClass;
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
+    }
 
     public TermType getTermType() {
         return termType;
@@ -147,5 +157,10 @@ public class TermDTO {
     @Override
     public int hashCode() {
         return Objects.hash(termType, language, label, status);
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this);
     }
 }

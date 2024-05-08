@@ -1,12 +1,18 @@
 package fi.vm.yti.terminology.api.v2;
 
-import fi.vm.yti.common.dto.OrganizationDTO;
-import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
-import fi.vm.yti.common.dto.ServiceCategoryDTO;
-import fi.vm.yti.common.dto.UserDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fi.vm.yti.common.dto.*;
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
+import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
+import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
@@ -67,4 +73,69 @@ public class TestUtils {
         dto.setCreator(creator);
         dto.setModifier(modifier);
     };
+
+    public static String asJsonString(Object obj) throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(obj);
+    }
+
+    public static ConceptDTO getConceptData() {
+        var dto = new ConceptDTO();
+        dto.setConceptClass("conceptClass");
+        dto.setChangeNote("change");
+        dto.setDefinition(Map.of("en", "definition"));
+        dto.setStatus(Status.VALID);
+        dto.setExamples(List.of(new LocalizedValueDTO("en", "example")));
+        dto.setIdentifier("concept-1");
+        dto.setNotes(List.of(new LocalizedValueDTO("en", "note")));
+        dto.setEditorialNotes(List.of("editorial"));
+        dto.setHistoryNote("history");
+        dto.setSubjectArea(Map.of("en", "subject area"));
+        dto.setSources(List.of("source"));
+
+        var link = new LinkDTO();
+        link.setName(Map.of("en", "link"));
+        link.setDescription(Map.of("en", "link description"));
+        link.setUri("https://dvv.fi");
+        dto.setLinks(List.of(link));
+
+        var references = new ArrayList<ConceptReferenceDTO>();
+        ConceptMapper.internalRefProperties.forEach(prop -> {
+            var ref = new ConceptReferenceDTO();
+            ref.setConceptURI("https://iri.suomi.fi/terminology/test/concept-1000");
+            ref.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
+            references.add(ref);
+        });
+
+        ConceptMapper.externalRefProperties.forEach(prop -> {
+            var ref = new ConceptReferenceDTO();
+            ref.setConceptURI("https://iri.suomi.fi/terminology/external/concept-123");
+            ref.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
+            references.add(ref);
+        });
+
+        dto.setReferences(references);
+
+        dto.setTerms(Set.of(getTermDTO()));
+
+        return dto;
+    }
+
+    public static TermDTO getTermDTO() {
+        var term = new TermDTO();
+        term.setTermType(TermType.RECOMMENDED);
+        term.setHomographNumber(1);
+        term.setLabel("term label");
+        term.setChangeNote("change");
+        term.setHistoryNote("history");
+        term.setLanguage("en");
+        term.setStatus(Status.VALID);
+        term.setScope("scope");
+        term.setTermInfo("info");
+        term.setTermFamily(TermFamily.NEUTRAL);
+        term.setTermConjugation(TermConjugation.SINGULAR);
+        term.setWordClass(WordClass.VERB);
+        term.setTermStyle("style");
+        term.setTermEquivalency(TermEquivalency.BROADER);
+        return term;
+    }
 }

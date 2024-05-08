@@ -10,19 +10,19 @@ import java.util.Set;
 
 public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String identifier;
-    private Map<String, String> definition;
-    private Map<String, String> subjectArea;
-    private List<LocalizedValueDTO> notes;
-    private List<LocalizedValueDTO> examples;
+    private Map<String, String> definition = Map.of();
+    private Map<String, String> subjectArea = Map.of();
+    private List<LocalizedValueDTO> notes = List.of();
+    private List<LocalizedValueDTO> examples = List.of();
     private Status status;
     private List<String> sources = List.of();
     private List<LinkDTO> links = List.of();
     private String changeNote;
     private String historyNote;
     private String conceptClass;
-    private List<String> editorialNotes;
-    private Set<ConceptReferenceInfoDTO> references;
-    private Set<TermDTO> terms;
+    private List<String> editorialNotes = List.of();
+    private Set<ConceptReferenceInfoDTO> references = Set.of();
+    private Set<TermDTO> terms = Set.of();
 
     public String getIdentifier() {
         return identifier;

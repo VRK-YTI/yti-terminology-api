@@ -70,7 +70,7 @@ public class ConceptController {
     public ResponseEntity<Void> update(
             @PathVariable @Parameter(description = "Terminology prefix") String prefix,
             @PathVariable @Parameter(description = "Concept identifier") String conceptIdentifier,
-            @RequestBody @ValidConcept ConceptDTO concept) {
+            @RequestBody @ValidConcept(update = true) ConceptDTO concept) {
         conceptService.update(prefix, conceptIdentifier, concept);
         return ResponseEntity.noContent().build();
     }
@@ -87,5 +87,15 @@ public class ConceptController {
                                        @PathVariable @Parameter(description = "Concept identifier") String conceptIdentifier) {
         conceptService.delete(prefix, conceptIdentifier);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Check if concept with identifier exists in terminology")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Concept deleted successfully")
+    })
+    @GetMapping("/{prefix}/{conceptIdentifier}/exists")
+    public Boolean exists(@PathVariable @Parameter(description = "Terminology prefix") String prefix,
+                                       @PathVariable @Parameter(description = "Concept identifier") String conceptIdentifier) {
+        return conceptService.exists(prefix, conceptIdentifier);
     }
 }

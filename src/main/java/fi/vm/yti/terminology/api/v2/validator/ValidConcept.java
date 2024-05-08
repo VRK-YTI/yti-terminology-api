@@ -22,5 +22,7 @@ public @interface ValidConcept {
 
     Class<?>[] groups() default {};
 
+    boolean update() default false;
+
     Class<? extends Payload>[] payload() default {};
 }

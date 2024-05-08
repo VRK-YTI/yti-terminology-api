@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.endpoint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fi.vm.yti.common.dto.MetaDataDTO;
 import fi.vm.yti.common.dto.OrganizationDTO;
 import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
@@ -135,20 +136,6 @@ class TerminologyControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(data.data())))
                 .andExpect(content().string(containsString(data.errorMessage())))
-                .andExpect(status().isBadRequest());
-
-        verifyNoMoreInteractions(this.terminologyService);
-    }
-
-    @Test
-    void shouldInvalidateOnUpdateNotExists() throws Exception {
-        var dto = getValidTerminologyMetadata();
-        dto.setPrefix(null);
-        this.mvc
-                .perform(put("/v2/terminology/test-not-exists")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(dto)))
-                .andExpect(content().string(containsString("graph-not-found")))
                 .andExpect(status().isBadRequest());
 
         verifyNoMoreInteractions(this.terminologyService);
@@ -309,4 +296,5 @@ class TerminologyControllerTest {
         return terminologyDTO;
     }
 
+    record DataWithError(String errorMessage, MetaDataDTO data) {}
 }

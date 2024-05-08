@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.repository;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.repository.BaseRepository;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -20,7 +21,12 @@ public class TerminologyRepository extends BaseRepository {
 
     @Override
     public ModelWrapper fetch(String graphURI) {
-        return new ModelWrapper(super.fetch(graphURI), graphURI);
+        var model = new ModelWrapper(super.fetch(graphURI), graphURI);
+        model.setNsPrefixes(Constants.PREFIXES);
+        model.setNsPrefix("term", "https://iri.suomi.fi/model/term/");
+        model.setNsPrefix("skos-xl", "http://www.w3.org/2008/05/skos-xl#");
+        model.setNsPrefix(model.getPrefix(), model.getModelResource().getNameSpace());
+        return model;
     }
 
     public ModelWrapper fetchByPrefix(String prefix) {

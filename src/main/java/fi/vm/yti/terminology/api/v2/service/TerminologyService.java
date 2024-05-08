@@ -70,6 +70,7 @@ public class TerminologyService {
 
     public void update(String prefix, TerminologyDTO dto) {
         var model = terminologyRepository.fetchByPrefix(prefix);
+
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
         var user = authorizationManager.getUser();
