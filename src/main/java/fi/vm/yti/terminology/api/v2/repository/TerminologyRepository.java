@@ -3,6 +3,7 @@ package fi.vm.yti.terminology.api.v2.repository;
 import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.repository.BaseRepository;
 import fi.vm.yti.common.util.ModelWrapper;
+import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,8 +24,7 @@ public class TerminologyRepository extends BaseRepository {
     public ModelWrapper fetch(String graphURI) {
         var model = new ModelWrapper(super.fetch(graphURI), graphURI);
         model.setNsPrefixes(Constants.PREFIXES);
-        model.setNsPrefix("term", "https://iri.suomi.fi/model/term/");
-        model.setNsPrefix("skos-xl", "http://www.w3.org/2008/05/skos-xl#");
+        model.setNsPrefix("term", Term.getNamespace());
         model.setNsPrefix(model.getPrefix(), model.getModelResource().getNameSpace());
         return model;
     }

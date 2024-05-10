@@ -25,4 +25,8 @@ public class Term {
     public static final Property termEquivalency = ResourceFactory.createProperty(URI, "termEquivalency");
     public static final Property wordClass = ResourceFactory.createProperty(URI, "wordClass");
     public static final Property notRecommendedSynonym = ResourceFactory.createProperty(URI, "notRecommendedSynonym");
+
+    public static String getNamespace() {
+        return URI;
+    }
 }
