@@ -1,14 +1,14 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.dto.LinkDTO;
+import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ConceptDTO {
+public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String identifier;
     private Map<String, String> definition = Map.of();
     private Map<String, String> subjectArea = Map.of();
@@ -21,7 +21,7 @@ public class ConceptDTO {
     private String historyNote;
     private String conceptClass;
     private List<String> editorialNotes = List.of();
-    private List<ConceptReferenceDTO> references = List.of();
+    private Set<ConceptReferenceInfoDTO> references = Set.of();
     private Set<TermDTO> terms = Set.of();
 
     public String getIdentifier() {
@@ -88,14 +88,6 @@ public class ConceptDTO {
         this.links = links;
     }
 
-    public String getHistoryNote() {
-        return historyNote;
-    }
-
-    public void setHistoryNote(String historyNote) {
-        this.historyNote = historyNote;
-    }
-
     public String getChangeNote() {
         return changeNote;
     }
@@ -104,28 +96,12 @@ public class ConceptDTO {
         this.changeNote = changeNote;
     }
 
-    public List<String> getEditorialNotes() {
-        return editorialNotes;
+    public String getHistoryNote() {
+        return historyNote;
     }
 
-    public void setEditorialNotes(List<String> editorialNotes) {
-        this.editorialNotes = editorialNotes;
-    }
-
-    public List<ConceptReferenceDTO> getReferences() {
-        return references;
-    }
-
-    public void setReferences(List<ConceptReferenceDTO> references) {
-        this.references = references;
-    }
-
-    public Set<TermDTO> getTerms() {
-        return terms;
-    }
-
-    public void setTerms(Set<TermDTO> terms) {
-        this.terms = terms;
+    public void setHistoryNote(String historyNote) {
+        this.historyNote = historyNote;
     }
 
     public String getConceptClass() {
@@ -136,8 +112,27 @@ public class ConceptDTO {
         this.conceptClass = conceptClass;
     }
 
-    @Override
-    public String toString() {
-        return ToStringBuilder.reflectionToString(this);
+    public List<String> getEditorialNotes() {
+        return editorialNotes;
+    }
+
+    public void setEditorialNotes(List<String> editorialNotes) {
+        this.editorialNotes = editorialNotes;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getReferences() {
+        return references;
+    }
+
+    public void setReferences(Set<ConceptReferenceInfoDTO> references) {
+        this.references = references;
+    }
+
+    public Set<TermDTO> getTerms() {
+        return terms;
+    }
+
+    public void setTerms(Set<TermDTO> terms) {
+        this.terms = terms;
     }
 }

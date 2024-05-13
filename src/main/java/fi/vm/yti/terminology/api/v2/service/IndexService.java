@@ -1,16 +1,25 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
 import fi.vm.yti.common.opensearch.OpenSearchInitializer;
+import fi.vm.yti.common.opensearch.OpenSearchUtil;
+import fi.vm.yti.common.service.FrontendService;
+import fi.vm.yti.common.util.ModelWrapper;
+import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
+import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
+import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
-import org.opensearch.client.opensearch._types.mapping.*;
+import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
+import org.apache.jena.arq.querybuilder.SelectBuilder;
+import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.vocabulary.SKOS;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Map;
 
-import static fi.vm.yti.common.opensearch.OpenSearchUtil.*;
+import java.util.Map;
 
 @Service
 public class IndexService extends OpenSearchInitializer {
@@ -20,17 +29,20 @@ public class IndexService extends OpenSearchInitializer {
     public static final String CONCEPT_INDEX = "concepts_v2";
 
     private final OpenSearchClientWrapper client;
+    private final TerminologyRepository repository;
+    private final FrontendService frontendService;
 
-    public IndexService(OpenSearchClientWrapper client) {
+    public IndexService(OpenSearchClientWrapper client,
+                        TerminologyRepository repository,
+                        FrontendService frontendService) {
         super(client);
         this.client = client;
+        this.repository = repository;
+        this.frontendService = frontendService;
     }
 
     public void initIndexes() {
-        InitIndexesFunction fn = () -> {
-            initTerminologyIndex();
-            initConceptIndex();
-        };
+        InitIndexesFunction fn = this::initTerminologyIndex;
 
         var indexConfig = Map.of(
                 TERMINOLOGY_INDEX, getTerminologyMappings(),
@@ -40,44 +52,67 @@ public class IndexService extends OpenSearchInitializer {
     }
 
     public void addTerminologyToIndex(IndexTerminology indexTerminology) {
-        client.putToIndex(TERMINOLOGY_INDEX, indexTerminology.getId(), indexTerminology);
+        client.putToIndex(TERMINOLOGY_INDEX, indexTerminology);
+    }
+
+    public void updateTerminologyToIndex(IndexTerminology indexTerminology) {
+        client.updateToIndex(TERMINOLOGY_INDEX, indexTerminology);
+    }
+
+    public void deleteTerminologyFromIndex(String id) {
+        client.removeFromIndex(TERMINOLOGY_INDEX, id);
+    }
+
+    public void addConceptToIndex(IndexConcept indexConcept) {
+        client.putToIndex(CONCEPT_INDEX, indexConcept);
+    }
+
+    public void updateConceptToIndex(IndexConcept indexConcept) {
+        client.updateToIndex(CONCEPT_INDEX, indexConcept);
+    }
+
+    public void deleteConceptFromIndex(String id) {
+        client.removeFromIndex(CONCEPT_INDEX, id);
     }
 
     private void initTerminologyIndex() {
-        LOG.info("Init terminologies");
+        LOG.info("Init terminologies index");
+
+        var selectBuilder = new SelectBuilder();
+        selectBuilder.addPrefixes(Constants.PREFIXES);
+        var exprFactory = selectBuilder.getExprFactory();
+        var expr = exprFactory.strstarts(exprFactory.str("?g"), Constants.TERMINOLOGY_NAMESPACE);
+        selectBuilder.addFilter(expr);
+        selectBuilder.addGraph("?g", new WhereBuilder());
+
+        var categories = frontendService.getServiceCategories();
+
+        repository.querySelect(selectBuilder.build(), (var row) -> {
+            var graph = row.get("g").toString();
+            LOG.info("Indexing terminology {} metadata", graph);
+
+            var model = repository.fetch(graph);
+            var index = TerminologyMapper.toIndexDocument(model, categories);
+            client.putToIndex(TERMINOLOGY_INDEX, index);
+
+            initConceptIndex(model);
+        });
     }
 
-    private void initConceptIndex() {
-        LOG.info("Init concepts");
+    private void initConceptIndex(ModelWrapper model) {
+        LOG.info("Init concepts for terminology {}", model.getGraphURI());
+
+        model.listSubjectsWithProperty(SKOS.inScheme, model.getModelResource()).forEach(concept -> {
+            LOG.debug("Indexing concept {}", concept.getURI());
+            var index = ConceptMapper.toIndexDocument(model, concept.getLocalName());
+            client.putToIndex(CONCEPT_INDEX, index);
+        });
     }
 
     private TypeMapping getTerminologyMappings() {
         return new TypeMapping.Builder()
-                .dynamicTemplates(getTerminologyDynamicTemplates())
-                .properties(getTerminologyProperties())
+                .dynamicTemplates(OpenSearchUtil.getMetaDataDynamicTemplates())
+                .properties(OpenSearchUtil.getMetaDataProperties())
                 .build();
     }
-
-    private List<Map<String, DynamicTemplate>> getTerminologyDynamicTemplates() {
-        return List.of(
-                getDynamicTemplate("label", "label.*"),
-                getDynamicTemplate("description", "description.*")
-        );
-    }
-
-    private Map<String, Property> getTerminologyProperties() {
-        return Map.ofEntries(
-                Map.entry("id", getKeywordProperty()),
-                Map.entry("status", getKeywordProperty()),
-                Map.entry("type", getKeywordProperty()),
-                Map.entry("prefix", getKeywordProperty()),
-                Map.entry("contributor", getKeywordProperty()),
-                Map.entry("language", getKeywordProperty()),
-                Map.entry("uri", getKeywordProperty()),
-                Map.entry("created", getDateProperty()),
-                Map.entry("contentModified", getDateProperty())
-        );
-    }
-
-
 }

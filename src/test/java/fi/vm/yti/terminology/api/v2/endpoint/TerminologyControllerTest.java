@@ -3,7 +3,6 @@ package fi.vm.yti.terminology.api.v2.endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.common.dto.MetaDataDTO;
-import fi.vm.yti.common.dto.MetaDataInfoDTO;
 import fi.vm.yti.common.dto.OrganizationDTO;
 import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
@@ -13,6 +12,8 @@ import fi.vm.yti.common.repository.CommonRepository;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.validator.ValidationConstants;
+import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
+import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.exception.TerminologyExceptionHandlerAdvice;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.service.TerminologyService;
@@ -95,7 +96,7 @@ class TerminologyControllerTest {
                         .content(asJsonString(terminologyDTO)))
                 .andExpect(status().isCreated());
 
-        verify(terminologyService).create(any(MetaDataDTO.class));
+        verify(terminologyService).create(any(TerminologyDTO.class));
         verifyNoMoreInteractions(this.terminologyService);
     }
 
@@ -110,7 +111,7 @@ class TerminologyControllerTest {
                         .content(asJsonString(terminologyDTO)))
                 .andExpect(status().isNoContent());
 
-        verify(terminologyService).update(eq("test"), any(MetaDataDTO.class));
+        verify(terminologyService).update(eq("test"), any(TerminologyDTO.class));
         verifyNoMoreInteractions(this.terminologyService);
     }
 
@@ -142,7 +143,7 @@ class TerminologyControllerTest {
 
     @Test
     void shouldGetTerminologyData() throws Exception {
-        var dto = new MetaDataInfoDTO();
+        var dto = new TerminologyInfoDTO();
         dto.setPrefix("test");
         dto.setLabel(Map.of("en", "Test terminology"));
 
@@ -180,6 +181,7 @@ class TerminologyControllerTest {
 
     private static Stream<Arguments> provideInvalidEditData() {
         var args = provideInvalidData();
+        args.forEach(a -> a.data().setPrefix(null));
 
         var dto = getValidTerminologyMetadata();
 
@@ -279,8 +281,8 @@ class TerminologyControllerTest {
         return args;
     }
 
-    private static MetaDataDTO getValidTerminologyMetadata() {
-        var terminologyDTO = new MetaDataDTO();
+    private static TerminologyDTO getValidTerminologyMetadata() {
+        var terminologyDTO = new TerminologyDTO();
 
         terminologyDTO.setOrganizations(Set.of(ORGANIZATION_ID));
         terminologyDTO.setGraphType(GraphType.TERMINOLOGICAL_VOCABULARY);
@@ -294,4 +296,5 @@ class TerminologyControllerTest {
         return terminologyDTO;
     }
 
+    record DataWithError(String errorMessage, MetaDataDTO data) {}
 }

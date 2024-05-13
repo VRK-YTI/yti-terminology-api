@@ -1,10 +1,10 @@
 package fi.vm.yti.terminology.api.v2.validator;
 
 import fi.vm.yti.common.Constants;
-import fi.vm.yti.common.dto.MetaDataDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.validator.MetaDataValidator;
 import fi.vm.yti.common.validator.ValidationConstants;
+import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 @Component
 public class TerminologyValidator extends MetaDataValidator<TerminologyRepository> implements
-        ConstraintValidator<ValidTerminology, MetaDataDTO> {
+        ConstraintValidator<ValidTerminology, TerminologyDTO> {
 
     boolean update;
 
@@ -28,7 +28,7 @@ public class TerminologyValidator extends MetaDataValidator<TerminologyRepositor
     }
 
     @Override
-    public boolean isValid(MetaDataDTO value, ConstraintValidatorContext context) {
+    public boolean isValid(TerminologyDTO value, ConstraintValidatorContext context) {
         setConstraintViolationAdded(false);
 
         checkModelPrefix(context, value, update);
@@ -44,8 +44,7 @@ public class TerminologyValidator extends MetaDataValidator<TerminologyRepositor
         return !isConstraintViolationAdded();
     }
 
-
-    private void checkGraphType(ConstraintValidatorContext context, MetaDataDTO value) {
+    private void checkGraphType(ConstraintValidatorContext context, TerminologyDTO value) {
         if (value.getGraphType() != null
             && !Arrays.asList(GraphType.TERMINOLOGICAL_VOCABULARY, GraphType.OTHER_VOCABULARY).contains(value.getGraphType())) {
                 addConstraintViolation(context, ValidationConstants.MSG_VALUE_INVALID, "graphType");
