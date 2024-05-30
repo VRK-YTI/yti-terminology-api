@@ -236,7 +236,7 @@ class ConceptMapperTest {
 
         var dto = ConceptMapper.modelToDTO(model, "concept-1", TestUtils.mapUser);
 
-        assertEquals(4, dto.getTerms().size());
+        assertEquals(5, dto.getTerms().size());
 
         var termOpt = dto.getTerms().stream()
                 .filter(t -> t.getIdentifier().equals("term-614007ae-5d84-45d8-b473-6359c3cbc5ca"))
