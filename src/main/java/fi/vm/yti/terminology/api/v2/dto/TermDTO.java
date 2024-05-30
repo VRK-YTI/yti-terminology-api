@@ -4,6 +4,7 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.util.List;
 import java.util.Objects;
 
 public class TermDTO {
@@ -22,6 +23,8 @@ public class TermDTO {
     private TermConjugation termConjugation;
     private TermEquivalency termEquivalency;
     private WordClass wordClass;
+    private List<String> sources = List.of();
+    private List<String> editorialNotes = List.of();
 
     public String getIdentifier() {
         return identifier;
@@ -141,6 +144,22 @@ public class TermDTO {
 
     public void setTermEquivalency(TermEquivalency termEquivalency) {
         this.termEquivalency = termEquivalency;
+    }
+
+    public List<String> getSources() {
+        return sources;
+    }
+
+    public void setSources(List<String> sources) {
+        this.sources = sources;
+    }
+
+    public List<String> getEditorialNotes() {
+        return editorialNotes;
+    }
+
+    public void setEditorialNotes(List<String> editorialNotes) {
+        this.editorialNotes = editorialNotes;
     }
 
     @Override
