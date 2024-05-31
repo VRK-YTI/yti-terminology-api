@@ -1,0 +1,115 @@
+@prefix dcap:       <http://purl.org/ws-mmi-dc/terms/> .
+@prefix dcterms:    <http://purl.org/dc/terms/> .
+@prefix foaf:       <http://xmlns.com/foaf/0.1/> .
+@prefix owl:        <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:         <http://www.w3.org/ns/shacl#> .
+@prefix skos:       <http://www.w3.org/2004/02/skos/core#> .
+@prefix skos-xl:    <http://www.w3.org/2008/05/skos-xl#> .
+@prefix suomi-meta: <https://iri.suomi.fi/model/suomi-meta/> .
+@prefix term:       <https://iri.suomi.fi/model/term/> .
+@prefix test:       <https://iri.suomi.fi/terminology/test/> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+
+# Terminology metadata
+
+test:   rdf:type                      skos:ConceptScheme;
+        dcterms:contributor           <urn:uuid:8d610719-105a-48fd-a4ce-ebef26bc5776>;
+        dcterms:isPartOf              <http://urn.fi/URN:NBN:fi:au:ptvl:v1105>;
+        dcterms:language              "en" , "fi";
+        dcap:preferredXMLNamespace    "https://iri.suomi.fi/terminology/test/";
+        dcap:preferredXMLNamespacePrefix
+                "test";
+        skos:prefLabel                "Sanaston nimi modified"@fi , "Test mod"@en;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+        term:terminologyType          "TERMINOLOGICAL_VOCABULARY" .
+
+# Concept collection containing concept-1 and concept-2
+
+test:collection-1   rdf:type    skos:Collection;
+                    skos:member test:concept-1, test:concept-2;
+        skos:prefLabel                "Testikokoelma 1"@fi , "Test collection 1"@en;
+        rdfs:comment                  "Test collection description 1"@en , "Testikokoelman kuvaus 1"@fi;
+        dcterms:created               "2024-05-15T05:00:00.000Z"^^xsd:dateTime;
+        dcterms:modified              "2024-05-16T04:00:00.000Z"^^xsd:dateTime;
+        suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812" .
+
+# Concept 1 with terms
+
+test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
+                                        dcterms:title        "link 1"@fi;
+                                        foaf:homepage        "https://dvv.fi"
+                                      ];
+        dcterms:created               "2024-05-06T05:00:00.000Z"^^xsd:dateTime;
+        dcterms:modified              "2024-05-07T04:00:00.000Z"^^xsd:dateTime;
+        skos:altLabel                 test:term-f04ce627-c799-4e9a-9b0c-71b65f69130b , test:term-ce6c2547-261f-46e1-9cba-662f886df7f6;
+        skos:broader                  test:concept-2;
+        skos:changeNote               "change";
+        skos:definition               "def"@fi;
+        skos:editorialNote            ( "editorial" );
+        skos:example                  ( "example"@fi );
+        skos:hiddenLabel              test:term-45f21a97-4bae-42ee-b7c5-c1d871ee9c2a;
+        skos:historyNote              "history";
+        skos:inScheme                 test:;
+        skos:note                     ( "note"@fi );
+        skos:prefLabel                test:term-614007ae-5d84-45d8-b473-6359c3cbc5ca;
+        suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT";
+        term:conceptClass             "concept class";
+        term:notRecommendedSynonym    test:term-47d79614-d8f5-4c42-8967-a860c3451f5b;
+        term:source                   ( "source" );
+        term:subjectArea              "subject area"@fi .
+
+test:term-614007ae-5d84-45d8-b473-6359c3cbc5ca
+         rdf:type                      skos-xl:Label;
+         skos:changeNote               "term change";
+         skos:historyNote              "term history";
+         skos-xl:literalForm           "Suositettava termi"@fi;
+         suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT";
+         term:homographNumber          2;
+         term:scope                    "scope";
+         term:termConjugation          "SINGULAR";
+         term:termEquivalency          "BROADER";
+         term:termFamily               "NEUTRAL";
+         term:termInfo                 "info";
+         term:termStyle                "term style";
+         term:wordClass                "ADJECTIVE" .
+
+test:term-f04ce627-c799-4e9a-9b0c-71b65f69130b
+        rdf:type                      skos-xl:Label;
+        skos-xl:literalForm           "synonyymi 1"@fi;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+test:term-ce6c2547-261f-46e1-9cba-662f886df7f6
+        rdf:type                      skos-xl:Label;
+        skos-xl:literalForm           "synonyymi 2"@fi;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+test:term-47d79614-d8f5-4c42-8967-a860c3451f5b
+        rdf:type                      skos-xl:Label;
+        skos-xl:literalForm           "ei suositettava"@fi;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+test:term-45f21a97-4bae-42ee-b7c5-c1d871ee9c2a
+        rdf:type                      skos-xl:Label;
+        skos-xl:literalForm           "hakutermi"@fi;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+# Concept 2 with term
+
+test:concept-2
+        dcterms:created               "2024-05-02T11:00:00.000Z"^^xsd:dateTime;
+        dcterms:modified              "2024-05-03T12:00:00.000Z"^^xsd:dateTime;
+        suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812";
+        skos:inScheme                 test:;
+        skos:prefLabel                test:term-4429d6a0-1aba-4964-a2c0-972a13409b2f;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+test:term-4429d6a0-1aba-4964-a2c0-972a13409b2f
+        rdf:type                      skos-xl:Label;
+        skos-xl:literalForm           "Suositettava termi"@fi;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .

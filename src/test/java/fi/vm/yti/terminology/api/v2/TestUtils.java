@@ -7,10 +7,7 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
-import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
-import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
-import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.dto.*;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -116,6 +113,17 @@ public class TestUtils {
         dto.setReferences(references);
 
         dto.setTerms(Set.of(getTermDTO()));
+
+        return dto;
+    }
+
+    public static ConceptCollectionDTO getConceptCollectionData() {
+        var dto = new ConceptCollectionDTO();
+        dto.setIdentifier("collection-1");
+        dto.setLabel(Map.of("en", "collection label"));
+        dto.setDescription(Map.of("en", "collection description"));
+        dto.addMember("concept-1");
+        dto.addMember("concept-2");
 
         return dto;
     }
