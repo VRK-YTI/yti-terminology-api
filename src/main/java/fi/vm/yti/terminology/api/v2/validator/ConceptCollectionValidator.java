@@ -30,7 +30,7 @@ public class ConceptCollectionValidator extends BaseValidator implements
             checkResourceIdentifier(context, dto.getIdentifier(), update);
         }
 
-        dto.getLabel().forEach((key, value) -> checkCommonTextArea(context, value, "label"));
+        dto.getLabel().forEach((key, value) -> checkCommonTextField(context, value, "label"));
         dto.getDescription().forEach((key, value) -> checkCommonTextArea(context, value, "description"));
 
         dto.getMembers().forEach(member -> {

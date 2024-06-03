@@ -10,6 +10,7 @@ import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.*;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
@@ -117,13 +118,17 @@ public class TestUtils {
         return dto;
     }
 
-    public static ConceptCollectionDTO getConceptCollectionData() {
+    public static ConceptCollectionDTO getConceptCollectionData(String prefix) {
         var dto = new ConceptCollectionDTO();
         dto.setIdentifier("collection-1");
         dto.setLabel(Map.of("en", "collection label"));
         dto.setDescription(Map.of("en", "collection description"));
-        dto.addMember("concept-1");
-        dto.addMember("concept-2");
+        dto.addMember(TerminologyURI
+                .createConceptURI(prefix, "concept-1")
+                .getResourceURI());
+        dto.addMember(TerminologyURI
+                .createConceptURI(prefix, "concept-2")
+                .getResourceURI());
 
         return dto;
     }

@@ -9,11 +9,9 @@ import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
-import org.apache.jena.vocabulary.DCTerms;
-import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.SKOS;
+import org.apache.jena.vocabulary.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -47,10 +45,7 @@ public class ConceptCollectionMapper {
                 conceptCollectionResource,
                 RDFS.comment);
 
-        var memberIdentifiers = dto.getMembers().stream().toList();
-        var conceptURIs = memberIdentifiers.stream()
-                .map(member -> modelResource.getNameSpace() + member)
-                .toList();
+        var conceptURIs = dto.getMembers().stream().toList();
         addListProperty(
                 conceptCollectionResource,
                 SKOS.member,
@@ -71,20 +66,20 @@ public class ConceptCollectionMapper {
         var languages = MapperUtils.arrayPropertyToSet(
                 model.getModelResource(),
                 DCTerms.language);
-        MapperUtils.addLocalizedProperty(
+        MapperUtils.updateLocalizedProperty(
                 languages,
                 dto.getLabel(),
                 conceptCollectionResource,
                 SKOS.prefLabel);
-        MapperUtils.addLocalizedProperty(
+        MapperUtils.updateLocalizedProperty(
                 languages,
                 dto.getDescription(),
                 conceptCollectionResource,
                 RDFS.comment);
 
         conceptCollectionResource.removeAll(SKOS.member);
-        dto.getMembers().stream().forEach(conceptIdentifier -> {
-            var conceptResource = model.getResourceById(conceptIdentifier);
+        dto.getMembers().stream().forEach(conceptUri -> {
+            var conceptResource = model.getResource(conceptUri);
             conceptCollectionResource.addProperty(SKOS.member, conceptResource);
         });
 
@@ -109,13 +104,13 @@ public class ConceptCollectionMapper {
                         SKOS.member)
                 .stream()
                 .forEach((conceptUri) -> {
-                    var concept = model.getResourceById(
-                            conceptUri.substring(
-                                    conceptUri.lastIndexOf("/") + 1));
-                    var definition = MapperUtils.localizedPropertyToMap(concept, SKOS.definition);
-                    dto.addMember(
-                            concept.getLocalName(),
-                            definition);
+                    var concept = model.getResource(conceptUri);
+                    var labelMap = new HashMap<String, String>();
+                    MapperUtils.arrayPropertyToList(concept, SKOS.prefLabel).forEach(term -> {
+                        var labelProperty = model.getResource(term).getProperty(SKOSXL.literalForm);
+                        labelMap.put(labelProperty.getLanguage(), labelProperty.getString());
+                    });
+                    dto.addMember(concept.getLocalName(), conceptUri, labelMap);
                 });
 
         MapperUtils.mapCreationInfo(dto, resource, mapUser);

@@ -2,13 +2,17 @@ package fi.vm.yti.terminology.api.v2.endpoint;
 
 import fi.vm.yti.common.repository.CommonRepository;
 import fi.vm.yti.common.service.GroupManagementService;
+import fi.vm.yti.common.validator.ValidationConstants;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptInfoDTO;
 import fi.vm.yti.terminology.api.v2.exception.TerminologyExceptionHandlerAdvice;
 import fi.vm.yti.terminology.api.v2.service.ConceptCollectionService;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -18,16 +22,18 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import static fi.vm.yti.terminology.api.v2.TestUtils.asJsonString;
-import static fi.vm.yti.terminology.api.v2.TestUtils.getConceptCollectionData;
+import static fi.vm.yti.terminology.api.v2.TestUtils.*;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = ConceptCollectionController.class)
 @ActiveProfiles("test")
@@ -57,16 +63,18 @@ public class ConceptCollectionControllerTest {
 
     @Test
     void shouldValidateAndCreate() throws Exception {
-        var conceptCollectionDTO = getConceptCollectionData();
+        var modelPrefix = "test";
+        var conceptCollectionDTO = getConceptCollectionData(modelPrefix);
 
-        URI conceptCollectionURI = new URI(
-                "https://iri.suomi.fi/terminology/test/collection-1");
+        URI conceptCollectionURI = new URI(String.format(
+                "https://iri.suomi.fi/terminology/%s/collection-1",
+                modelPrefix));
         when(conceptCollectionService.create(
-                eq("test"),
+                eq(modelPrefix),
                 any(ConceptCollectionDTO.class))).thenReturn(conceptCollectionURI);
 
         this.mvc
-                .perform(post("/v2/collection/test")
+                .perform(post(String.format("/v2/collection/%s", modelPrefix))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(conceptCollectionDTO)))
                 .andExpect(status().isCreated())
@@ -75,16 +83,23 @@ public class ConceptCollectionControllerTest {
                         conceptCollectionURI.toString()));
 
         verify(conceptCollectionService).create(
-                eq("test"),
+                eq(modelPrefix),
                 any(ConceptCollectionDTO.class));
         verify(conceptCollectionService).create(
-                eq("test"),
+                eq(modelPrefix),
                 argThat(dto -> {
                     if (!dto.getIdentifier().equals("collection-1")) {
                         return false;
                     }
-                    if (!dto.getMembers().containsAll(
-                            Set.of("concept-1", "concept-2"))) {
+                    var expectedConceptUris = Set.of(
+                            TerminologyURI
+                                    .createConceptURI(modelPrefix, "concept-1")
+                                    .getResourceURI(),
+                            TerminologyURI
+                                    .createConceptURI(modelPrefix, "concept-2")
+                                    .getResourceURI()
+                    );
+                    if (!dto.getMembers().containsAll(expectedConceptUris)) {
                         return false;
                     }
                     return true;
@@ -94,16 +109,17 @@ public class ConceptCollectionControllerTest {
 
     @Test
     void shouldValidateAndUpdate() throws Exception {
-        var conceptCollectionDTO = getConceptCollectionData();
+        var modelPrefix = "test";
+        var conceptCollectionDTO = getConceptCollectionData(modelPrefix);
         conceptCollectionDTO.setIdentifier("collection-1");
 
         this.mvc
-                .perform(put("/v2/collection/test/collection-1")
+                .perform(put(String.format("/v2/collection/%s/collection-1", modelPrefix))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(conceptCollectionDTO)))
                 .andExpect(status().isNoContent());
         verify(conceptCollectionService).update(
-                eq("test"),
+                eq(modelPrefix),
                 eq("collection-1"),
                 any(ConceptCollectionDTO.class));
         verifyNoMoreInteractions(this.conceptCollectionService);
@@ -143,4 +159,63 @@ public class ConceptCollectionControllerTest {
 
         verify(conceptCollectionService).exists("test", "collection-1");
     }
+
+    @ParameterizedTest
+    @MethodSource("provideInvalidConceptCollectionCreateData")
+    void shouldInvalidateConceptCollectionOnCreation(
+            ConceptCollectionControllerTest.ConceptCollectionWithError data) throws Exception {
+
+        this.mvc
+                .perform(post("/v2/collection/test")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(data.dto)))
+                .andExpect(content().string(containsString(data.error())))
+                .andExpect(status().isBadRequest());
+
+        verifyNoMoreInteractions(this.conceptCollectionService);
+    }
+
+    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionCreateData() {
+        var args = new ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError>();
+
+        var dto = getConceptCollectionData("test");
+        dto.setIdentifier(null);
+        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("should-have-value", dto));
+
+        args.addAll(provideInvalidConceptCollectionData());
+
+        return args;
+    }
+
+    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionUpdateData() {
+        var args = new ArrayList<ConceptCollectionWithError>();
+
+        var dto = getConceptCollectionData("test");
+        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("not-allowed-update", dto));
+
+        provideInvalidConceptCollectionData().forEach(data -> {
+            data.dto.setIdentifier(null);
+            args.add(data);
+        });
+        return args;
+    }
+
+    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionData() {
+        var args = new ArrayList<ConceptCollectionWithError>();
+
+        var longTextField = RandomStringUtils.randomAlphabetic(ValidationConstants.TEXT_FIELD_MAX_LENGTH + 1);
+        var longTextArea = RandomStringUtils.randomAlphabetic(ValidationConstants.TEXT_AREA_MAX_LENGTH + 1);
+
+        var dto = getConceptCollectionData("test");
+        dto.setLabel(Map.of("en", longTextField));
+        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("value-over-character-limit", dto));
+
+        dto = getConceptCollectionData("test");
+        dto.setDescription(Map.of("en", longTextArea));
+        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("value-over-character-limit", dto));
+
+        return args;
+    }
+
+    record ConceptCollectionWithError(String error, ConceptCollectionDTO dto) {}
 }

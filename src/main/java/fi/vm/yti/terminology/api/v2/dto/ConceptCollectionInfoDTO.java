@@ -10,7 +10,9 @@ public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
     class Concept {
         private String identifier;
 
-        private Map<String, String> definition = Map.of();
+        private String uri;
+
+        private Map<String, String> label = Map.of();
 
         public String getIdentifier() {
             return identifier;
@@ -20,12 +22,20 @@ public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
             this.identifier = identifier;
         }
 
-        public Map<String, String> getDefinition() {
-            return definition;
+        public String getUri() {
+            return uri;
         }
 
-        public void setDefinition(Map<String, String> definition) {
-            this.definition = definition;
+        public void setUri(String uri) {
+            this.uri = uri;
+        }
+
+        public Map<String, String> getLabel() {
+            return label;
+        }
+
+        public void setLabel(Map<String, String> label) {
+            this.label = label;
         }
     }
 
@@ -59,10 +69,11 @@ public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
         this.members = members;
     }
 
-    public void addMember(String identifier, Map<String, String> definition) {
+    public void addMember(String identifier, String uri, Map<String, String> label) {
         Concept concept = new Concept();
         concept.identifier = identifier;
-        concept.definition = definition;
+        concept.uri = uri;
+        concept.label = label;
         members.add(concept);
     }
 }
