@@ -27,6 +27,10 @@ public class TerminologyURI extends GraphURI {
         return new TerminologyURI(prefix, conceptId);
     }
 
+    public static TerminologyURI createConceptCollectionURI(String prefix, String conceptCollectionId) {
+        return new TerminologyURI(prefix, conceptCollectionId);
+    }
+
     private TerminologyURI(String prefix) {
         createModelURI(prefix, null);
     }

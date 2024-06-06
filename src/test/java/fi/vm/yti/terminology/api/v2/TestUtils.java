@@ -7,12 +7,10 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
-import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
-import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
-import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.dto.*;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
@@ -116,6 +114,21 @@ public class TestUtils {
         dto.setReferences(references);
 
         dto.setTerms(Set.of(getTermDTO()));
+
+        return dto;
+    }
+
+    public static ConceptCollectionDTO getConceptCollectionData(String prefix) {
+        var dto = new ConceptCollectionDTO();
+        dto.setIdentifier("collection-1");
+        dto.setLabel(Map.of("en", "collection label"));
+        dto.setDescription(Map.of("en", "collection description"));
+        dto.addMember(TerminologyURI
+                .createConceptURI(prefix, "concept-1")
+                .getResourceURI());
+        dto.addMember(TerminologyURI
+                .createConceptURI(prefix, "concept-2")
+                .getResourceURI());
 
         return dto;
     }
