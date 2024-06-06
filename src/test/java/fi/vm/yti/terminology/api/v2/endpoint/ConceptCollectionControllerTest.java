@@ -111,7 +111,7 @@ public class ConceptCollectionControllerTest {
     void shouldValidateAndUpdate() throws Exception {
         var modelPrefix = "test";
         var conceptCollectionDTO = getConceptCollectionData(modelPrefix);
-        conceptCollectionDTO.setIdentifier("collection-1");
+        conceptCollectionDTO.setIdentifier(null);
 
         this.mvc
                 .perform(put(String.format("/v2/collection/%s/collection-1", modelPrefix))
@@ -162,8 +162,7 @@ public class ConceptCollectionControllerTest {
 
     @ParameterizedTest
     @MethodSource("provideInvalidConceptCollectionCreateData")
-    void shouldInvalidateConceptCollectionOnCreation(
-            ConceptCollectionControllerTest.ConceptCollectionWithError data) throws Exception {
+    void shouldInvalidateConceptCollectionOnCreation(ConceptCollectionWithError data) throws Exception {
 
         this.mvc
                 .perform(post("/v2/collection/test")
@@ -175,23 +174,36 @@ public class ConceptCollectionControllerTest {
         verifyNoMoreInteractions(this.conceptCollectionService);
     }
 
-    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionCreateData() {
-        var args = new ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError>();
+    @ParameterizedTest
+    @MethodSource("provideInvalidConceptCollectionUpdateData")
+    void shouldInvalidateConceptCollectionOnUpdate(ConceptCollectionWithError data) throws Exception {
+        this.mvc
+                .perform(put("/v2/collection/test/collection-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(data.dto)))
+                .andExpect(content().string(containsString(data.error())))
+                .andExpect(status().isBadRequest());
+
+        verifyNoMoreInteractions(this.conceptCollectionService);
+    }
+
+    public static ArrayList<ConceptCollectionWithError> provideInvalidConceptCollectionCreateData() {
+        var args = new ArrayList<ConceptCollectionWithError>();
 
         var dto = getConceptCollectionData("test");
         dto.setIdentifier(null);
-        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("should-have-value", dto));
+        args.add(new ConceptCollectionWithError("should-have-value", dto));
 
         args.addAll(provideInvalidConceptCollectionData());
 
         return args;
     }
 
-    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionUpdateData() {
+    public static ArrayList<ConceptCollectionWithError> provideInvalidConceptCollectionUpdateData() {
         var args = new ArrayList<ConceptCollectionWithError>();
 
         var dto = getConceptCollectionData("test");
-        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("not-allowed-update", dto));
+        args.add(new ConceptCollectionWithError("not-allowed-update", dto));
 
         provideInvalidConceptCollectionData().forEach(data -> {
             data.dto.setIdentifier(null);
@@ -200,7 +212,7 @@ public class ConceptCollectionControllerTest {
         return args;
     }
 
-    public static ArrayList<ConceptCollectionControllerTest.ConceptCollectionWithError> provideInvalidConceptCollectionData() {
+    public static ArrayList<ConceptCollectionWithError> provideInvalidConceptCollectionData() {
         var args = new ArrayList<ConceptCollectionWithError>();
 
         var longTextField = RandomStringUtils.randomAlphabetic(ValidationConstants.TEXT_FIELD_MAX_LENGTH + 1);
@@ -208,11 +220,11 @@ public class ConceptCollectionControllerTest {
 
         var dto = getConceptCollectionData("test");
         dto.setLabel(Map.of("en", longTextField));
-        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("value-over-character-limit", dto));
+        args.add(new ConceptCollectionWithError("value-over-character-limit", dto));
 
         dto = getConceptCollectionData("test");
         dto.setDescription(Map.of("en", longTextArea));
-        args.add(new ConceptCollectionControllerTest.ConceptCollectionWithError("value-over-character-limit", dto));
+        args.add(new ConceptCollectionWithError("value-over-character-limit", dto));
 
         return args;
     }

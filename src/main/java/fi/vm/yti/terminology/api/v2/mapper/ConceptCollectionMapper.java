@@ -26,8 +26,7 @@ public class ConceptCollectionMapper {
             YtiUser user) {
         var modelResource = model.getModelResource();
         var conceptCollectionResource = model.createResourceWithId(dto.getIdentifier())
-                .addProperty(SKOS.inScheme,
-                        ResourceFactory.createResource(modelResource.getURI()))
+                .addProperty(SKOS.inScheme, modelResource)
                 .addProperty(RDF.type, SKOS.Collection);
 
         var languages = MapperUtils.arrayPropertyToSet(

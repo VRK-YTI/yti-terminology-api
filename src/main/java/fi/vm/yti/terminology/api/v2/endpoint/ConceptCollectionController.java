@@ -69,7 +69,7 @@ public class ConceptCollectionController {
     public ResponseEntity<Void> update(
             @PathVariable @Parameter(description = "Terminology prefix") String prefix,
             @PathVariable @Parameter(description = "Concept collection identifier") String conceptCollectionIdentifier,
-            @RequestBody /* @ValidConceptCollection(update = true) */ ConceptCollectionDTO conceptCollection) {
+            @RequestBody @ValidConceptCollection(update = true) ConceptCollectionDTO conceptCollection) {
         conceptCollectionService.update(prefix, conceptCollectionIdentifier, conceptCollection);
         return ResponseEntity.noContent().build();
     }
