@@ -104,6 +104,7 @@ class ConceptServiceTest {
         when(authorizationManager.hasRightsToTerminology(eq(conceptURI.getPrefix()), any(Model.class))).thenReturn(false);
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
         when(groupManagementService.mapUser()).thenReturn(TestUtils.mapUser);
+        when(repository.queryConstruct(any(Query.class))).thenReturn(ModelFactory.createDefaultModel());
 
         var dto = conceptService.get(conceptURI.getPrefix(), conceptURI.getResourceId());
 
