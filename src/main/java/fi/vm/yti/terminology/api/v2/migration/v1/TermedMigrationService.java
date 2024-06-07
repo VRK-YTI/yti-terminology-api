@@ -8,12 +8,14 @@ import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.AuthorizationException;
+import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
 import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
+import fi.vm.yti.terminology.api.v2.service.ConceptCollectionService;
 import fi.vm.yti.terminology.api.v2.service.ConceptService;
 import fi.vm.yti.terminology.api.v2.service.TerminologyService;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -32,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
@@ -42,12 +45,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TermedMigrationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TermedMigrationService.class);
-    private static final String URI_SUOMI_FI = "http://uri.suomi.fi";
 
     @Value("${terminology.host:https://sanastot.test.yti.cloud.dvv.fi}")
     String terminologyHost;
@@ -57,6 +60,8 @@ public class TermedMigrationService {
     private final ConceptService conceptService;
 
     private final FrontendService frontendService;
+
+    private final ConceptCollectionService collectionService;
 
     private final TerminologyRepository terminologyRepository;
 
@@ -70,6 +75,7 @@ public class TermedMigrationService {
                                   FrontendService frontendService,
                                   TerminologyRepository terminologyRepository,
                                   AuthenticatedUserProvider userProvider,
+                                  ConceptCollectionService collectionService,
                                   @Value("${api.url:http://localhost:9102/api}") String termedHost,
                                   @Value("${api.user:}") String termedUser,
                                   @Value("${api.pw:}") String termedPassword) {
@@ -78,10 +84,12 @@ public class TermedMigrationService {
         this.frontendService = frontendService;
         this.terminologyRepository = terminologyRepository;
         this.userProvider = userProvider;
+        this.collectionService = collectionService;
 
         HttpHeaders defaultHttpHeaders = new HttpHeaders();
         defaultHttpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         defaultHttpHeaders.setBasicAuth(termedUser, termedPassword);
+
         this.webClient = WebClient.builder()
                 .defaultHeaders(headers -> headers.addAll(defaultHttpHeaders))
                 .baseUrl(termedHost + "/graphs")
@@ -91,6 +99,7 @@ public class TermedMigrationService {
                 ).build();
     }
 
+    @Async
     public void migrateAll() throws URISyntaxException {
         var graphs = webClient.get()
                 .uri(UriBuilder::build)
@@ -151,12 +160,12 @@ public class TermedMigrationService {
         addTermedId(terminologyDTO.getPrefix(), null, terminologyId);
 
         handleConcepts(terminologyId, oldData, terminologyDTO, defaultLanguage);
-        handleCollections(oldData);
+        handleCollections(terminologyDTO.getPrefix(), oldData);
     }
 
     private void handleConcepts(String terminologyId, Model oldData, TerminologyDTO terminologyDTO, String defaultLanguage) {
         oldData.listSubjectsWithProperty(RDF.type, SKOS.Concept)
-                .filterKeep(c -> c.getURI().startsWith(URI_SUOMI_FI))
+                .filterKeep(c -> c.getURI().startsWith(TermedDataMapper.URI_SUOMI_FI))
                 .forEach(resource -> {
                     var concept = TermedDataMapper.mapConcept(oldData, resource, mapper, defaultLanguage);
 
@@ -193,8 +202,7 @@ public class TermedMigrationService {
 
                                         if (result != null && !result.isEmpty()) {
                                             var refDto = new ConceptReferenceDTO();
-                                            refDto.setConceptURI(result.get(0).get("uri").asText()
-                                                    .replace(URI_SUOMI_FI, "https://iri.suomi.fi"));
+                                            refDto.setConceptURI(TermedDataMapper.fixURI(result.get(0).get("uri").asText()));
                                             refDto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
 
                                             concept.getReferences().add(refDto);
@@ -210,23 +218,33 @@ public class TermedMigrationService {
                 });
     }
 
-    private static void handleCollections(Model oldData) {
+    private void handleCollections(String prefix, Model oldData) {
         oldData.listSubjectsWithProperty(RDF.type, SKOS.Collection).forEach(c -> {
             var label = MapperUtils.localizedPropertyToMap(c, SKOS.prefLabel);
             var description = MapperUtils.localizedPropertyToMap(c, SKOS.definition);
             var identifier = NodeFactory.createURI(MapperUtils.propertyToString(c, Termed.uri)).getLocalName();
             var members = MapperUtils.arrayPropertyToList(c, SKOS.member).stream()
-                    .map(m -> m.replace(URI_SUOMI_FI, "https://iri.suomi.fi"))
-                    .toList();
+                    .map(TermedDataMapper::fixURI)
+                    .collect(Collectors.toSet());
 
-            // TODO: save collection
-            LOG.info("Collection {}, {}, {}, {}", label, description, identifier, members);
+            var dto = new ConceptCollectionDTO();
+            dto.setIdentifier(identifier);
+            dto.setLabel(label);
+            dto.setDescription(description);
+            dto.setMembers(members);
+            try {
+                collectionService.create(prefix, dto);
+                updateTimestamps(c, prefix, identifier);
+                addTermedId(prefix, identifier, MapperUtils.propertyToString(c, Termed.id));
+            } catch (Exception e) {
+                LOG.error("Error creating collection", e);
+            }
         });
     }
 
     private static List<LocalizedValueDTO> handleOrder(JsonNode properties, String property) {
         var result = new ArrayList<LocalizedValueDTO>();
-        Optional.of(
+        Optional.ofNullable(
                 properties.get(property))
                 .ifPresent(prop -> prop.iterator().forEachRemaining(p -> result.add(
                         new LocalizedValueDTO(p.get("lang").asText(), p.get("value").asText()))));

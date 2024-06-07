@@ -13,6 +13,7 @@ import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.slf4j.Logger;
@@ -102,11 +103,10 @@ public class IndexService extends OpenSearchInitializer {
     private void initConceptIndex(ModelWrapper model) {
         LOG.info("Init concepts for terminology {}", model.getGraphURI());
 
-        model.listSubjectsWithProperty(SKOS.inScheme, model.getModelResource()).forEach(concept -> {
-            LOG.debug("Indexing concept {}", concept.getURI());
-            var index = ConceptMapper.toIndexDocument(model, concept.getLocalName());
-            client.putToIndex(CONCEPT_INDEX, index);
-        });
+        var concepts = model.listSubjectsWithProperty(RDF.type, SKOS.Concept)
+                .mapWith(concept -> ConceptMapper.toIndexDocument(model, concept.getLocalName()))
+                .toList();
+        client.bulkInsert(CONCEPT_INDEX, concepts);
     }
 
     private TypeMapping getTerminologyMappings() {

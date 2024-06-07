@@ -130,7 +130,7 @@ public class ConceptCollectionMapper {
             return;
         }
         var list = resource.getModel().createList(values.stream()
-                .map(ResourceFactory::createStringLiteral)
+                .map(ResourceFactory::createResource)
                 .iterator());
         resource.addProperty(property, list);
     }

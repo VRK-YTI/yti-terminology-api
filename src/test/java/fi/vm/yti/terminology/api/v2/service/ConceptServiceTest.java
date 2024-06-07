@@ -10,13 +10,16 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.query.Query;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.SKOSXL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +31,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -70,9 +74,14 @@ class ConceptServiceTest {
         var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
 
+        var extRefResult = ModelFactory.createDefaultModel();
+        extRefResult.createResource(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI())
+                .addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral("Ext concept label", "fi"));
+
         when(authorizationManager.hasRightsToTerminology(eq(conceptURI.getPrefix()), any(Model.class))).thenReturn(true);
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
         when(groupManagementService.mapUser()).thenReturn(TestUtils.mapUser);
+        when(repository.queryConstruct(any(Query.class))).thenReturn(extRefResult);
 
         var dto = conceptService.get(conceptURI.getPrefix(), conceptURI.getResourceId());
 
@@ -80,6 +89,11 @@ class ConceptServiceTest {
         assertFalse(dto.getEditorialNotes().isEmpty());
         assertNotNull(dto.getCreator().getName());
         assertNotNull(dto.getModifier().getName());
+
+        var extRef = dto.getReferences().stream().filter(r -> r.getReferenceType().equals(ReferenceType.NARROW_MATCH)).findFirst();
+
+        assertTrue(extRef.isPresent());
+        assertEquals(Map.of("fi", "Ext concept label"), extRef.get().getLabel());
     }
 
     @Test

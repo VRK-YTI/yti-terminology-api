@@ -5,7 +5,8 @@ import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.TestUtils;
-import fi.vm.yti.terminology.api.v2.enums.TermType;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.migration.v1.TermedDataMapper;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -57,6 +58,13 @@ class TermedDataMapperTest {
         assertEquals(4, dto.getNotes().size());
 
         assertEquals("test definition", dto.getDefinition().get("fi"));
+        assertEquals("c340", dto.getIdentifier());
+        assertEquals("muutos", dto.getChangeNote());
+        assertEquals("luokkakäsite", dto.getConceptClass());
+        assertEquals("käyttö", dto.getHistoryNote());
+        assertEquals(List.of("muistiinpano"), dto.getEditorialNotes());
+        assertEquals(Status.VALID, dto.getStatus());
+        assertEquals(Map.of("fi", "Test aihealue"), dto.getSubjectArea());
 
         var prefTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.RECOMMENDED)).findFirst();
         var synonym = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SYNONYM)).findFirst();
@@ -68,10 +76,28 @@ class TermedDataMapperTest {
         assertTrue(searchTerm.isPresent());
         assertEquals(2, notRecommended.size());
 
-        assertEquals("pref term label", prefTerm.get().getLabel());
-        assertEquals("fi", prefTerm.get().getLanguage());
+        var term = prefTerm.get();
+        assertEquals("pref term label", term.getLabel());
+        assertEquals("fi", term.getLanguage());
+        assertEquals("lisätieto", term.getTermInfo());
+        assertEquals("tyyli", term.getTermStyle());
+        assertEquals("term käytönhistoria", term.getHistoryNote());
+        assertEquals("skooppi", term.getScope());
+        assertEquals(TermConjugation.SINGULAR, term.getTermConjugation());
+        assertEquals(TermFamily.MASCULINE, term.getTermFamily());
+        assertEquals(WordClass.ADJECTIVE, term.getWordClass());
+        assertEquals(Status.VALID, term.getStatus());
+        assertEquals(1, term.getHomographNumber());
+        assertEquals("term-9869b1f6-de6a-4d2b-8823-60750def6f30", term.getIdentifier());
+        assertEquals("term muutoshistoria", term.getChangeNote());
+        assertEquals(TermEquivalency.BROADER, term.getTermEquivalency());
+        assertEquals(List.of("term muistiinpano"), term.getEditorialNotes());
+        assertEquals(List.of("lähde 2", "termin lähde"), term.getSources());
 
-        assertEquals(1, dto.getReferences().size());
+        var ref = dto.getReferences().get(0);
+
+        assertEquals("https://iri.suomi.fi/terminology/test/braoder-test", ref.getConceptURI());
+        assertEquals(ReferenceType.BROADER, ref.getReferenceType());
     }
 
     private Model getData() {

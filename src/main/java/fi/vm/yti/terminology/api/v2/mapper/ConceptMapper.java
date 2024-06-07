@@ -75,7 +75,7 @@ public class ConceptMapper {
         dto.setNotes(listToLocalizedValues(resource, SKOS.note));
         dto.setSubjectArea(MapperUtils.localizedPropertyToMap(resource, Term.subjectArea));
 
-        dto.setReferences(mapInternalReferencesDTO(model, resource));
+        dto.setReferences(mapConceptReferencesDTO(model, resource));
 
         var links = resource.listProperties(RDFS.seeAlso).mapWith(l -> {
             var link = new LinkDTO();
@@ -190,11 +190,9 @@ public class ConceptMapper {
                         Collectors.mapping(r -> r.getProperty(SKOSXL.literalForm).getString(), Collectors.toList())));
     }
 
-    private static Set<ConceptReferenceInfoDTO> mapInternalReferencesDTO(ModelWrapper model, Resource resource) {
+    private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(ModelWrapper model, Resource resource) {
         var references = new HashSet<ConceptReferenceInfoDTO>();
 
-        // at this point, populate only labels for references to current terminology,
-        // labels for external references must be fetched from index
         internalRefProperties.forEach(prop -> {
             var ref = MapperUtils.propertyToString(resource, prop);
 
@@ -214,6 +212,17 @@ public class ConceptMapper {
             }
         });
 
+        // at this point, populate URI and type for external references,
+        // labels for them must be fetched from index / fuseki
+        externalRefProperties.forEach(prop -> {
+            var ref = MapperUtils.propertyToString(resource, prop);
+            if (ref != null) {
+                var dto = new ConceptReferenceInfoDTO();
+                dto.setConceptURI(ref);
+                dto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
+                references.add(dto);
+            }
+        });
         return references;
     }
 

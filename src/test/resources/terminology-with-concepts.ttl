@@ -50,6 +50,7 @@ test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
         term:conceptClass             "concept class";
         term:notRecommendedSynonym    test:term-47d79614-d8f5-4c42-8967-a860c3451f5b;
         term:source                   ( "source" );
+        skos:narrowMatch              <https://iri.suomi.fi/terminology/ext/concept-1> ;
         term:subjectArea              "subject area"@fi .
 
 test:term-614007ae-5d84-45d8-b473-6359c3cbc5ca

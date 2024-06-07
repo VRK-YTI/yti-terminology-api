@@ -28,6 +28,8 @@ public class TermedDataMapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(TermedDataMapper.class);
 
+    public static final String URI_SUOMI_FI = "http://uri.suomi.fi";
+
     private TermedDataMapper() {}
 
     public static TerminologyDTO mapTerminology(Resource metaResource, List<ServiceCategoryDTO> allCategories) {
@@ -102,9 +104,9 @@ public class TermedDataMapper {
                 var json = mapper.readTree(l);
 
                 var dto = new LinkDTO();
-                dto.setName(Map.of(defaultLanguage, Optional.of(json.get("name")).map(JsonNode::asText).orElse("")));
-                dto.setDescription(Map.of(defaultLanguage, Optional.of(json.get("description")).map(JsonNode::asText).orElse("")));
-                dto.setUri(Optional.of(json.get("url")).map(JsonNode::asText).orElse(""));
+                dto.setName(Map.of(defaultLanguage, Optional.ofNullable(json.get("name")).map(JsonNode::asText).orElse("")));
+                dto.setDescription(Map.of(defaultLanguage, Optional.ofNullable(json.get("description")).map(JsonNode::asText).orElse("")));
+                dto.setUri(Optional.ofNullable(json.get("url")).map(JsonNode::asText).orElse(""));
                 return dto;
             } catch (JsonProcessingException e) {
                 LOG.error("Error parsing links for concept {}, {}", concept.getIdentifier(), l);
@@ -139,9 +141,16 @@ public class TermedDataMapper {
         return concept;
     }
 
+    public static String fixURI(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        return uri.replace(URI_SUOMI_FI, "https://iri.suomi.fi");
+    }
+
     private static ConceptReferenceDTO getReference(String uri, ReferenceType referenceType) {
         var dto = new ConceptReferenceDTO();
-        dto.setConceptURI(uri);
+        dto.setConceptURI(fixURI(uri));
         dto.setReferenceType(referenceType);
         return  dto;
     }
