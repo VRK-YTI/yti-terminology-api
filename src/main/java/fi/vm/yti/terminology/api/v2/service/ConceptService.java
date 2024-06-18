@@ -5,16 +5,24 @@ import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.GroupManagementService;
+import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptInfoDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.arq.querybuilder.ConstructBuilder;
+import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.SKOS;
+import org.apache.jena.vocabulary.SKOSXL;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -52,7 +60,38 @@ public class ConceptService {
         if (authorizationManager.hasRightsToTerminology(prefix, model)) {
             mapUser = groupManagementService.mapUser();
         }
-        return ConceptMapper.modelToDTO(model, conceptIdentifier, mapUser);
+
+        var dto = ConceptMapper.modelToDTO(model, conceptIdentifier, mapUser);
+        mapExternalReferenceLabels(dto.getReferences());
+        return dto;
+    }
+
+    private void mapExternalReferenceLabels(Set<ConceptReferenceInfoDTO> references) {
+        var externalRefs = references.stream()
+                .filter(r -> r.getLabel() == null)
+                .toList();
+
+        if (externalRefs.isEmpty()) {
+            return;
+        }
+
+        var conceptVar = "?concept";
+        var builder = new ConstructBuilder();
+        builder.addConstruct(conceptVar, SKOSXL.literalForm, "?label");
+        var where = new WhereBuilder()
+                .addWhere(conceptVar, SKOS.prefLabel, "?prefLabel")
+                .addWhere("?prefLabel", SKOSXL.literalForm, "?label");
+
+        externalRefs.forEach(r -> where.addWhereValueVar(conceptVar,
+                ResourceFactory.createResource(r.getConceptURI())));
+        builder.addWhere(where);
+
+        var result = repository.queryConstruct(builder.build());
+
+        externalRefs.forEach(ref -> {
+            var extResource = result.getResource(ref.getConceptURI());
+            ref.setLabel(MapperUtils.localizedPropertyToMap(extResource, SKOSXL.literalForm));
+        });
     }
 
     public URI create(String prefix, ConceptDTO dto) throws URISyntaxException {

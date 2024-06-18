@@ -223,10 +223,18 @@ class ConceptMapperTest {
         assertEquals("description", link.getDescription().get("fi"));
         assertEquals("https://dvv.fi", link.getUri());
 
-        var ref = dto.getReferences().iterator().next();
-        assertEquals(graphURI + "concept-2", ref.getConceptURI());
-        assertEquals(ReferenceType.BROADER, ref.getReferenceType());
-        assertEquals("Suositettava termi", ref.getLabel().get("fi"));
+        var internalRef = dto.getReferences().stream()
+                .filter(r -> r.getReferenceType().equals(ReferenceType.BROADER))
+                .findFirst();
+        assertTrue(internalRef.isPresent());
+        assertEquals(graphURI + "concept-2", internalRef.get().getConceptURI());
+        assertEquals("Suositettava termi", internalRef.get().getLabel().get("fi"));
+
+        var externalRef = dto.getReferences().stream()
+                .filter(r -> r.getReferenceType().equals(ReferenceType.NARROW_MATCH))
+                .findFirst();
+        assertTrue(externalRef.isPresent());
+        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.get().getConceptURI());
     }
 
     @Test
@@ -236,7 +244,7 @@ class ConceptMapperTest {
 
         var dto = ConceptMapper.modelToDTO(model, "concept-1", TestUtils.mapUser);
 
-        assertEquals(4, dto.getTerms().size());
+        assertEquals(5, dto.getTerms().size());
 
         var termOpt = dto.getTerms().stream()
                 .filter(t -> t.getIdentifier().equals("term-614007ae-5d84-45d8-b473-6359c3cbc5ca"))
