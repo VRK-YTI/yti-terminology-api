@@ -29,6 +29,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -42,6 +43,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@TestPropertySource(properties = {
+        "spring.cloud.config.import-check.enabled=false"
+})
 @WebMvcTest(controllers = TerminologyController.class)
 @ActiveProfiles("test")
 class TerminologyControllerTest {
@@ -70,7 +74,9 @@ class TerminologyControllerTest {
     private static final UUID ORGANIZATION_ID = UUID.randomUUID();
 
     private static final String VALID_GRAPH_URI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+
     private static final String EXISTING_GRAPH = TerminologyURI.createTerminologyURI("existing-graph").getGraphURI();
+
     @BeforeEach
     public void setup() {
         this.mvc = MockMvcBuilders

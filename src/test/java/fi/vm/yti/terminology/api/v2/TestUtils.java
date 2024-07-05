@@ -15,6 +15,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
@@ -150,5 +151,10 @@ public class TestUtils {
         term.setTermStyle("style");
         term.setTermEquivalency(TermEquivalency.BROADER);
         return term;
+    }
+
+    public static String getJsonString(String file) throws Exception {
+        return new String(TestUtils.class
+                .getResourceAsStream(file).readAllBytes(), StandardCharsets.UTF_8);
     }
 }

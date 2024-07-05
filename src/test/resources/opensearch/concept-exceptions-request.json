@@ -1,0 +1,80 @@
+{
+  "from": 0,
+  "size": 100,
+  "highlight": {
+    "fields": {
+      "definition.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "minimum_should_match": "1",
+            "should": [
+              {
+                "query_string": {
+                  "boost": 1.5,
+                  "fields": [
+                    "label.*",
+                    "altLabel.*",
+                    "searchTerm.*",
+                    "hiddenTerm.*",
+                    "definition.*",
+                    "notRecommendedSynonym.*"
+                  ],
+                  "fuzziness": "2",
+                  "query": "*test*"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "terms": {
+            "status": [
+              "INCOMPLETE",
+              "VALID",
+              "DRAFT"
+            ]
+          }
+        },
+        {
+          "bool": {
+            "should": [
+              {
+                "bool": {
+                  "must_not": [
+                    {
+                      "terms": {
+                        "status": [
+                          "INCOMPLETE"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "namespace": [
+                    "https://iri.test/terminology/terminology1/concept"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}

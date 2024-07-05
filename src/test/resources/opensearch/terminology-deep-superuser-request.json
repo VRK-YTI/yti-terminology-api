@@ -1,0 +1,68 @@
+{
+  "from": 0,
+  "size": 100,
+  "highlight": {
+    "fields": {
+      "label.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "minimum_should_match": "1",
+      "should": [
+        {
+          "bool": {
+            "minimum_should_match": "1",
+            "should": [
+              {
+                "terms": {
+                  "uri": [
+                    "https://iri.test/terminology/terminology1/"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "bool": {
+            "must": [
+              {
+                "bool": {
+                  "minimum_should_match": "1",
+                  "should": [
+                    {
+                      "query_string": {
+                        "fields": [
+                          "label.*"
+                        ],
+                        "fuzziness": "2",
+                        "query": "*test*"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "groups": [
+                    "P1",
+                    "P11"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}

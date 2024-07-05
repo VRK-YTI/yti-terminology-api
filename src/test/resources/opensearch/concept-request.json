@@ -1,0 +1,67 @@
+{
+  "from": 0,
+  "highlight": {
+    "fields": {
+      "definition.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "minimum_should_match": "1",
+            "should": [
+              {
+                "query_string": {
+                  "boost": 1.5,
+                  "fields": [
+                    "label.*",
+                    "altLabel.*",
+                    "searchTerm.*",
+                    "hiddenTerm.*",
+                    "definition.*",
+                    "notRecommendedSynonym.*"
+                  ],
+                  "fuzziness": "2",
+                  "query": "*test*"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "terms": {
+            "status": [
+              "DRAFT",
+              "INCOMPLETE",
+              "VALID"
+            ]
+          }
+        },
+        {
+          "bool": {
+            "must_not": [
+              {
+                "terms": {
+                  "status": [
+                    "INCOMPLETE"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "size": 100,
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}

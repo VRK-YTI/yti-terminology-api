@@ -3,7 +3,14 @@ package fi.vm.yti.terminology.api.v2.endpoint;
 import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.dto.OrganizationDTO;
 import fi.vm.yti.common.dto.ServiceCategoryDTO;
+import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.service.FrontendService;
+import fi.vm.yti.security.AuthenticatedUserProvider;
+import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
+import fi.vm.yti.terminology.api.v2.dto.TerminologySearchResultDTO;
+import fi.vm.yti.terminology.api.v2.opensearch.ConceptSearchRequest;
+import fi.vm.yti.terminology.api.v2.opensearch.TerminologySearchRequest;
+import fi.vm.yti.terminology.api.v2.service.SearchIndexService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,15 +23,26 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 @RestController
 @RequestMapping("v2/frontend")
 @Tag(name = "Frontend")
 public class FrontendController {
 
+    private final SearchIndexService searchIndexService;
+
     private final FrontendService frontendService;
 
-    public FrontendController(FrontendService frontendService) {
+    private final AuthenticatedUserProvider userProvider;
+
+    public FrontendController(
+            SearchIndexService searchIndexService,
+            FrontendService frontendService,
+            AuthenticatedUserProvider userProvider) {
         this.frontendService = frontendService;
+        this.searchIndexService = searchIndexService;
+        this.userProvider = userProvider;
     }
 
     @Operation(summary = "Get organizations", description = "List of organizations sorted by name")
@@ -45,5 +63,23 @@ public class FrontendController {
             @RequestParam(required = false, defaultValue = Constants.DEFAULT_LANGUAGE)
             @Parameter(description = "Alphabetical sorting language") String sortLang) {
         return frontendService.getServiceCategories(sortLang);
+    }
+
+    @Operation(summary = "Search terminologies")
+    @ApiResponse(responseCode = "200", description = "List of terminology objects")
+    @GetMapping(value = "/search-terminologies", produces = APPLICATION_JSON_VALUE)
+    public SearchResponseDTO<TerminologySearchResultDTO> getTerminologies(
+            @Parameter(description = "Terminology search parameters") TerminologySearchRequest request
+    ) {
+        return searchIndexService.searchTerminologies(request, userProvider.getUser());
+    }
+
+    @Operation(summary = "Search concepts")
+    @ApiResponse(responseCode = "200", description = "List of concept objects")
+    @GetMapping(value = "/search-concepts", produces = APPLICATION_JSON_VALUE)
+    public SearchResponseDTO<ConceptSearchResultDTO> getConcepts(
+            @Parameter(description = "Concept search parameters") ConceptSearchRequest request
+    ) {
+        return searchIndexService.searchConcepts(request, userProvider.getUser());
     }
 }

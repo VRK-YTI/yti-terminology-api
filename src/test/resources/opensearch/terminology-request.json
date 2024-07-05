@@ -1,0 +1,60 @@
+{
+  "from": 0,
+  "size": 100,
+  "highlight": {
+    "fields": {
+      "label.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "must_not": [
+              {
+                "term": {
+                  "status": {
+                    "value": "INCOMPLETE"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "bool": {
+            "minimum_should_match": "1",
+            "should": [
+              {
+                "query_string": {
+                  "fields": [
+                    "label.*"
+                  ],
+                  "fuzziness": "2",
+                  "query": "*test*"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "terms": {
+            "groups": [
+              "P11",
+              "P1"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}

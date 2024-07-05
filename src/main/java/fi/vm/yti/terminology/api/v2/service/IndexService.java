@@ -19,7 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
+
+import static fi.vm.yti.common.opensearch.OpenSearchUtil.*;
 
 @Service
 public class IndexService extends OpenSearchInitializer {
@@ -46,7 +49,8 @@ public class IndexService extends OpenSearchInitializer {
 
         var indexConfig = Map.of(
                 TERMINOLOGY_INDEX, getTerminologyMappings(),
-                CONCEPT_INDEX, new TypeMapping.Builder().build()
+                // CONCEPT_INDEX, new TypeMapping.Builder().build()
+                CONCEPT_INDEX, getConceptMappings()
         );
         super.initIndexes(fn, indexConfig);
     }
@@ -113,6 +117,26 @@ public class IndexService extends OpenSearchInitializer {
         return new TypeMapping.Builder()
                 .dynamicTemplates(OpenSearchUtil.getMetaDataDynamicTemplates())
                 .properties(OpenSearchUtil.getMetaDataProperties())
+                .build();
+    }
+
+    private TypeMapping getConceptMappings() {
+        return new TypeMapping.Builder()
+                .dynamicTemplates(List.of(
+                        getDynamicTemplate("label", "label.*"),
+                        getDynamicTemplate("definition", "definition.*"),
+                        getDynamicTemplate("altLabel", "altLabel.*"),
+                        getDynamicTemplate("searchTerm", "searchTerm.*"),
+                        getDynamicTemplate("notRecommendedSynonym", "notRecommendedSynonym.*")))
+                .properties(Map.ofEntries(
+                        Map.entry("id", getKeywordProperty()),
+                        Map.entry("uri", getKeywordProperty()),
+                        Map.entry("status", getKeywordProperty()),
+                        Map.entry("namespace", getKeywordProperty()),
+                        Map.entry("prefix", getKeywordProperty()),
+                        Map.entry("created", getDateProperty()),
+                        Map.entry("modified", getDateProperty())
+                ))
                 .build();
     }
 }
