@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="file://localhost/X:/NTRF.css" type="text/css"?>
+<VOCABULARY>
+    <RECORD numb="c1" stat="VALID">
+        <LANG value="en">
+            <TE stat="VALID">
+                <TERM>Test recommended term</TERM>
+            </TE>
+            <SY stat="VALID">
+                <TERM>Test synonym</TERM>
+            </SY>
+            <DEF>Definition</DEF>
+        </LANG>
+    </RECORD>
+    <DIAG numb="collection-1" name="Test collection">
+        <LINK href="#c1">c1</LINK>
+    </DIAG>
+</VOCABULARY>

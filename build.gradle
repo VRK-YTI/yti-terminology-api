@@ -79,6 +79,9 @@ dependencies {
     implementation "org.apache.jena:jena-querybuilder:4.10.0"
     implementation "com.google.guava:guava:33.0.0-jre"
 
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.2'
+    implementation 'com.sun.xml.bind:jaxb-impl:4.0.5'
+
     compileOnly "org.springframework.boot:spring-boot-configuration-processor"
     compileOnly "org.jetbrains:annotations:23.0.0"
 

@@ -4,25 +4,23 @@ import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.enums.Status;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ConceptDTO {
     private String identifier;
-    private Map<String, String> definition = Map.of();
-    private Map<String, String> subjectArea = Map.of();
-    private List<LocalizedValueDTO> notes = List.of();
-    private List<LocalizedValueDTO> examples = List.of();
+    private Map<String, String> definition = new HashMap<>();
+    private Map<String, String> subjectArea = new HashMap<>();
+    private List<LocalizedValueDTO> notes = new ArrayList<>();
+    private List<LocalizedValueDTO> examples = new ArrayList<>();
     private Status status;
-    private List<String> sources = List.of();
+    private List<String> sources = new ArrayList<>();
     private List<LinkDTO> links = List.of();
     private String changeNote;
     private String historyNote;
     private String conceptClass;
-    private List<String> editorialNotes = List.of();
-    private List<ConceptReferenceDTO> references = List.of();
-    private Set<TermDTO> terms = Set.of();
+    private List<String> editorialNotes = new ArrayList<>();
+    private List<ConceptReferenceDTO> references = new ArrayList<>();
+    private Set<TermDTO> terms = new HashSet<>();
 
     public String getIdentifier() {
         return identifier;

@@ -181,6 +181,15 @@ public class ConceptMapper {
         model.removeAll(resource, null, null);
     }
 
+    public static List<Resource> getTermSubjects(Resource conceptResource) {
+        return termProperties.stream()
+                .flatMap(prop -> conceptResource.listProperties(prop)
+                        .mapWith(Statement::getObject)
+                        .toList().stream())
+                .map(RDFNode::asResource)
+                .toList();
+    }
+
     private static Map<String, List<String>> getIndexedTerm(ModelWrapper model, Resource resource, Property property) {
         return resource.listProperties(property)
                 .mapWith(s -> model.getResource(s.getObject().toString()))
@@ -278,15 +287,6 @@ public class ConceptMapper {
         linkResource.addProperty(FOAF.homepage, link.getUri());
 
         resource.addProperty(RDFS.seeAlso, linkResource);
-    }
-
-    private static List<Resource> getTermSubjects(Resource conceptResource) {
-        return termProperties.stream()
-                .flatMap(prop -> conceptResource.listProperties(prop)
-                        .mapWith(Statement::getObject)
-                        .toList().stream())
-                .map(RDFNode::asResource)
-                .toList();
     }
 
     private static void mapTerm(ModelWrapper model, TermDTO term, Resource resource) {
