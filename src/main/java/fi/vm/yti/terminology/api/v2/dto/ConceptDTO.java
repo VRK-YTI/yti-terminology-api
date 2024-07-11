@@ -19,7 +19,7 @@ public class ConceptDTO {
     private String historyNote;
     private String conceptClass;
     private List<String> editorialNotes = new ArrayList<>();
-    private List<ConceptReferenceDTO> references = new ArrayList<>();
+    private Set<ConceptReferenceDTO> references = new HashSet<>();
     private Set<TermDTO> terms = new HashSet<>();
 
     public String getIdentifier() {
@@ -110,11 +110,11 @@ public class ConceptDTO {
         this.editorialNotes = editorialNotes;
     }
 
-    public List<ConceptReferenceDTO> getReferences() {
+    public Set<ConceptReferenceDTO> getReferences() {
         return references;
     }
 
-    public void setReferences(List<ConceptReferenceDTO> references) {
+    public void setReferences(Set<ConceptReferenceDTO> references) {
         this.references = references;
     }
 

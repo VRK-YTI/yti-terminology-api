@@ -156,7 +156,7 @@ class ConceptMapperTest {
         ref2.setReferenceType(ReferenceType.BROAD_MATCH);
         ref2.setConceptURI("https://iri.suomi.fi/terminology/external/concept-300");
 
-        dto.setReferences(List.of(ref1, ref2));
+        dto.setReferences(Set.of(ref1, ref2));
 
         ConceptMapper.dtoToUpdateModel(model, "concept-1", dto, mockUser);
 

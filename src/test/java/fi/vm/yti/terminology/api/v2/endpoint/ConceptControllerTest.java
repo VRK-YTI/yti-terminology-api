@@ -222,7 +222,7 @@ class ConceptControllerTest {
         dto = getConceptData();
         var ref = new ConceptReferenceDTO();
         ref.setReferenceType(ReferenceType.BROADER);
-        dto.setReferences(List.of(ref));
+        dto.setReferences(Set.of(ref));
         args.add(new ConceptWithError("should-have-value", dto));
 
         // check term data

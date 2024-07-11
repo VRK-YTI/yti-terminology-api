@@ -97,7 +97,7 @@ public class TestUtils {
         link.setUri("https://dvv.fi");
         dto.setLinks(List.of(link));
 
-        var references = new ArrayList<ConceptReferenceDTO>();
+        var references = new HashSet<ConceptReferenceDTO>();
         ConceptMapper.internalRefProperties.forEach(prop -> {
             var ref = new ConceptReferenceDTO();
             ref.setConceptURI("https://iri.suomi.fi/terminology/test/concept-1000");

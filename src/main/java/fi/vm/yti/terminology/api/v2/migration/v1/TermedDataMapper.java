@@ -131,7 +131,7 @@ public class TermedDataMapper {
 
         concept.setTerms(terms);
 
-        var references = new ArrayList<ConceptReferenceDTO>();
+        var references = new HashSet<ConceptReferenceDTO>();
 
         ConceptMapper.internalRefProperties.forEach(prop ->
                 MapperUtils.arrayPropertyToList(c, prop)

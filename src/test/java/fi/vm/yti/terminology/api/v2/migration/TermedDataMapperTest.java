@@ -94,7 +94,7 @@ class TermedDataMapperTest {
         assertEquals(List.of("term muistiinpano"), term.getEditorialNotes());
         assertEquals(List.of("lähde 2", "termin lähde"), term.getSources());
 
-        var ref = dto.getReferences().get(0);
+        var ref = dto.getReferences().iterator().next();
 
         assertEquals("https://iri.suomi.fi/terminology/test/braoder-test", ref.getConceptURI());
         assertEquals(ReferenceType.BROADER, ref.getReferenceType());

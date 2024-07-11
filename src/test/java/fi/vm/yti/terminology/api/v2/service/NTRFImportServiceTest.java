@@ -8,6 +8,7 @@ import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +52,11 @@ class NTRFImportServiceTest {
         var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
 
         var m = ModelFactory.createDefaultModel();
-                m.createResource(graphURI).addProperty(DCAP.preferredXMLNamespacePrefix, "test");
+        m.createResource(graphURI)
+                .addProperty(DCTerms.language, "fi")
+                .addProperty(DCTerms.language, "sv")
+                .addProperty(DCTerms.language, "en")
+                .addProperty(DCAP.preferredXMLNamespacePrefix, "test");
         var model = new ModelWrapper(m, graphURI);
 
         when(terminologyRepository.fetchByPrefix(prefix)).thenReturn(model);
@@ -60,8 +65,10 @@ class NTRFImportServiceTest {
         var file = mock(MultipartFile.class);
         when(file.getInputStream()).thenReturn(getClass().getResourceAsStream("/ntrf/ntrf-simple.xml"));
 
+        var start = System.currentTimeMillis();
         service.importNTRF(prefix, file);
-
+        var dur = System.currentTimeMillis() - start;
+        System.out.println("FINISHED IN " + dur + "ms");
         verify(terminologyRepository).put(eq(model.getGraphURI()), modelCaptor.capture());
         verify(indexService).reindexTerminology(any(ModelWrapper.class));
 
