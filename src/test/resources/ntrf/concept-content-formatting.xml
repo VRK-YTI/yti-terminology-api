@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="file://localhost/X:/NTRF.css" type="text/css"?>
+<VOCABULARY>
+    <RECORD numb="c1">
+        <LANG value="en">
+            <TE stat="VALID">
+                <TERM>Test term</TERM>
+            </TE>
+            <DEF>Formatted content <I>italic</I> <B>bold</B> <SUP>superscript</SUP> and <SUB>subscript</SUB>.</DEF>
+            <NOTE><NCON href="#c2">Note <HOGR>2</HOGR></NCON> with <LINK href="https://example.com">link</LINK></NOTE>
+        </LANG>
+    </RECORD>
+</VOCABULARY>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <RECORD numb="c1" stat="DRAFT">
+        <LANG value="en">
+            <TE stat="DRAFT">
+                <TERM>Test term 1</TERM>
+            </TE>
+        </LANG>
+    </RECORD>
+    <RECORD numb="c2" stat="DRAFT">
+        <LANG value="en">
+            <TE stat="DRAFT">
+                <TERM>Test term 2</TERM>
+            </TE>
+        </LANG>
+    </RECORD>
+    <DIAG numb="collection-1" href="" name="Test collection">
+        <LINK href="#c1" />
+        <LINK href="#c2" />
+    </DIAG>
+</VOCABULARY>

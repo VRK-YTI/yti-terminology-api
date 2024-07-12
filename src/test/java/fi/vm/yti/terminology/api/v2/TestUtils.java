@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.common.dto.*;
 import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
@@ -14,6 +15,7 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.vocabulary.DCTerms;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -30,6 +32,18 @@ public class TestUtils {
         assertNotNull(stream);
         RDFDataMgr.read(model, stream, RDFLanguages.TURTLE);
         return new ModelWrapper(model, graphURI);
+    }
+
+    public static ModelWrapper getDefaultModel(String prefix) {
+        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+
+        var m = ModelFactory.createDefaultModel();
+        m.createResource(graphURI)
+                .addProperty(DCTerms.language, "fi")
+                .addProperty(DCTerms.language, "sv")
+                .addProperty(DCTerms.language, "en")
+                .addProperty(DCAP.preferredXMLNamespacePrefix, prefix);
+        return new ModelWrapper(m, graphURI);
     }
 
     public static final YtiUser mockUser = new YtiUser("test@localhost",
@@ -88,7 +102,7 @@ public class TestUtils {
         dto.setNotes(List.of(new LocalizedValueDTO("en", "note")));
         dto.setEditorialNotes(List.of("editorial"));
         dto.setHistoryNote("history");
-        dto.setSubjectArea(Map.of("en", "subject area"));
+        dto.setSubjectArea("subject area");
         dto.setSources(List.of("source"));
 
         var link = new LinkDTO();

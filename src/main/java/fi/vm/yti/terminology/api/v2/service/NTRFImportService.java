@@ -1,8 +1,6 @@
 package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.terminology.api.v2.mapper.NTRFMapper;
-import fi.vm.yti.terminology.api.v2.ntrf.DIAG;
-import fi.vm.yti.terminology.api.v2.ntrf.RECORD;
 import fi.vm.yti.terminology.api.v2.ntrf.VOCABULARY;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
@@ -48,19 +46,9 @@ public class NTRFImportService {
             factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
             XMLStreamReader reader = factory.createXMLStreamReader(file.getInputStream());
             Unmarshaller unmarshaller = context.createUnmarshaller();
-
             VOCABULARY voc = (VOCABULARY) unmarshaller.unmarshal(reader);
 
-            var elements = voc.getRECORDAndHEADAndDIAG();
-            var user = authorizationManager.getUser();
-
-            for (var elem : elements) {
-                if (elem instanceof RECORD concept) {
-                    NTRFMapper.mapConcept(model, concept, user);
-                } else if (elem instanceof DIAG collection) {
-                    NTRFMapper.mapCollection(model, collection, user);
-                }
-            }
+            NTRFMapper.mapTerminology(voc, model, authorizationManager.getUser());
 
             terminologyRepository.put(model.getGraphURI(), model);
             indexService.reindexTerminology(model);

@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.mapper;
 
 import com.google.common.escape.Escaper;
 import com.google.common.escape.Escapers;
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
@@ -17,7 +18,11 @@ import org.apache.jena.vocabulary.SKOS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -32,9 +37,24 @@ public class NTRFMapper {
     // allowed formatting elements according to schema
     private static final List<String> HTML_ELEMENTS = List.of("br", "i", "b", "sup", "sub");
 
-    public static void mapConcept(ModelWrapper model, RECORD concept, YtiUser user) {
+    public static void mapTerminology(VOCABULARY vocabulary, ModelWrapper model, YtiUser user) {
+        var elements = vocabulary.getRECORDAndHEADAndDIAG();
+
+        for (var elem : elements) {
+            if (elem instanceof RECORD concept) {
+                mapConcept(model, concept, user);
+            } else if (elem instanceof DIAG collection) {
+                mapCollection(model, collection, user);
+            }
+        }
+    }
+    private static void mapConcept(ModelWrapper model, RECORD concept, YtiUser user) {
         var resource = model.getResourceById(concept.getNumb());
         var conceptDTO = xmlToDTO(concept, model);
+
+        if (conceptDTO == null) {
+            return;
+        }
 
         if (resource.listProperties().hasNext()) {
             ConceptMapper.dtoToUpdateModel(model, concept.getNumb(), conceptDTO, user);
@@ -43,13 +63,13 @@ public class NTRFMapper {
         }
     }
 
-    public static void mapCollection(ModelWrapper model, DIAG collection, YtiUser user) {
+    private static void mapCollection(ModelWrapper model, DIAG collection, YtiUser user) {
         var dto = new ConceptCollectionDTO();
         var lang = collection.getLang() != null ? collection.getLang() : "fi";
         dto.setLabel(Map.of(lang, collection.getName()));
         dto.setIdentifier(collection.getNumb());
 
-        var members = new HashSet<String>();
+        var members = new LinkedHashSet<String>();
         collection.getLINK().forEach(member -> {
             var conceptId = member.getHref().substring(1);
             members.add(TerminologyURI.createConceptURI(model.getPrefix(), conceptId).getResourceURI());
@@ -67,23 +87,30 @@ public class NTRFMapper {
     private static ConceptDTO xmlToDTO(RECORD concept, ModelWrapper model) {
         var languages = MapperUtils.arrayPropertyToSet(model.getModelResource(), DCTerms.language);
 
-        var dto = new ConceptDTO();
-        dto.setIdentifier(concept.getNumb());
-        try {
-            dto.setStatus(getStatus(concept.getStat()));
-        } catch (Exception e) {
-            LOG.warn("Invalid status value for concept {}, {}", concept.getNumb(), concept.getStat());
-            dto.setStatus(Status.DRAFT);
+        if ("ulottuvuus".equalsIgnoreCase(concept.getType())) {
+            LOG.info("Drop concept {} with type=ulottuvuus", concept.getNumb());
+            return null;
         }
 
-        concept.getSOURC().forEach(source -> getContentWithTags(source.getContent(), dto, model));
-        dto.setConceptClass(getContentWithTags(concept.getCLAS(), dto, model));
+        var dto = new ConceptDTO();
+
+        dto.setIdentifier(concept.getNumb());
+        dto.setStatus(getConceptStatus(concept));
+
+        if (!concept.getCLAS().isEmpty()) {
+            dto.setConceptClass(getContentWithTags(concept.getCLAS().get(0).getContent(), dto, model));
+        }
+        if (!concept.getSUBJ().isEmpty()) {
+            dto.setSubjectArea(getContentWithTags(concept.getSUBJ().get(0).getContent(), dto, model));
+        }
+        handleEditorialNotes(concept, model, dto);
+        concept.getSOURC().forEach(source -> dto.getSources().add(getContentWithTags(source.getContent(), dto, model)));
 
         concept.getLANG().forEach(lang -> {
             var langValue = lang.getValue().value();
 
             if (!languages.contains(langValue.toLowerCase())) {
-                LOG.warn("Language {} not added to terminology {}", langValue, model.getPrefix());
+                LOG.warn("Language {} in concept {} not added to terminology {}", langValue, concept.getNumb(), model.getPrefix());
                 return;
             }
 
@@ -98,33 +125,73 @@ public class NTRFMapper {
                     new LocalizedValueDTO(langValue, getContentWithTags(example.getContent(), dto, model)))
             );
 
-            handleTerm(model, dto, lang.getTE(), lang.getTE().getStat(), TermType.RECOMMENDED, langValue);
-            lang.getSY().forEach(sy -> handleTerm(model, dto, sy, sy.getStat(), TermType.SYNONYM, langValue));
-            lang.getSTE().forEach(ste -> handleTerm(model, dto, ste, ste.getStat(), TermType.SEARCH_TERM, langValue));
-            lang.getDTE().forEach(dte -> handleTerm(model, dto, dte, dte.getStat(), TermType.NOT_RECOMMENDED, langValue));
-            lang.getDTEA().forEach(dtea -> handleTerm(model, dto, dtea, dtea.getStat(), TermType.NOT_RECOMMENDED, langValue));
-            lang.getDTEB().forEach(dteb -> handleTerm(model, dto, dteb, dteb.getStat(), TermType.NOT_RECOMMENDED, langValue));
+            handleTerm(model, dto, lang.getTE(), TermType.RECOMMENDED, langValue);
+            lang.getSY().forEach(sy -> handleTerm(model, dto, sy, TermType.SYNONYM, langValue));
+            lang.getSTE().forEach(ste -> handleTerm(model, dto, ste, TermType.SEARCH_TERM, langValue));
+            lang.getDTE().forEach(dte -> handleTerm(model, dto, dte, TermType.NOT_RECOMMENDED, langValue));
+            lang.getDTEA().forEach(dtea -> handleTerm(model, dto, dtea, TermType.NOT_RECOMMENDED, langValue));
+            lang.getDTEB().forEach(dteb -> handleTerm(model, dto, dteb, TermType.NOT_RECOMMENDED, langValue));
         });
-        addConceptReference(dto, concept.getRCON());
-        addConceptReference(dto, concept.getBCON());
-        addConceptReference(dto, concept.getNCON());
-        addConceptReference(dto, concept.getECON());
-        addConceptReference(dto, concept.getRCONEXT());
-        addConceptReference(dto, concept.getBCONEXT());
-        addConceptReference(dto, concept.getNCONEXT());
+        addConceptReference(dto, model.getPrefix(), concept.getRCON());
+        addConceptReference(dto, model.getPrefix(), concept.getBCON());
+        addConceptReference(dto, model.getPrefix(), concept.getNCON());
+        addConceptReference(dto, model.getPrefix(), concept.getECON());
+        addConceptReference(dto, model.getPrefix(), concept.getRCONEXT());
+        addConceptReference(dto, model.getPrefix(), concept.getBCONEXT());
+        addConceptReference(dto, model.getPrefix(), concept.getNCONEXT());
         return dto;
     }
 
-    private static void addConceptReference(ConceptDTO conceptDTO, List<?> refs) {
+    private static void handleEditorialNotes(RECORD concept, ModelWrapper model, ConceptDTO dto) {
+        concept.getREMK().forEach(remk -> dto.getEditorialNotes().add(getContentWithTags(remk.getContent(), dto, model)));
+        var conceptType = concept.getType();
+        var additionalNote = new ArrayList<String>();
+        if ("aputermi".equalsIgnoreCase(conceptType)) {
+            additionalNote.add(conceptType);
+        }
+        if (concept.getUpda() != null) {
+            var upd = concept.getUpda().split(",");
+            if (upd.length == 2) {
+                DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                try {
+                    var lastModifiedDate = LocalDate.parse(upd[1].trim(), df);
+
+                    additionalNote.add("- Viimeksi muokattu, " + lastModifiedDate);
+                } catch (DateTimeParseException dex) {
+                    LOG.warn("");
+                }
+            }
+        }
+        if (!additionalNote.isEmpty()) {
+            dto.getEditorialNotes().add(String.join(" ", additionalNote));
+        }
+    }
+
+    private static Status getConceptStatus(RECORD concept) {
+        try {
+            if (concept.getStat() != null) {
+                return getStatus(concept.getStat());
+            } else if ("vanhentunut".equalsIgnoreCase(concept.getType())) {
+                return Status.RETIRED;
+            } else if (concept.getCHECK() != null) {
+                return Status.DRAFT;
+            }
+        } catch (Exception e) {
+            LOG.warn("Invalid status value for concept {}, {}", concept.getNumb(), concept.getStat());
+        }
+        return Status.DRAFT;
+    }
+
+    private static void addConceptReference(ConceptDTO conceptDTO, String prefix, List<?> refs) {
         refs.forEach(ref -> {
-            var reference = getConceptReference(ref);
+            var reference = getConceptReference(ref, prefix);
             if (reference != null) {
                 conceptDTO.getReferences().add(reference);
             }
         });
     }
 
-    private static ConceptReferenceDTO getConceptReference(Object ref) {
+    private static ConceptReferenceDTO getConceptReference(Object ref, String prefix) {
         ConceptReferenceDTO dto = new ConceptReferenceDTO();
         if (ref instanceof RCON rcon) {
             dto.setReferenceType(ReferenceType.RELATED);
@@ -166,16 +233,23 @@ public class NTRFMapper {
         } else {
             return null;
         }
+        var conceptURI = dto.getConceptURI();
+        if (conceptURI.startsWith("#")) {
+            var identifier = conceptURI.substring(1);
+            dto.setConceptURI(TerminologyURI.createConceptURI(prefix, identifier).getResourceURI());
+        } else if (conceptURI.contains("uri.suomi.fi/terminology")) {
+            dto.setConceptURI(conceptURI.replaceAll("^https?://uri.suomi.fi/terminology/", Constants.TERMINOLOGY_NAMESPACE));
+        }
+
         return dto;
     }
 
     private static void handleTerm(
-                               ModelWrapper model,
-                               ConceptDTO conceptDTO,
-                               Termcontent term,
-                               String status,
-                               TermType termType,
-                               String lang) {
+            ModelWrapper model,
+            ConceptDTO conceptDTO,
+            Termcontent term,
+            TermType termType,
+            String lang) {
         var termDTO = new TermDTO();
         StringBuilder termLabel = new StringBuilder();
         term.getTERM().getContent().forEach(c -> {
@@ -191,9 +265,12 @@ public class NTRFMapper {
         if (term.getSCOPE() != null) {
             termDTO.setScope(getContentWithTags(term.getSCOPE().getContent(), conceptDTO, model));
         }
-
         if (term.getHOGR() != null) {
             termDTO.setHomographNumber(Integer.parseInt(term.getHOGR()));
+        }
+        if (termType.equals(TermType.RECOMMENDED) && term.getSOURF() != null) {
+            var termSource = getContentWithTags(term.getSOURF().getContent(), conceptDTO, model);
+            conceptDTO.getSources().add(termSource);
         }
         termDTO.setTermEquivalency(handleEQUI(term.getEQUI()));
         termDTO.setTermInfo(term.getADD());
@@ -201,9 +278,12 @@ public class NTRFMapper {
         termDTO.setTermType(termType);
 
         try {
-            termDTO.setStatus(getStatus(status));
+            var status = term.getClass().getMethod("getStat").invoke(term);
+            termDTO.setStatus(status != null
+                    ? getStatus(status.toString())
+                    : Status.DRAFT);
         } catch (Exception e) {
-            LOG.warn("Invalid status value for term in concept {}, {}", conceptDTO.getIdentifier(), status);
+            LOG.warn("Invalid status value for term in concept {}", conceptDTO.getIdentifier());
             termDTO.setStatus(Status.DRAFT);
         }
         conceptDTO.getTerms().add(termDTO);
@@ -267,7 +347,7 @@ public class NTRFMapper {
         StringBuilder content = new StringBuilder();
 
         contentElements.forEach(c -> {
-            var reference = getConceptReference(c);
+            var reference = getConceptReference(c, model.getPrefix());
 
             if (c instanceof String s) {
                 addStringContent(content, s);
@@ -275,7 +355,7 @@ public class NTRFMapper {
                 addLink(content, link.getHref(), link.getContent(), model);
             } else if (reference != null) {
                 try {
-                    var linkContent = (List<?>)c.getClass().getMethod("getContent").invoke(c);
+                    var linkContent = (List<?>) c.getClass().getMethod("getContent").invoke(c);
                     addLink(content, reference.getConceptURI(), linkContent, model);
                     conceptDTO.getReferences().add(reference);
                 } catch (Exception e) {
@@ -284,7 +364,7 @@ public class NTRFMapper {
             } else if (c instanceof JAXBElement<?> el) {
                 var name = el.getName().toString().toLowerCase();
                 if (name.equalsIgnoreCase("HOGR")) {
-                    content.append(" (").append(el.getValue().toString()).append(")");
+                    addHOGR(content, el);
                 } else if (HTML_ELEMENTS.contains(name)) {
                     content.append("<")
                             .append(name);
@@ -304,24 +384,31 @@ public class NTRFMapper {
 
         return content.toString()
                 .replace(" , ", ", ")
-                .replace(" . ", ". ")
-                .replaceAll("( )+", " ")
+                .replaceAll("\\s\\.\\s?", ". ")
                 .trim();
     }
 
-    private static void addStringContent(StringBuilder content, String strElement) {
-        strElement = escapeStringContent(strElement).trim();
+    private static void addHOGR(StringBuilder content, JAXBElement<?> el) {
+        var value = el.getValue().toString();
+        if (value != null && !value.isBlank()) {
+            content.append(" (")
+                    .append(value.trim())
+                    .append(")");
+        }
+    }
 
-        // Add space after and before if not the first content or element is not empty
+    private static void addStringContent(StringBuilder content, String strElement) {
+        strElement = escapeStringContent(strElement);
+
         if (content.isEmpty()) {
-            content.append(strElement)
-                    .append(" ");
+            content.append(strElement);
         } else if (strElement.isEmpty() && !StringUtils.endsWith(content, " ")) {
             content.append(" ");
         } else if (!strElement.isEmpty()) {
-            content.append(" ")
-                    .append(strElement)
-                    .append(" ");
+            if (!strElement.startsWith(" ") && !StringUtils.endsWith(content, " ")) {
+                content.append(" ");
+            }
+            content.append(strElement);
         }
     }
 
@@ -341,9 +428,7 @@ public class NTRFMapper {
         for (var c : text) {
             if (c instanceof JAXBElement<?> el) {
                 if (el.getName().toString().equalsIgnoreCase("HOGR")) {
-                    linkText.append(" (")
-                            .append(el.getValue().toString())
-                            .append(")");
+                    addHOGR(linkText, el);
                 }
             } else if (c instanceof String s) {
                 linkText.append(s.trim());
