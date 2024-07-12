@@ -6,9 +6,9 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
-import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.*;
 
 import java.util.HashMap;
@@ -77,10 +77,12 @@ public class ConceptCollectionMapper {
                 RDFS.comment);
 
         conceptCollectionResource.removeAll(SKOS.member);
-        dto.getMembers().stream().forEach(conceptUri -> {
-            var conceptResource = model.getResource(conceptUri);
-            conceptCollectionResource.addProperty(SKOS.member, conceptResource);
-        });
+
+        var conceptURIs = dto.getMembers().stream().toList();
+        addListProperty(
+                conceptCollectionResource,
+                SKOS.member,
+                conceptURIs);
 
         MapperUtils.addUpdateMetadata(conceptCollectionResource, user);
     }
@@ -101,8 +103,7 @@ public class ConceptCollectionMapper {
         MapperUtils.arrayPropertyToSet(
                         resource,
                         SKOS.member)
-                .stream()
-                .forEach((conceptUri) -> {
+                .forEach(conceptUri -> {
                     var concept = model.getResource(conceptUri);
                     var labelMap = new HashMap<String, String>();
                     MapperUtils.arrayPropertyToList(concept, SKOS.prefLabel).forEach(term -> {
