@@ -48,7 +48,7 @@ class ConceptMapperTest {
         assertEquals(concept.getSources(), getList(conceptResource, Term.source));
 
         assertEquals(concept.getStatus(), MapperUtils.getStatus(conceptResource));
-        assertEquals(concept.getSubjectArea(), Map.of("en", "subject area"));
+        assertEquals(concept.getSubjectArea(), conceptResource.getProperty(Term.subjectArea).getString());
 
         var examples = getLocalizedList(conceptResource, SKOS.example);
         assertEquals(concept.getExamples().size(), examples.size());

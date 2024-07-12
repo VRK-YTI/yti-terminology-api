@@ -44,8 +44,7 @@ public class ConceptMapper {
         MapperUtils.addStatus(conceptResource, dto.getStatus());
 
         MapperUtils.addLocalizedProperty(languages, dto.getDefinition(), conceptResource, SKOS.definition);
-        MapperUtils.addLocalizedProperty(languages, dto.getSubjectArea(), conceptResource, Term.subjectArea);
-
+        MapperUtils.addOptionalStringProperty(conceptResource, Term.subjectArea, dto.getSubjectArea());
         MapperUtils.addOptionalStringProperty(conceptResource, SKOS.changeNote, dto.getChangeNote());
         MapperUtils.addOptionalStringProperty(conceptResource, SKOS.historyNote, dto.getHistoryNote());
         MapperUtils.addOptionalStringProperty(conceptResource, Term.conceptClass, dto.getConceptClass());
@@ -113,8 +112,7 @@ public class ConceptMapper {
         MapperUtils.addStatus(conceptResource, dto.getStatus());
 
         MapperUtils.updateLocalizedProperty(languages, dto.getDefinition(), conceptResource, SKOS.definition);
-        MapperUtils.updateLocalizedProperty(languages, dto.getSubjectArea(), conceptResource, Term.subjectArea);
-
+        MapperUtils.updateStringProperty(conceptResource, Term.subjectArea, dto.getSubjectArea());
         MapperUtils.updateStringProperty(conceptResource, SKOS.changeNote, dto.getChangeNote());
         MapperUtils.updateStringProperty(conceptResource, SKOS.historyNote, dto.getHistoryNote());
         MapperUtils.updateStringProperty(conceptResource, Term.conceptClass, dto.getConceptClass());

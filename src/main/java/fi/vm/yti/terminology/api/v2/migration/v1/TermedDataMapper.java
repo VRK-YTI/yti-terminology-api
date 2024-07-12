@@ -88,11 +88,7 @@ public class TermedDataMapper {
         concept.setConceptClass(MapperUtils.propertyToString(c, Termed.conceptClass));
         concept.setHistoryNote(MapperUtils.propertyToString(c, SKOS.historyNote));
         concept.setChangeNote(MapperUtils.propertyToString(c, SKOS.changeNote));
-
-        var subjectArea = MapperUtils.propertyToString(c, Termed.subjectArea);
-        if (subjectArea != null) {
-            concept.setSubjectArea(Map.of(defaultLanguage, subjectArea));
-        }
+        concept.setSubjectArea(MapperUtils.propertyToString(c, Termed.subjectArea));
         concept.setEditorialNotes(MapperUtils.arrayPropertyToList(c, SKOS.editorialNote));
         concept.setSources(MapperUtils.arrayPropertyToList(c, DCTerms.source));
 

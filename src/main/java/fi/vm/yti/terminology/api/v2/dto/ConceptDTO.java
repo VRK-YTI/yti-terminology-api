@@ -9,7 +9,7 @@ import java.util.*;
 public class ConceptDTO {
     private String identifier;
     private Map<String, String> definition = new HashMap<>();
-    private Map<String, String> subjectArea = new HashMap<>();
+    private String subjectArea;
     private List<LocalizedValueDTO> notes = new ArrayList<>();
     private List<LocalizedValueDTO> examples = new ArrayList<>();
     private Status status;
@@ -38,11 +38,11 @@ public class ConceptDTO {
         this.definition = definition;
     }
 
-    public Map<String, String> getSubjectArea() {
+    public String getSubjectArea() {
         return subjectArea;
     }
 
-    public void setSubjectArea(Map<String, String> subjectArea) {
+    public void setSubjectArea(String subjectArea) {
         this.subjectArea = subjectArea;
     }
 

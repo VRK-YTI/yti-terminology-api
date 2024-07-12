@@ -57,7 +57,7 @@ public class ConceptValidator extends BaseValidator implements
         checkCommonTextArea(context, dto.getChangeNote(), "changeNote");
         checkCommonTextArea(context, dto.getHistoryNote(), "historyNote");
         dto.getDefinition().forEach((key, value) -> checkCommonTextArea(context, value, "definition"));
-        dto.getSubjectArea().forEach((key, value) -> checkCommonTextField(context, value, "subjectArea"));
+        checkCommonTextField(context, dto.getSubjectArea(), "subjectArea");
         dto.getExamples().forEach(e -> checkCommonTextArea(context, e.getValue(), "examples"));
         dto.getNotes().forEach(e -> checkCommonTextArea(context, e.getValue(), "notes"));
         dto.getEditorialNotes().forEach(e -> checkCommonTextArea(context, e, "editorialNotes"));

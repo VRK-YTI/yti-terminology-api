@@ -64,7 +64,7 @@ class TermedDataMapperTest {
         assertEquals("käyttö", dto.getHistoryNote());
         assertEquals(List.of("muistiinpano"), dto.getEditorialNotes());
         assertEquals(Status.VALID, dto.getStatus());
-        assertEquals(Map.of("fi", "Test aihealue"), dto.getSubjectArea());
+        assertEquals("Test aihealue", dto.getSubjectArea());
 
         var prefTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.RECOMMENDED)).findFirst();
         var synonym = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SYNONYM)).findFirst();

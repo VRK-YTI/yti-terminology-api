@@ -216,7 +216,7 @@ class ConceptControllerTest {
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
-        dto.setSubjectArea(Map.of("en", longTextField));
+        dto.setSubjectArea(longTextField);
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
