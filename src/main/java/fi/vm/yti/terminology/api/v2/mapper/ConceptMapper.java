@@ -161,6 +161,7 @@ public class ConceptMapper {
         indexConcept.setId(resource.getURI());
         indexConcept.setUri(resource.getURI());
         indexConcept.setStatus(MapperUtils.getStatus(resource));
+        indexConcept.setNamespace(resource.getNameSpace());
         indexConcept.setLabel(prefLabels);
         indexConcept.setAltLabel(getIndexedTerm(model, resource, SKOS.altLabel));
         indexConcept.setNotRecommendedSynonym(getIndexedTerm(model, resource, Term.notRecommendedSynonym));

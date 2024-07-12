@@ -1,0 +1,95 @@
+{
+  "from": 0,
+  "size": 100,
+  "highlight": {
+    "fields": {
+      "label.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "minimum_should_match": "1",
+      "should": [
+        {
+          "bool": {
+            "minimum_should_match": "1",
+            "should": [
+              {
+                "terms": {
+                  "uri": [
+                    "https://iri.test/terminology/terminology1/"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "bool": {
+            "must": [
+              {
+                "bool": {
+                  "minimum_should_match": "1",
+                  "should": [
+                    {
+                      "terms": {
+                        "organizations": [
+                          "d1f9f5fc-3aca-11ef-8006-7ef97ea86967"
+                        ]
+                      }
+                    },
+                    {
+                      "bool": {
+                        "must_not": [
+                          {
+                            "term": {
+                              "status": {
+                                "value": "INCOMPLETE"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "bool": {
+                  "minimum_should_match": "1",
+                  "should": [
+                    {
+                      "query_string": {
+                        "fields": [
+                          "label.*"
+                        ],
+                        "fuzziness": "2",
+                        "query": "*test*"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "groups": [
+                    "P11",
+                    "P1"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}
