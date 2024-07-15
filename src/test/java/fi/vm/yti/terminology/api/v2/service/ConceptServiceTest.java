@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -140,7 +140,7 @@ class ConceptServiceTest {
         var term = new TermDTO();
         term.setLanguage("en");
         term.setLabel("test");
-        dto.setRecommendedTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
 
         conceptService.create(conceptURI.getPrefix(), dto);
 
@@ -217,7 +217,7 @@ class ConceptServiceTest {
         var term = new TermDTO();
         term.setLanguage("en");
         term.setLabel("test");
-        dto.setRecommendedTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
 
         conceptService.update(conceptURI.getPrefix(), conceptURI.getResourceId(), dto);
 

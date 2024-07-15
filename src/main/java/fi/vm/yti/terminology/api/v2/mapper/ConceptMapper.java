@@ -52,7 +52,7 @@ public class ConceptMapper {
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
         addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, Term.source, dto.getSources());
+        addListProperty(conceptResource, DCTerms.source, dto.getSources());
 
         handleTerms(model, dto, conceptResource);
         mapReferencesToResource(dto, conceptResource);
@@ -72,7 +72,7 @@ public class ConceptMapper {
 
         dto.setExamples(listToLocalizedValues(resource, SKOS.example));
         dto.setNotes(listToLocalizedValues(resource, SKOS.note));
-        dto.setSubjectArea(MapperUtils.localizedPropertyToMap(resource, Term.subjectArea));
+        dto.setSubjectArea(MapperUtils.propertyToString(resource, Term.subjectArea));
 
         dto.setReferences(mapConceptReferencesDTO(model, resource));
 
@@ -84,7 +84,7 @@ public class ConceptMapper {
             return link;
         });
         dto.setLinks(links.toList());
-        dto.setSources(listToValues(resource, Term.source));
+        dto.setSources(listToValues(resource, DCTerms.source));
 
         dto.setChangeNote(MapperUtils.propertyToString(resource, SKOS.changeNote));
         dto.setHistoryNote(MapperUtils.propertyToString(resource, SKOS.historyNote));
@@ -123,24 +123,9 @@ public class ConceptMapper {
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
         addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, Term.source, dto.getSources());
+        addListProperty(conceptResource, DCTerms.source, dto.getSources());
 
         mapReferencesToResource(dto, conceptResource);
-
-        // remove terms not included to payload
-        var termURIs = dto.getTerms().stream()
-                .filter(t -> t.getIdentifier() != null)
-                .map(t -> model.getModelResource().getNameSpace() + t.getIdentifier())
-                .toList();
-
-        var removedTerms = getTermSubjects(conceptResource).stream()
-                .filter(t -> !termURIs.contains(t.getURI()))
-                .toList();
-
-        removedTerms.forEach(removed -> {
-            model.removeAll(conceptResource, null, removed);
-            model.removeAll(removed.asResource(), null, null);
-        });
 
         handleTerms(model, dto, conceptResource);
         dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
@@ -151,7 +136,7 @@ public class ConceptMapper {
     public static IndexConcept toIndexDocument(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
-        var prefLabels = getListProperty(resource, SKOS.prefLabel)
+        var prefLabels = MapperUtils.getResourceList(resource, SKOS.prefLabel)
                 .stream().collect(Collectors.toMap(
                         r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
                         r -> r.getProperty(SKOSXL.literalForm).getString()));
@@ -190,7 +175,7 @@ public class ConceptMapper {
     }
 
     private static Map<String, List<String>> getIndexedTerm(Resource resource, Property property) {
-        return getListProperty(resource, property).stream()
+        return MapperUtils.getResourceList(resource, property).stream()
                 .filter(r -> r.hasProperty(SKOSXL.literalForm))
                 .collect(Collectors.groupingBy(
                         r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
@@ -208,7 +193,7 @@ public class ConceptMapper {
                 dto.setConceptURI(ref);
 
                 var label = new HashMap<String, String>();
-                getListProperty(model.getResource(ref), SKOS.prefLabel).forEach(r -> {
+                MapperUtils.getResourceList(model.getResource(ref), SKOS.prefLabel).forEach(r -> {
                     var value = r.getProperty(SKOSXL.literalForm);
                     label.put(value.getLanguage(), value.getString());
                 });
@@ -232,35 +217,19 @@ public class ConceptMapper {
         return references;
     }
 
-    private static void addLocalizedListProperty(Resource resource, Property property, List<LocalizedValueDTO> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
-                .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
-                .iterator());
-        resource.addProperty(property, list);
-    }
-
     private static void addListProperty(Resource resource, Property property, List<String> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
+        var literalValues = values.stream()
                 .map(ResourceFactory::createStringLiteral)
-                .iterator());
-        resource.addProperty(property, list);
+                .toList();
+
+        MapperUtils.addListProperty(resource, property, literalValues);
     }
 
-    private static void addResourceListProperty(Resource resource, Property property, List<Resource> resources) {
-        resource.removeAll(property);
-        if (resources.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(resources.stream().iterator());
-        resource.addProperty(property, list);
+    private static void addLocalizedListProperty(Resource resource, Property property, List<LocalizedValueDTO> values) {
+        var literalValues = values.stream()
+                .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
+                .toList();
+        MapperUtils.addListProperty(resource, property, literalValues);
     }
 
     private static void mapReferencesToResource(ConceptDTO dto, Resource resource) {
@@ -295,22 +264,22 @@ public class ConceptMapper {
     }
 
     private static void handleTerms(ModelWrapper model, ConceptDTO dto, Resource conceptResource) {
-        addResourceListProperty(conceptResource, SKOS.prefLabel,
+        MapperUtils.addListProperty(conceptResource, SKOS.prefLabel,
                 dto.getRecommendedTerms().stream()
                         .map(term -> mapTerm(model, term))
                         .toList());
 
-        addResourceListProperty(conceptResource, SKOS.altLabel,
+        MapperUtils.addListProperty(conceptResource, SKOS.altLabel,
                 dto.getSynonyms().stream()
                         .map(term -> mapTerm(model, term))
                         .toList());
 
-        addResourceListProperty(conceptResource, Term.notRecommendedSynonym,
+        MapperUtils.addListProperty(conceptResource, Term.notRecommendedSynonym,
                 dto.getNotRecommendedTerms().stream()
                         .map(term -> mapTerm(model, term))
                         .toList());
 
-        addResourceListProperty(conceptResource, SKOS.hiddenLabel,
+        MapperUtils.addListProperty(conceptResource, SKOS.hiddenLabel,
                 dto.getSearchTerms().stream()
                         .map(term -> mapTerm(model, term))
                         .toList());
@@ -337,11 +306,11 @@ public class ConceptMapper {
         return termResource;
     }
 
-    private static Set<TermDTO> mapTermDTO(Resource resource, Property property) {
+    private static List<TermDTO> mapTermDTO(Resource resource, Property property) {
 
-        var terms = new LinkedHashSet<TermDTO>();
+        var terms = new ArrayList<TermDTO>();
 
-        var termResources = getListProperty(resource, property);
+        var termResources = MapperUtils.getResourceList(resource, property);
 
         termResources.forEach(termResource -> {
             var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();
@@ -370,18 +339,6 @@ public class ConceptMapper {
         });
 
         return terms;
-    }
-
-    private static List<Resource> getListProperty(Resource resource, Property property) {
-        if (!resource.hasProperty(property)) {
-            return new ArrayList<>();
-        }
-        return resource.getProperty(property)
-                .getList()
-                .asJavaList()
-                .stream()
-                .map(RDFNode::asResource)
-                .toList();
     }
 
     private static void addOptionalEnumProperty(Resource resource, Property property, Enum<?> e) {

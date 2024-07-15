@@ -4,15 +4,12 @@ import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String identifier;
     private Map<String, String> definition = Map.of();
-    private Map<String, String> subjectArea = Map.of();
+    private String subjectArea;
     private List<LocalizedValueDTO> notes = List.of();
     private List<LocalizedValueDTO> examples = List.of();
     private Status status;
@@ -23,11 +20,10 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String conceptClass;
     private List<String> editorialNotes = List.of();
     private Set<ConceptReferenceInfoDTO> references = Set.of();
-    private Set<TermDTO> recommendedTerms = new LinkedHashSet<>();
-    private Set<TermDTO> synonyms = new LinkedHashSet<>();
-    private Set<TermDTO> notRecommendedTerms = new LinkedHashSet<>();
-    private Set<TermDTO> searchTerms = new LinkedHashSet<>();
-    private Set<TermDTO> terms = Set.of();
+    private List<TermDTO> recommendedTerms = new ArrayList<>();
+    private List<TermDTO> synonyms = new ArrayList<>();
+    private List<TermDTO> notRecommendedTerms = new ArrayList<>();
+    private List<TermDTO> searchTerms = new ArrayList<>();
 
     public String getIdentifier() {
         return identifier;
@@ -45,11 +41,11 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
         this.definition = definition;
     }
 
-    public Map<String, String> getSubjectArea() {
+    public String getSubjectArea() {
         return subjectArea;
     }
 
-    public void setSubjectArea(Map<String, String> subjectArea) {
+    public void setSubjectArea(String subjectArea) {
         this.subjectArea = subjectArea;
     }
 
@@ -133,43 +129,35 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
         this.references = references;
     }
 
-    public Set<TermDTO> getTerms() {
-        return terms;
-    }
-
-    public void setTerms(Set<TermDTO> terms) {
-        this.terms = terms;
-    }
-
-    public Set<TermDTO> getRecommendedTerms() {
+    public List<TermDTO> getRecommendedTerms() {
         return recommendedTerms;
     }
 
-    public void setRecommendedTerms(Set<TermDTO> recommendedTerms) {
+    public void setRecommendedTerms(List<TermDTO> recommendedTerms) {
         this.recommendedTerms = recommendedTerms;
     }
 
-    public Set<TermDTO> getSynonyms() {
+    public List<TermDTO> getSynonyms() {
         return synonyms;
     }
 
-    public void setSynonyms(Set<TermDTO> synonyms) {
+    public void setSynonyms(List<TermDTO> synonyms) {
         this.synonyms = synonyms;
     }
 
-    public Set<TermDTO> getNotRecommendedTerms() {
+    public List<TermDTO> getNotRecommendedTerms() {
         return notRecommendedTerms;
     }
 
-    public void setNotRecommendedTerms(Set<TermDTO> notRecommendedTerms) {
+    public void setNotRecommendedTerms(List<TermDTO> notRecommendedTerms) {
         this.notRecommendedTerms = notRecommendedTerms;
     }
 
-    public Set<TermDTO> getSearchTerms() {
+    public List<TermDTO> getSearchTerms() {
         return searchTerms;
     }
 
-    public void setSearchTerms(Set<TermDTO> searchTerms) {
+    public void setSearchTerms(List<TermDTO> searchTerms) {
         this.searchTerms = searchTerms;
     }
 }

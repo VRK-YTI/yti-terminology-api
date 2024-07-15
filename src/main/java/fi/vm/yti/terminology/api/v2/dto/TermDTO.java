@@ -1,11 +1,13 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.enums.Status;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
-import java.util.Objects;
 
 public class TermDTO {
     private String identifier;
@@ -151,21 +153,6 @@ public class TermDTO {
 
     public void setEditorialNotes(List<String> editorialNotes) {
         this.editorialNotes = editorialNotes;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TermDTO termDTO = (TermDTO) o;
-        return Objects.equals(language, termDTO.language)
-               && Objects.equals(label, termDTO.label)
-               && status == termDTO.status;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(language, label, status);
     }
 
     @Override

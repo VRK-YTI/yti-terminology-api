@@ -20,11 +20,10 @@ public class ConceptDTO {
     private String conceptClass;
     private List<String> editorialNotes = new ArrayList<>();
     private Set<ConceptReferenceDTO> references = new HashSet<>();
-    private Set<TermDTO> recommendedTerms = new LinkedHashSet<>();
-    private Set<TermDTO> synonyms = new LinkedHashSet<>();
-    private Set<TermDTO> notRecommendedTerms = new LinkedHashSet<>();
-    private Set<TermDTO> searchTerms = new LinkedHashSet<>();
-    private Set<TermDTO> terms = new HashSet<>();
+    private List<TermDTO> recommendedTerms = new ArrayList<>();
+    private List<TermDTO> synonyms = new ArrayList<>();
+    private List<TermDTO> notRecommendedTerms = new ArrayList<>();
+    private List<TermDTO> searchTerms = new ArrayList<>();
 
     public String getIdentifier() {
         return identifier;
@@ -122,14 +121,6 @@ public class ConceptDTO {
         this.references = references;
     }
 
-    public Set<TermDTO> getTerms() {
-        return terms;
-    }
-
-    public void setTerms(Set<TermDTO> terms) {
-        this.terms = terms;
-    }
-
     public String getConceptClass() {
         return conceptClass;
     }
@@ -138,35 +129,35 @@ public class ConceptDTO {
         this.conceptClass = conceptClass;
     }
 
-    public Set<TermDTO> getRecommendedTerms() {
+    public List<TermDTO> getRecommendedTerms() {
         return recommendedTerms;
     }
 
-    public void setRecommendedTerms(Set<TermDTO> recommendedTerms) {
+    public void setRecommendedTerms(List<TermDTO> recommendedTerms) {
         this.recommendedTerms = recommendedTerms;
     }
 
-    public Set<TermDTO> getSynonyms() {
+    public List<TermDTO> getSynonyms() {
         return synonyms;
     }
 
-    public void setSynonyms(Set<TermDTO> synonyms) {
+    public void setSynonyms(List<TermDTO> synonyms) {
         this.synonyms = synonyms;
     }
 
-    public Set<TermDTO> getNotRecommendedTerms() {
+    public List<TermDTO> getNotRecommendedTerms() {
         return notRecommendedTerms;
     }
 
-    public void setNotRecommendedTerms(Set<TermDTO> notRecommendedTerms) {
+    public void setNotRecommendedTerms(List<TermDTO> notRecommendedTerms) {
         this.notRecommendedTerms = notRecommendedTerms;
     }
 
-    public Set<TermDTO> getSearchTerms() {
+    public List<TermDTO> getSearchTerms() {
         return searchTerms;
     }
 
-    public void setSearchTerms(Set<TermDTO> searchTerms) {
+    public void setSearchTerms(List<TermDTO> searchTerms) {
         this.searchTerms = searchTerms;
     }
 

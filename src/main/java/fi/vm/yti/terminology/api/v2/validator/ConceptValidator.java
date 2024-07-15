@@ -7,7 +7,7 @@ import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConceptValidator extends BaseValidator implements
@@ -25,11 +25,14 @@ public class ConceptValidator extends BaseValidator implements
         setConstraintViolationAdded(false);
         checkConceptData(context, value);
         checkRecommendedTerms(value.getRecommendedTerms(), context);
-        checkTermData(context, value.getTerms());
+        checkTermData(context, value.getRecommendedTerms());
+        checkTermData(context, value.getSynonyms());
+        checkTermData(context, value.getSearchTerms());
+        checkTermData(context, value.getNotRecommendedTerms());
         return !isConstraintViolationAdded();
     }
 
-    private void checkRecommendedTerms(Set<TermDTO> terms, ConstraintValidatorContext context) {
+    private void checkRecommendedTerms(List<TermDTO> terms, ConstraintValidatorContext context) {
 
         if (terms.isEmpty()) {
             addConstraintViolation(context, "missing-recommended-term", "terms");
@@ -39,7 +42,7 @@ public class ConceptValidator extends BaseValidator implements
                 .collect(Collectors.groupingBy(TermDTO::getLanguage))
                 .forEach((key, value) -> {
                     if (value.size() > 1) {
-                        addConstraintViolation(context, "too-many-recommended-terms-" + key, "terms");
+                        addConstraintViolation(context, "too-many-recommended-terms-" + key, "recommendedTerms");
                     }
                 });
     }
@@ -71,7 +74,7 @@ public class ConceptValidator extends BaseValidator implements
         });
     }
 
-    private void checkTermData(ConstraintValidatorContext context, Set<TermDTO> terms) {
+    private void checkTermData(ConstraintValidatorContext context, List<TermDTO> terms) {
         terms.forEach(term -> {
             if (!update && term.getIdentifier() != null) {
                 addConstraintViolation(context, ValidationConstants.MSG_NOT_ALLOWED_UPDATE, "identifier");

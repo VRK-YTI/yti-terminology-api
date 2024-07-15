@@ -1,6 +1,6 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,7 +11,7 @@ public class ConceptCollectionDTO {
 
     private Map<String, String> description = Map.of();
 
-    private Set<String> members = new HashSet<>();
+    private Set<String> members = new LinkedHashSet<>();
 
     public String getIdentifier() {
         return identifier;

@@ -82,7 +82,7 @@ test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
                                       ] ) ;
         term:source                   ( "source" );
         skos:narrowMatch              <https://iri.suomi.fi/terminology/ext/concept-1> ;
-        term:subjectArea              "subject area"@fi .
+        term:subjectArea              "subject area" .
 
 # Concept 2 with term
 

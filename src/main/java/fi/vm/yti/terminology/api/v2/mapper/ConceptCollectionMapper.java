@@ -6,13 +6,12 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.*;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class ConceptCollectionMapper {
@@ -44,11 +43,9 @@ public class ConceptCollectionMapper {
                 conceptCollectionResource,
                 RDFS.comment);
 
-        var conceptURIs = dto.getMembers().stream().toList();
-        addListProperty(
+        addMembers(
                 conceptCollectionResource,
-                SKOS.member,
-                conceptURIs);
+                dto.getMembers());
 
         MapperUtils.addCreationMetadata(
                 conceptCollectionResource,
@@ -76,13 +73,9 @@ public class ConceptCollectionMapper {
                 conceptCollectionResource,
                 RDFS.comment);
 
-        conceptCollectionResource.removeAll(SKOS.member);
-
-        var conceptURIs = dto.getMembers().stream().toList();
-        addListProperty(
+        addMembers(
                 conceptCollectionResource,
-                SKOS.member,
-                conceptURIs);
+                dto.getMembers());
 
         MapperUtils.addUpdateMetadata(conceptCollectionResource, user);
     }
@@ -125,14 +118,11 @@ public class ConceptCollectionMapper {
         model.removeAll(resource, null, null);
     }
 
-    private static void addListProperty(Resource resource, Property property, List<String> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
+    private static void addMembers(Resource resource, Set<String> values) {
+        var resources = values.stream()
                 .map(ResourceFactory::createResource)
-                .iterator());
-        resource.addProperty(property, list);
+                .toList();
+
+        MapperUtils.addListProperty(resource, SKOS.member, resources);
     }
 }

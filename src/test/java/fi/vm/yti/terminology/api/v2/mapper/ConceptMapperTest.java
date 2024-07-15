@@ -13,14 +13,14 @@ import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.getConceptData;
 import static fi.vm.yti.terminology.api.v2.TestUtils.mockUser;
@@ -45,7 +45,7 @@ class ConceptMapperTest {
         assertEquals(concept.getHistoryNote(), conceptResource.getProperty(SKOS.historyNote).getString());
 
         assertEquals(concept.getEditorialNotes(), getList(conceptResource, SKOS.editorialNote));
-        assertEquals(concept.getSources(), getList(conceptResource, Term.source));
+        assertEquals(concept.getSources(), getList(conceptResource, DCTerms.source));
 
         assertEquals(concept.getStatus(), MapperUtils.getStatus(conceptResource));
         assertEquals(concept.getSubjectArea(), conceptResource.getProperty(Term.subjectArea).getString());
@@ -83,7 +83,7 @@ class ConceptMapperTest {
 
         var conceptResource = model.getResourceById(concept.getIdentifier());
 
-        var term = concept.getTerms().iterator().next();
+        var term = concept.getRecommendedTerms().iterator().next();
         var termResource = conceptResource.getProperty(SKOS.prefLabel).getList().get(0).asResource();
 
         assertEquals(SKOSXL.Label, termResource.getProperty(RDF.type).getObject().asResource());
@@ -128,7 +128,7 @@ class ConceptMapperTest {
         link.setUri("https://dvv.fi/updated");
         dto.setLinks(List.of(link));
 
-        var recommendedTerms = new LinkedHashSet<TermDTO>();
+        var recommendedTerms = new ArrayList<TermDTO>();
         var prefLabel = new TermDTO();
         prefLabel.setIdentifier("term-614007ae-5d84-45d8-b473-6359c3cbc5ca");
         prefLabel.setLabel("pref term label");
@@ -136,7 +136,7 @@ class ConceptMapperTest {
         prefLabel.setLanguage("fi");
         recommendedTerms.add(prefLabel);
 
-        var synonyms = new LinkedHashSet<TermDTO>();
+        var synonyms = new ArrayList<TermDTO>();
         var altLabel = new TermDTO();
         altLabel.setIdentifier("term-f04ce627-c799-4e9a-9b0c-71b65f69130b");
         altLabel.setStatus(Status.VALID);
@@ -144,7 +144,7 @@ class ConceptMapperTest {
         altLabel.setLanguage("fi");
         synonyms.add(altLabel);
 
-        var searchTerms = new LinkedHashSet<TermDTO>();
+        var searchTerms = new ArrayList<TermDTO>();
         var searchTerm = new TermDTO();
         searchTerm.setStatus(Status.DRAFT);
         searchTerm.setLanguage("en");
@@ -213,7 +213,7 @@ class ConceptMapperTest {
         assertEquals("change", dto.getChangeNote());
         assertEquals("history", dto.getHistoryNote());
         assertEquals(Status.DRAFT, dto.getStatus());
-        assertEquals("subject area", dto.getSubjectArea().get("fi"));
+        assertEquals("subject area", dto.getSubjectArea());
         assertEquals("concept class", dto.getConceptClass());
         assertEquals(graphURI + "concept-1", dto.getUri());
         assertEquals(Map.of("fi", "def"), dto.getDefinition());

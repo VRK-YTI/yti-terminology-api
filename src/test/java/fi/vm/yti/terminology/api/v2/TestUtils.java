@@ -128,10 +128,9 @@ public class TestUtils {
 
         dto.setReferences(references);
 
-        var recommendedTerms = new LinkedHashSet<TermDTO>();
+        var recommendedTerms = new ArrayList<TermDTO>();
         recommendedTerms.add(getTermDTO());
         dto.setRecommendedTerms(recommendedTerms);
-        dto.setTerms(Set.of(getTermDTO()));
 
         return dto;
     }

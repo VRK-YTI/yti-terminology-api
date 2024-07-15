@@ -15,6 +15,7 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ class NTRFMapperTest {
         assertEquals("Concept class", MapperUtils.propertyToString(concept, Term.conceptClass));
         assertEquals(List.of("Editorial note 1", "Editorial note 2"), getListValues(concept, SKOS.editorialNote));
         assertEquals("Subject area", MapperUtils.propertyToString(concept, Term.subjectArea));
-        assertEquals(List.of("Source 1", "Source 2", "Term source"), getListValues(concept, Term.source));
+        assertEquals(List.of("Source 1", "Source 2", "Term source"), getListValues(concept, DCTerms.source));
 
         var recommendedTermEN = getTerm(concept, SKOS.prefLabel, "en").get(0);
         var recommendedTermFI = getTerm(concept, SKOS.prefLabel, "fi").get(0);

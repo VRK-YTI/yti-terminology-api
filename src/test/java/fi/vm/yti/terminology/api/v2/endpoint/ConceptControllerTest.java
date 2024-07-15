@@ -26,7 +26,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.*;
@@ -230,49 +229,49 @@ class ConceptControllerTest {
         dto = getConceptData();
         var term = getTermDTO();
         term.setLanguage("");
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("should-have-value", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setLabel(longTextField);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setLabel("");
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("should-have-value", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setTermStyle(longTextField);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setScope(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setTermInfo(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setHistoryNote(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setChangeNote(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         return args;
