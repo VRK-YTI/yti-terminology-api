@@ -4,6 +4,7 @@ import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,10 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String conceptClass;
     private List<String> editorialNotes = List.of();
     private Set<ConceptReferenceInfoDTO> references = Set.of();
+    private Set<TermDTO> recommendedTerms = new LinkedHashSet<>();
+    private Set<TermDTO> synonyms = new LinkedHashSet<>();
+    private Set<TermDTO> notRecommendedTerms = new LinkedHashSet<>();
+    private Set<TermDTO> searchTerms = new LinkedHashSet<>();
     private Set<TermDTO> terms = Set.of();
 
     public String getIdentifier() {
@@ -134,5 +139,37 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
 
     public void setTerms(Set<TermDTO> terms) {
         this.terms = terms;
+    }
+
+    public Set<TermDTO> getRecommendedTerms() {
+        return recommendedTerms;
+    }
+
+    public void setRecommendedTerms(Set<TermDTO> recommendedTerms) {
+        this.recommendedTerms = recommendedTerms;
+    }
+
+    public Set<TermDTO> getSynonyms() {
+        return synonyms;
+    }
+
+    public void setSynonyms(Set<TermDTO> synonyms) {
+        this.synonyms = synonyms;
+    }
+
+    public Set<TermDTO> getNotRecommendedTerms() {
+        return notRecommendedTerms;
+    }
+
+    public void setNotRecommendedTerms(Set<TermDTO> notRecommendedTerms) {
+        this.notRecommendedTerms = notRecommendedTerms;
+    }
+
+    public Set<TermDTO> getSearchTerms() {
+        return searchTerms;
+    }
+
+    public void setSearchTerms(Set<TermDTO> searchTerms) {
+        this.searchTerms = searchTerms;
     }
 }

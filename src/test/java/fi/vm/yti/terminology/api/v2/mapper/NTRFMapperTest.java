@@ -110,7 +110,6 @@ class NTRFMapperTest {
 
         var concept = model.getResourceById("c100");
 
-        System.out.println(concept.listProperties(SKOS.related).toList());
     }
 
     @Test
@@ -169,14 +168,17 @@ class NTRFMapperTest {
     }
 
     private static List<Resource> getTerm(Resource concept, Property property, String language) {
-        return concept.listProperties(property).toList().stream()
-                .filter(term -> term.getObject().asResource()
-                        .getProperty(SKOSXL.literalForm)
+        if (!concept.hasProperty(property)) {
+            return new ArrayList<>();
+        }
+        return concept.getProperty(property).getList()
+                .asJavaList().stream()
+                .map(RDFNode::asResource)
+                .filter(r -> r.getProperty(SKOSXL.literalForm)
                         .getObject()
                         .asLiteral()
                         .getLanguage()
                         .equals(language))
-                .map(term -> term.getObject().asResource())
                 .toList();
     }
 

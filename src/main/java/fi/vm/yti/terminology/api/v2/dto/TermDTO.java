@@ -9,7 +9,6 @@ import java.util.Objects;
 
 public class TermDTO {
     private String identifier;
-    private TermType termType;
     private String language;
     private String label;
     private Integer homographNumber;
@@ -32,14 +31,6 @@ public class TermDTO {
 
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
-    }
-
-    public TermType getTermType() {
-        return termType;
-    }
-
-    public void setTermType(TermType termType) {
-        this.termType = termType;
     }
 
     public String getLanguage() {
@@ -167,15 +158,14 @@ public class TermDTO {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TermDTO termDTO = (TermDTO) o;
-        return termType == termDTO.termType
-               && Objects.equals(language, termDTO.language)
+        return Objects.equals(language, termDTO.language)
                && Objects.equals(label, termDTO.label)
                && status == termDTO.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(termType, language, label, status);
+        return Objects.hash(language, label, status);
     }
 
     @Override

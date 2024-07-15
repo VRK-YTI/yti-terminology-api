@@ -4,7 +4,6 @@ import fi.vm.yti.common.validator.BaseValidator;
 import fi.vm.yti.common.validator.ValidationConstants;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.TermDTO;
-import fi.vm.yti.terminology.api.v2.enums.TermType;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -25,21 +24,18 @@ public class ConceptValidator extends BaseValidator implements
     public boolean isValid(ConceptDTO value, ConstraintValidatorContext context) {
         setConstraintViolationAdded(false);
         checkConceptData(context, value);
-        checkRecommendedTerms(value.getTerms(), context);
+        checkRecommendedTerms(value.getRecommendedTerms(), context);
         checkTermData(context, value.getTerms());
         return !isConstraintViolationAdded();
     }
 
     private void checkRecommendedTerms(Set<TermDTO> terms, ConstraintValidatorContext context) {
-        var recommendedTerms = terms.stream()
-                .filter(t -> t.getTermType().equals(TermType.RECOMMENDED))
-                .toList();
 
-        if (recommendedTerms.isEmpty()) {
+        if (terms.isEmpty()) {
             addConstraintViolation(context, "missing-recommended-term", "terms");
         }
 
-        recommendedTerms.stream()
+        terms.stream()
                 .collect(Collectors.groupingBy(TermDTO::getLanguage))
                 .forEach((key, value) -> {
                     if (value.size() > 1) {

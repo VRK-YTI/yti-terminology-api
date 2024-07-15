@@ -10,9 +10,11 @@ import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.*;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.ntrf.*;
+import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import jakarta.xml.bind.JAXBElement;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
 import org.slf4j.Logger;
@@ -125,12 +127,12 @@ public class NTRFMapper {
                     new LocalizedValueDTO(langValue, getContentWithTags(example.getContent(), dto, model)))
             );
 
-            handleTerm(model, dto, lang.getTE(), TermType.RECOMMENDED, langValue);
-            lang.getSY().forEach(sy -> handleTerm(model, dto, sy, TermType.SYNONYM, langValue));
-            lang.getSTE().forEach(ste -> handleTerm(model, dto, ste, TermType.SEARCH_TERM, langValue));
-            lang.getDTE().forEach(dte -> handleTerm(model, dto, dte, TermType.NOT_RECOMMENDED, langValue));
-            lang.getDTEA().forEach(dtea -> handleTerm(model, dto, dtea, TermType.NOT_RECOMMENDED, langValue));
-            lang.getDTEB().forEach(dteb -> handleTerm(model, dto, dteb, TermType.NOT_RECOMMENDED, langValue));
+            handleTerm(model, dto, lang.getTE(), SKOS.prefLabel, langValue);
+            lang.getSY().forEach(sy -> handleTerm(model, dto, sy, SKOS.altLabel, langValue));
+            lang.getSTE().forEach(ste -> handleTerm(model, dto, ste, SKOS.hiddenLabel, langValue));
+            lang.getDTE().forEach(dte -> handleTerm(model, dto, dte, Term.notRecommendedSynonym, langValue));
+            lang.getDTEA().forEach(dtea -> handleTerm(model, dto, dtea, Term.notRecommendedSynonym, langValue));
+            lang.getDTEB().forEach(dteb -> handleTerm(model, dto, dteb, Term.notRecommendedSynonym, langValue));
         });
         addConceptReference(dto, model.getPrefix(), concept.getRCON());
         addConceptReference(dto, model.getPrefix(), concept.getBCON());
@@ -248,7 +250,7 @@ public class NTRFMapper {
             ModelWrapper model,
             ConceptDTO conceptDTO,
             Termcontent term,
-            TermType termType,
+            Property termProperty,
             String lang) {
         var termDTO = new TermDTO();
         StringBuilder termLabel = new StringBuilder();
@@ -268,14 +270,13 @@ public class NTRFMapper {
         if (term.getHOGR() != null) {
             termDTO.setHomographNumber(Integer.parseInt(term.getHOGR()));
         }
-        if (termType.equals(TermType.RECOMMENDED) && term.getSOURF() != null) {
+        if (termProperty.equals(SKOS.prefLabel) && term.getSOURF() != null) {
             var termSource = getContentWithTags(term.getSOURF().getContent(), conceptDTO, model);
             conceptDTO.getSources().add(termSource);
         }
         termDTO.setTermEquivalency(handleEQUI(term.getEQUI()));
         termDTO.setTermInfo(term.getADD());
         termDTO.setLanguage(lang);
-        termDTO.setTermType(termType);
 
         try {
             var status = term.getClass().getMethod("getStat").invoke(term);
@@ -286,7 +287,16 @@ public class NTRFMapper {
             LOG.warn("Invalid status value for term in concept {}", conceptDTO.getIdentifier());
             termDTO.setStatus(Status.DRAFT);
         }
-        conceptDTO.getTerms().add(termDTO);
+
+        if (termProperty.equals(SKOS.prefLabel)) {
+            conceptDTO.getRecommendedTerms().add(termDTO);
+        } else if (termProperty.equals(SKOS.altLabel)) {
+            conceptDTO.getSynonyms().add(termDTO);
+        } else if (termProperty.equals(SKOS.hiddenLabel)) {
+            conceptDTO.getSearchTerms().add(termDTO);
+        } else {
+            conceptDTO.getNotRecommendedTerms().add(termDTO);
+        }
     }
 
     private static TermEquivalency handleEQUI(EQUI equi) {

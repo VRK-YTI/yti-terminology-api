@@ -53,7 +53,10 @@ class TermedDataMapperTest {
         var dto = TermedDataMapper.mapConcept(oldData, oldData.getResource("http://uri.suomi.fi/terminology/test/c340"),
                 new ObjectMapper(), "fi");
 
-        assertEquals(5, dto.getTerms().size());
+        assertEquals(1, dto.getRecommendedTerms().size());
+        assertEquals(1, dto.getSynonyms().size());
+        assertEquals(2, dto.getNotRecommendedTerms().size());
+        assertEquals(1, dto.getSearchTerms().size());
         assertEquals(1, dto.getReferences().size());
         assertEquals(4, dto.getNotes().size());
 
@@ -66,17 +69,8 @@ class TermedDataMapperTest {
         assertEquals(Status.VALID, dto.getStatus());
         assertEquals("Test aihealue", dto.getSubjectArea());
 
-        var prefTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.RECOMMENDED)).findFirst();
-        var synonym = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SYNONYM)).findFirst();
-        var searchTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SEARCH_TERM)).findFirst();
-        var notRecommended = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.NOT_RECOMMENDED)).toList();
+        var term = dto.getRecommendedTerms().iterator().next();
 
-        assertTrue(prefTerm.isPresent());
-        assertTrue(synonym.isPresent());
-        assertTrue(searchTerm.isPresent());
-        assertEquals(2, notRecommended.size());
-
-        var term = prefTerm.get();
         assertEquals("pref term label", term.getLabel());
         assertEquals("fi", term.getLanguage());
         assertEquals("lisätieto", term.getTermInfo());

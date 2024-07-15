@@ -14,13 +14,13 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.getConceptData;
 import static fi.vm.yti.terminology.api.v2.TestUtils.mockUser;
@@ -84,7 +84,7 @@ class ConceptMapperTest {
         var conceptResource = model.getResourceById(concept.getIdentifier());
 
         var term = concept.getTerms().iterator().next();
-        var termResource = conceptResource.getProperty(SKOS.prefLabel).getResource();
+        var termResource = conceptResource.getProperty(SKOS.prefLabel).getList().get(0).asResource();
 
         assertEquals(SKOSXL.Label, termResource.getProperty(RDF.type).getObject().asResource());
 
@@ -128,25 +128,32 @@ class ConceptMapperTest {
         link.setUri("https://dvv.fi/updated");
         dto.setLinks(List.of(link));
 
+        var recommendedTerms = new LinkedHashSet<TermDTO>();
         var prefLabel = new TermDTO();
-        prefLabel.setTermType(TermType.RECOMMENDED);
         prefLabel.setIdentifier("term-614007ae-5d84-45d8-b473-6359c3cbc5ca");
         prefLabel.setLabel("pref term label");
         prefLabel.setTermFamily(TermFamily.FEMININE);
+        prefLabel.setLanguage("fi");
+        recommendedTerms.add(prefLabel);
 
+        var synonyms = new LinkedHashSet<TermDTO>();
         var altLabel = new TermDTO();
-        altLabel.setTermType(TermType.SYNONYM);
         altLabel.setIdentifier("term-f04ce627-c799-4e9a-9b0c-71b65f69130b");
         altLabel.setStatus(Status.VALID);
         altLabel.setLabel("modified alt label");
+        altLabel.setLanguage("fi");
+        synonyms.add(altLabel);
 
+        var searchTerms = new LinkedHashSet<TermDTO>();
         var searchTerm = new TermDTO();
-        searchTerm.setTermType(TermType.SEARCH_TERM);
         searchTerm.setStatus(Status.DRAFT);
         searchTerm.setLanguage("en");
         searchTerm.setLabel("new search term");
+        searchTerms.add(searchTerm);
 
-        dto.setTerms(Set.of(prefLabel, altLabel, searchTerm));
+        dto.setRecommendedTerms(recommendedTerms);
+        dto.setSynonyms(synonyms);
+        dto.setSearchTerms(searchTerms);
 
         var ref1 = new ConceptReferenceDTO();
         ref1.setReferenceType(ReferenceType.RELATED);
@@ -173,21 +180,16 @@ class ConceptMapperTest {
         assertEquals(Map.of("fi", "link 2"), MapperUtils.localizedPropertyToMap(linkResource, DCTerms.title));
         assertEquals("https://dvv.fi/updated", MapperUtils.propertyToString(linkResource, FOAF.homepage));
 
-        var prefLabels = updatedResource.listProperties(SKOS.prefLabel).toList();
+        var prefLabels = updatedResource.getProperty(SKOS.prefLabel).getList();
         assertEquals(1, prefLabels.size());
-        checkLabel("pref term label", "fi", prefLabels.get(0));
+        checkLabel("pref term label", "fi", prefLabels.get(0).asResource());
 
-        var altLabels = updatedResource.listProperties(SKOS.altLabel).toList();
+        var altLabels = updatedResource.getProperty(SKOS.altLabel).getList();
         assertEquals(1, altLabels.size());
-        checkLabel("modified alt label", "fi", altLabels.get(0));
+        checkLabel("modified alt label", "fi", altLabels.get(0).asResource());
 
-        var hiddenLabels = updatedResource.listProperties(SKOS.hiddenLabel).toList();
-        checkLabel("new search term", "en", hiddenLabels.get(0));
-
-        // Other alt label, search term and not recommended synonym should not exists in the model
-        assertFalse(model.getResourceById("term-ce6c2547-261f-46e1-9cba-662f886df7f6;").listProperties().hasNext());
-        assertFalse(model.getResourceById("term-47d79614-d8f5-4c42-8967-a860c3451f5b").listProperties().hasNext());
-        assertFalse(model.getResourceById("term-45f21a97-4bae-42ee-b7c5-c1d871ee9c2a").listProperties().hasNext());
+        var hiddenLabels = updatedResource.getProperty(SKOS.hiddenLabel).getList();
+        checkLabel("new search term", "en", hiddenLabels.get(0).asResource());
 
         var related = updatedResource.listProperties(SKOS.related).toList();
         var broadMatch = updatedResource.listProperties(SKOS.broadMatch).toList();
@@ -244,14 +246,12 @@ class ConceptMapperTest {
 
         var dto = ConceptMapper.modelToDTO(model, "concept-1", TestUtils.mapUser);
 
-        assertEquals(5, dto.getTerms().size());
+        assertEquals(1, dto.getRecommendedTerms().size());
+        assertEquals(2, dto.getSynonyms().size());
+        assertEquals(1, dto.getNotRecommendedTerms().size());
+        assertEquals(1, dto.getSearchTerms().size());
 
-        var termOpt = dto.getTerms().stream()
-                .filter(t -> t.getIdentifier().equals("term-614007ae-5d84-45d8-b473-6359c3cbc5ca"))
-                .findFirst();
-        assertTrue(termOpt.isPresent());
-
-        var term = termOpt.get();
+        var term = dto.getRecommendedTerms().iterator().next();
 
         assertEquals("Suositettava termi", term.getLabel());
         assertEquals("info", term.getTermInfo());
@@ -280,7 +280,7 @@ class ConceptMapperTest {
         assertEquals(Status.DRAFT, dto.getStatus());
         assertEquals("Suositettava termi", dto.getLabel().get("fi"));
         assertEquals("def", dto.getDefinition().get("fi"));
-        assertEquals(List.of("synonyymi 2", "synonyymi 1"), dto.getAltLabel().get("fi"));
+        assertEquals(List.of("synonyymi 1", "synonyymi 2"), dto.getAltLabel().get("fi"));
         assertEquals(List.of("ei suositettava"), dto.getNotRecommendedSynonym().get("fi"));
         assertEquals(List.of("hakutermi"), dto.getSearchTerm().get("fi"));
         assertEquals("2024-05-06T05:00:00.000Z", dto.getCreated());
@@ -301,8 +301,8 @@ class ConceptMapperTest {
                 .toList();
     }
 
-    private static void checkLabel(String expectedValue, String expectedLanguage, Statement stmt) {
-        assertEquals(expectedValue, stmt.getProperty(SKOSXL.literalForm).getString());
-        assertEquals(expectedLanguage, stmt.getProperty(SKOSXL.literalForm).getLanguage());
+    private static void checkLabel(String expectedValue, String expectedLanguage, Resource resource) {
+        assertEquals(expectedValue, resource.getProperty(SKOSXL.literalForm).getString());
+        assertEquals(expectedLanguage, resource.getProperty(SKOSXL.literalForm).getLanguage());
     }
 }

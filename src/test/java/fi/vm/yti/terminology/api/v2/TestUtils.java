@@ -128,6 +128,9 @@ public class TestUtils {
 
         dto.setReferences(references);
 
+        var recommendedTerms = new LinkedHashSet<TermDTO>();
+        recommendedTerms.add(getTermDTO());
+        dto.setRecommendedTerms(recommendedTerms);
         dto.setTerms(Set.of(getTermDTO()));
 
         return dto;
@@ -150,7 +153,6 @@ public class TestUtils {
 
     public static TermDTO getTermDTO() {
         var term = new TermDTO();
-        term.setTermType(TermType.RECOMMENDED);
         term.setHomographNumber(1);
         term.setLabel("term label");
         term.setChangeNote("change");

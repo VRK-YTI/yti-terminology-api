@@ -20,6 +20,10 @@ public class ConceptDTO {
     private String conceptClass;
     private List<String> editorialNotes = new ArrayList<>();
     private Set<ConceptReferenceDTO> references = new HashSet<>();
+    private Set<TermDTO> recommendedTerms = new LinkedHashSet<>();
+    private Set<TermDTO> synonyms = new LinkedHashSet<>();
+    private Set<TermDTO> notRecommendedTerms = new LinkedHashSet<>();
+    private Set<TermDTO> searchTerms = new LinkedHashSet<>();
     private Set<TermDTO> terms = new HashSet<>();
 
     public String getIdentifier() {
@@ -132,6 +136,38 @@ public class ConceptDTO {
 
     public void setConceptClass(String conceptClass) {
         this.conceptClass = conceptClass;
+    }
+
+    public Set<TermDTO> getRecommendedTerms() {
+        return recommendedTerms;
+    }
+
+    public void setRecommendedTerms(Set<TermDTO> recommendedTerms) {
+        this.recommendedTerms = recommendedTerms;
+    }
+
+    public Set<TermDTO> getSynonyms() {
+        return synonyms;
+    }
+
+    public void setSynonyms(Set<TermDTO> synonyms) {
+        this.synonyms = synonyms;
+    }
+
+    public Set<TermDTO> getNotRecommendedTerms() {
+        return notRecommendedTerms;
+    }
+
+    public void setNotRecommendedTerms(Set<TermDTO> notRecommendedTerms) {
+        this.notRecommendedTerms = notRecommendedTerms;
+    }
+
+    public Set<TermDTO> getSearchTerms() {
+        return searchTerms;
+    }
+
+    public void setSearchTerms(Set<TermDTO> searchTerms) {
+        this.searchTerms = searchTerms;
     }
 
     @Override

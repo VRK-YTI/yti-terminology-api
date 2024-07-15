@@ -10,6 +10,7 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
@@ -32,6 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -135,6 +137,11 @@ class ConceptServiceTest {
         dto.setIdentifier(conceptURI.getResourceId());
         dto.setStatus(Status.DRAFT);
 
+        var term = new TermDTO();
+        term.setLanguage("en");
+        term.setLabel("test");
+        dto.setRecommendedTerms(Set.of(term));
+
         conceptService.create(conceptURI.getPrefix(), dto);
 
         verify(repository).put(eq(conceptURI.getGraphURI()), modelCaptor.capture());
@@ -206,6 +213,11 @@ class ConceptServiceTest {
         var dto = new ConceptDTO();
         dto.setIdentifier(conceptURI.getResourceId());
         dto.setStatus(Status.VALID);
+
+        var term = new TermDTO();
+        term.setLanguage("en");
+        term.setLabel("test");
+        dto.setRecommendedTerms(Set.of(term));
 
         conceptService.update(conceptURI.getPrefix(), conceptURI.getResourceId(), dto);
 

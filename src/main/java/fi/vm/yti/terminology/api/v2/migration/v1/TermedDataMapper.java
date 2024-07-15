@@ -112,20 +112,17 @@ public class TermedDataMapper {
 
         concept.setLinks(links);
 
-        var terms = new HashSet<TermDTO>();
         MapperUtils.arrayPropertyToList(c, SKOSXL.prefLabel)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.RECOMMENDED)));
+                .forEach(t -> concept.getRecommendedTerms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.synonym)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.SYNONYM)));
+                .forEach(t -> concept.getSynonyms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.notRecommended)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.NOT_RECOMMENDED)));
+                .forEach(t -> concept.getNotRecommendedTerms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.searchTerm)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.SEARCH_TERM)));
-
-        concept.setTerms(terms);
+                .forEach(t -> concept.getSearchTerms().add(getTerm(oldData.getResource(t))));
 
         var references = new HashSet<ConceptReferenceDTO>();
 
@@ -151,12 +148,11 @@ public class TermedDataMapper {
         return  dto;
     }
 
-    private static TermDTO getTerm(Resource resource, TermType type) {
+    private static TermDTO getTerm(Resource resource) {
         var dto = new TermDTO();
         var label = resource.getProperty(SKOSXL.literalForm);
         dto.setLanguage(label.getLanguage());
         dto.setLabel(label.getString());
-        dto.setTermType(type);
         dto.setIdentifier("term-" + MapperUtils.propertyToString(resource, Termed.id));
         dto.setStatus(Status.valueOf(MapperUtils.propertyToString(resource, Termed.status)));
         dto.setHistoryNote(MapperUtils.propertyToString(resource, SKOS.historyNote));
