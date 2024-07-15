@@ -5,7 +5,6 @@ import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.TestUtils;
-import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.migration.v1.TermedDataMapper;
 import org.apache.jena.rdf.model.Model;
@@ -19,7 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TermedDataMapperTest {
 
