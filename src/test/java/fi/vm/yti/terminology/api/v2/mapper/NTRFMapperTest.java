@@ -111,6 +111,37 @@ class NTRFMapperTest {
 
         var concept = model.getResourceById("c100");
 
+        assertEquals(List.of("bcon-1", "bcon-2", "bcon-3"), MapperUtils.getResourceList(concept, SKOS.broader)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("ncon-1", "ncon-2", "ncon-3"), MapperUtils.getResourceList(concept, SKOS.narrower)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("rcon-1", "rcon-2", "rcon-3"), MapperUtils.getResourceList(concept, SKOS.related)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("hasPart-1"), MapperUtils.getResourceList(concept, DCTerms.hasPart)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("isPartOf-1"), MapperUtils.getResourceList(concept, DCTerms.isPartOf)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("rconext-1", "rconext-2"), MapperUtils.getResourceList(concept, SKOS.relatedMatch)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("nconext"), MapperUtils.getResourceList(concept, SKOS.narrowMatch)
+                .stream().map(Resource::getLocalName)
+                .toList());
+
+        assertEquals(List.of("bconext"), MapperUtils.getResourceList(concept, SKOS.broadMatch)
+                .stream().map(Resource::getLocalName)
+                .toList());
     }
 
     @Test

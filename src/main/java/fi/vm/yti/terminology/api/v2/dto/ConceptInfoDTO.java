@@ -19,7 +19,16 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private String historyNote;
     private String conceptClass;
     private List<String> editorialNotes = List.of();
-    private Set<ConceptReferenceInfoDTO> references = Set.of();
+    private Set<ConceptReferenceInfoDTO> broader = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> narrower = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> isPartOf = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> hasPart = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> related = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> broadMatch = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> narrowMatch = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> exactMatch = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> closeMatch = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> relatedMatch = new LinkedHashSet<>();
     private List<TermDTO> recommendedTerms = new ArrayList<>();
     private List<TermDTO> synonyms = new ArrayList<>();
     private List<TermDTO> notRecommendedTerms = new ArrayList<>();
@@ -121,12 +130,84 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
         this.editorialNotes = editorialNotes;
     }
 
-    public Set<ConceptReferenceInfoDTO> getReferences() {
-        return references;
+    public Set<ConceptReferenceInfoDTO> getBroader() {
+        return broader;
     }
 
-    public void setReferences(Set<ConceptReferenceInfoDTO> references) {
-        this.references = references;
+    public void setBroader(Set<ConceptReferenceInfoDTO> broader) {
+        this.broader = broader;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getNarrower() {
+        return narrower;
+    }
+
+    public void setNarrower(Set<ConceptReferenceInfoDTO> narrower) {
+        this.narrower = narrower;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getIsPartOf() {
+        return isPartOf;
+    }
+
+    public void setIsPartOf(Set<ConceptReferenceInfoDTO> isPartOf) {
+        this.isPartOf = isPartOf;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getHasPart() {
+        return hasPart;
+    }
+
+    public void setHasPart(Set<ConceptReferenceInfoDTO> hasPart) {
+        this.hasPart = hasPart;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getRelated() {
+        return related;
+    }
+
+    public void setRelated(Set<ConceptReferenceInfoDTO> related) {
+        this.related = related;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getBroadMatch() {
+        return broadMatch;
+    }
+
+    public void setBroadMatch(Set<ConceptReferenceInfoDTO> broadMatch) {
+        this.broadMatch = broadMatch;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getNarrowMatch() {
+        return narrowMatch;
+    }
+
+    public void setNarrowMatch(Set<ConceptReferenceInfoDTO> narrowMatch) {
+        this.narrowMatch = narrowMatch;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getExactMatch() {
+        return exactMatch;
+    }
+
+    public void setExactMatch(Set<ConceptReferenceInfoDTO> exactMatch) {
+        this.exactMatch = exactMatch;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getCloseMatch() {
+        return closeMatch;
+    }
+
+    public void setCloseMatch(Set<ConceptReferenceInfoDTO> closeMatch) {
+        this.closeMatch = closeMatch;
+    }
+
+    public Set<ConceptReferenceInfoDTO> getRelatedMatch() {
+        return relatedMatch;
+    }
+
+    public void setRelatedMatch(Set<ConceptReferenceInfoDTO> relatedMatch) {
+        this.relatedMatch = relatedMatch;
     }
 
     public List<TermDTO> getRecommendedTerms() {

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -62,14 +62,17 @@ public class ConceptService {
         }
 
         var dto = ConceptMapper.modelToDTO(model, conceptIdentifier, mapUser);
-        mapExternalReferenceLabels(dto.getReferences());
+        mapExternalReferenceLabels(dto);
         return dto;
     }
 
-    private void mapExternalReferenceLabels(Set<ConceptReferenceInfoDTO> references) {
-        var externalRefs = references.stream()
-                .filter(r -> r.getLabel() == null)
-                .toList();
+    private void mapExternalReferenceLabels(ConceptInfoDTO dto) {
+        var externalRefs = new ArrayList<ConceptReferenceInfoDTO>();
+        externalRefs.addAll(dto.getBroadMatch());
+        externalRefs.addAll(dto.getNarrowMatch());
+        externalRefs.addAll(dto.getRelatedMatch());
+        externalRefs.addAll(dto.getExactMatch());
+        externalRefs.addAll(dto.getCloseMatch());
 
         if (externalRefs.isEmpty()) {
             return;

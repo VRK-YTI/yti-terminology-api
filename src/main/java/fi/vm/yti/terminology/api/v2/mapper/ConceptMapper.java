@@ -7,7 +7,10 @@ import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.*;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import org.apache.jena.rdf.model.*;
@@ -51,11 +54,11 @@ public class ConceptMapper {
 
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
-        addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, DCTerms.source, dto.getSources());
+        addLiteralListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
+        addLiteralListProperty(conceptResource, DCTerms.source, dto.getSources());
 
         handleTerms(model, dto, conceptResource);
-        mapReferencesToResource(dto, conceptResource);
+        mapReferencesToResource(model, dto, conceptResource);
         dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
 
         MapperUtils.addCreationMetadata(conceptResource, user);
@@ -74,7 +77,16 @@ public class ConceptMapper {
         dto.setNotes(listToLocalizedValues(resource, SKOS.note));
         dto.setSubjectArea(MapperUtils.propertyToString(resource, Term.subjectArea));
 
-        dto.setReferences(mapConceptReferencesDTO(model, resource));
+        dto.setBroader(mapConceptReferencesDTO(model, resource, SKOS.broader));
+        dto.setNarrower(mapConceptReferencesDTO(model, resource, SKOS.narrower));
+        dto.setHasPart(mapConceptReferencesDTO(model, resource, DCTerms.hasPart));
+        dto.setIsPartOf(mapConceptReferencesDTO(model, resource, DCTerms.isPartOf));
+        dto.setRelated(mapConceptReferencesDTO(model, resource, SKOS.related));
+        dto.setBroadMatch(mapConceptReferencesDTO(model, resource, SKOS.broadMatch));
+        dto.setNarrowMatch(mapConceptReferencesDTO(model, resource, SKOS.narrowMatch));
+        dto.setExactMatch(mapConceptReferencesDTO(model, resource, SKOS.exactMatch));
+        dto.setCloseMatch(mapConceptReferencesDTO(model, resource, SKOS.closeMatch));
+        dto.setRelatedMatch(mapConceptReferencesDTO(model, resource, SKOS.relatedMatch));
 
         var links = resource.listProperties(RDFS.seeAlso).mapWith(l -> {
             var link = new LinkDTO();
@@ -122,10 +134,10 @@ public class ConceptMapper {
 
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
-        addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, DCTerms.source, dto.getSources());
+        addLiteralListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
+        addLiteralListProperty(conceptResource, DCTerms.source, dto.getSources());
 
-        mapReferencesToResource(dto, conceptResource);
+        mapReferencesToResource(model, dto, conceptResource);
 
         handleTerms(model, dto, conceptResource);
         dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
@@ -182,42 +194,24 @@ public class ConceptMapper {
                         Collectors.mapping(r -> r.getProperty(SKOSXL.literalForm).getString(), Collectors.toList())));
     }
 
-    private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(ModelWrapper model, Resource resource) {
-        var references = new HashSet<ConceptReferenceInfoDTO>();
+    private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(Model model, Resource resource, Property property) {
+        var result = new LinkedHashSet<ConceptReferenceInfoDTO>();
+        MapperUtils.getResourceList(resource, property).forEach(ref -> {
+            var refDTO = new ConceptReferenceInfoDTO();
+            refDTO.setConceptURI(ref.getURI());
 
-        internalRefProperties.forEach(prop -> {
-            var ref = MapperUtils.propertyToString(resource, prop);
-
-            if (ref != null) {
-                var dto = new ConceptReferenceInfoDTO();
-                dto.setConceptURI(ref);
-
-                var label = new HashMap<String, String>();
-                MapperUtils.getResourceList(model.getResource(ref), SKOS.prefLabel).forEach(r -> {
-                    var value = r.getProperty(SKOSXL.literalForm);
-                    label.put(value.getLanguage(), value.getString());
-                });
-                dto.setLabel(label);
-                dto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-                references.add(dto);
-            }
+            var label = new HashMap<String, String>();
+            MapperUtils.getResourceList(model.getResource(ref.getURI()), SKOS.prefLabel).forEach(r -> {
+                var value = r.getProperty(SKOSXL.literalForm);
+                label.put(value.getLanguage(), value.getString());
+            });
+            refDTO.setLabel(label);
+            result.add(refDTO);
         });
-
-        // at this point, populate URI and type for external references,
-        // labels for them must be fetched from index / fuseki
-        externalRefProperties.forEach(prop -> {
-            var ref = MapperUtils.propertyToString(resource, prop);
-            if (ref != null) {
-                var dto = new ConceptReferenceInfoDTO();
-                dto.setConceptURI(ref);
-                dto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-                references.add(dto);
-            }
-        });
-        return references;
+        return result;
     }
 
-    private static void addListProperty(Resource resource, Property property, List<String> values) {
+    private static void addLiteralListProperty(Resource resource, Property property, Collection<String> values) {
         var literalValues = values.stream()
                 .map(ResourceFactory::createStringLiteral)
                 .toList();
@@ -225,33 +219,31 @@ public class ConceptMapper {
         MapperUtils.addListProperty(resource, property, literalValues);
     }
 
-    private static void addLocalizedListProperty(Resource resource, Property property, List<LocalizedValueDTO> values) {
+    private static void addLocalizedListProperty(Resource resource, Property property, Collection<LocalizedValueDTO> values) {
         var literalValues = values.stream()
                 .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
                 .toList();
         MapperUtils.addListProperty(resource, property, literalValues);
     }
 
-    private static void mapReferencesToResource(ConceptDTO dto, Resource resource) {
-        internalRefProperties.forEach(resource::removeAll);
-        externalRefProperties.forEach(resource::removeAll);
+    private static void addResourceListProperty(Model model, Resource resource, Property property, Collection<String> values) {
+        var resourceValues = values.stream()
+                .map(model::getResource)
+                .toList();
+        MapperUtils.addListProperty(resource, property, resourceValues);
+    }
 
-        dto.getReferences().forEach(ref -> {
-            switch (ref.getReferenceType()) {
-                case BROADER -> MapperUtils.addOptionalUriProperty(resource, SKOS.broader, ref.getConceptURI());
-                case NARROWER -> MapperUtils.addOptionalUriProperty(resource, SKOS.narrower, ref.getConceptURI());
-                case RELATED -> MapperUtils.addOptionalUriProperty(resource, SKOS.related, ref.getConceptURI());
-                case IS_PART_OF -> MapperUtils.addOptionalUriProperty(resource, DCTerms.isPartOf, ref.getConceptURI());
-                case HAS_PART -> MapperUtils.addOptionalUriProperty(resource, DCTerms.hasPart, ref.getConceptURI());
-                case BROAD_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.broadMatch, ref.getConceptURI());
-                case NARROW_MATCH ->
-                        MapperUtils.addOptionalUriProperty(resource, SKOS.narrowMatch, ref.getConceptURI());
-                case CLOSE_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.closeMatch, ref.getConceptURI());
-                case RELATED_MATCH ->
-                        MapperUtils.addOptionalUriProperty(resource, SKOS.relatedMatch, ref.getConceptURI());
-                case EXACT_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.exactMatch, ref.getConceptURI());
-            }
-        });
+    private static void mapReferencesToResource(Model model, ConceptDTO dto, Resource resource) {
+        addResourceListProperty(model, resource, SKOS.broader, dto.getBroader());
+        addResourceListProperty(model, resource, SKOS.narrower, dto.getNarrower());
+        addResourceListProperty(model, resource, DCTerms.hasPart, dto.getHasPart());
+        addResourceListProperty(model, resource, DCTerms.isPartOf, dto.getIsPartOf());
+        addResourceListProperty(model, resource, SKOS.related, dto.getRelated());
+        addResourceListProperty(model, resource, SKOS.broadMatch, dto.getBroadMatch());
+        addResourceListProperty(model, resource, SKOS.narrowMatch, dto.getNarrowMatch());
+        addResourceListProperty(model, resource, SKOS.exactMatch, dto.getExactMatch());
+        addResourceListProperty(model, resource, SKOS.closeMatch, dto.getCloseMatch());
+        addResourceListProperty(model, resource, SKOS.relatedMatch, dto.getRelatedMatch());
     }
 
     private static void mapLinks(ModelWrapper model, LinkDTO link, Set<String> languages, Resource resource) {

@@ -92,10 +92,8 @@ class ConceptServiceTest {
         assertNotNull(dto.getCreator().getName());
         assertNotNull(dto.getModifier().getName());
 
-        var extRef = dto.getReferences().stream().filter(r -> r.getReferenceType().equals(ReferenceType.NARROW_MATCH)).findFirst();
-
-        assertTrue(extRef.isPresent());
-        assertEquals(Map.of("fi", "Ext concept label"), extRef.get().getLabel());
+        var narrowMatch = dto.getNarrowMatch().iterator().next();
+        assertEquals(Map.of("fi", "Ext concept label"), narrowMatch.getLabel());
     }
 
     @Test

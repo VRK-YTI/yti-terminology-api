@@ -43,7 +43,7 @@ test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
                                             skos-xl:literalForm           "synonyymi 2"@fi;
                                             suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
                                       ] );
-        skos:broader                  test:concept-2;
+        skos:broader                  ( test:concept-2 test:concept-20 );
         skos:changeNote               "change";
         skos:definition               "def"@fi;
         skos:editorialNote            ( "editorial" );
@@ -81,7 +81,7 @@ test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
                                               suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
                                       ] ) ;
         term:source                   ( "source" );
-        skos:narrowMatch              <https://iri.suomi.fi/terminology/ext/concept-1> ;
+        skos:narrowMatch              ( <https://iri.suomi.fi/terminology/ext/concept-1> ) ;
         term:subjectArea              "subject area" .
 
 # Concept 2 with term

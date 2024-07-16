@@ -7,8 +7,14 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
-import fi.vm.yti.terminology.api.v2.dto.*;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.ntrf.*;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -134,13 +140,14 @@ public class NTRFMapper {
             lang.getDTEA().forEach(dtea -> handleTerm(model, dto, dtea, Term.notRecommendedSynonym, langValue));
             lang.getDTEB().forEach(dteb -> handleTerm(model, dto, dteb, Term.notRecommendedSynonym, langValue));
         });
-        addConceptReference(dto, model.getPrefix(), concept.getRCON());
-        addConceptReference(dto, model.getPrefix(), concept.getBCON());
-        addConceptReference(dto, model.getPrefix(), concept.getNCON());
-        addConceptReference(dto, model.getPrefix(), concept.getECON());
-        addConceptReference(dto, model.getPrefix(), concept.getRCONEXT());
-        addConceptReference(dto, model.getPrefix(), concept.getBCONEXT());
-        addConceptReference(dto, model.getPrefix(), concept.getNCONEXT());
+
+        addConceptReferences(model.getPrefix(), dto, concept.getRCON());
+        addConceptReferences(model.getPrefix(), dto, concept.getBCON());
+        addConceptReferences(model.getPrefix(), dto, concept.getNCON());
+        addConceptReferences(model.getPrefix(), dto, concept.getECON());
+        addConceptReferences(model.getPrefix(), dto, concept.getRCONEXT());
+        addConceptReferences(model.getPrefix(), dto, concept.getBCONEXT());
+        addConceptReferences(model.getPrefix(), dto, concept.getNCONEXT());
         return dto;
     }
 
@@ -184,66 +191,64 @@ public class NTRFMapper {
         return Status.DRAFT;
     }
 
-    private static void addConceptReference(ConceptDTO conceptDTO, String prefix, List<?> refs) {
-        refs.forEach(ref -> {
-            var reference = getConceptReference(ref, prefix);
-            if (reference != null) {
-                conceptDTO.getReferences().add(reference);
-            }
-        });
+    private static void addConceptReferences(String prefix, ConceptDTO dto, List<?> refs) {
+        refs.forEach(ref -> addAndReturnConceptReference(ref, dto, prefix));
     }
 
-    private static ConceptReferenceDTO getConceptReference(Object ref, String prefix) {
-        ConceptReferenceDTO dto = new ConceptReferenceDTO();
+    private static String addAndReturnConceptReference(Object ref, ConceptDTO dto, String prefix) {
+        String referenceURI;
         if (ref instanceof RCON rcon) {
-            dto.setReferenceType(ReferenceType.RELATED);
-            dto.setConceptURI(rcon.getHref());
+            referenceURI = fixURI(rcon.getHref(), prefix);
+            dto.getRelated().add(referenceURI);
         } else if (ref instanceof BCON bcon) {
-            dto = new ConceptReferenceDTO();
+            referenceURI = fixURI(bcon.getHref(), prefix);
             if ("partitive".equalsIgnoreCase(bcon.getTypr())) {
-                dto.setReferenceType(ReferenceType.IS_PART_OF);
+                dto.getIsPartOf().add(referenceURI);
             } else {
-                dto.setReferenceType(ReferenceType.BROADER);
+                dto.getBroader().add(referenceURI);
             }
-            dto.setConceptURI(bcon.getHref());
         } else if (ref instanceof NCON ncon) {
+            referenceURI = fixURI(ncon.getHref(), prefix);
             if ("partitive".equalsIgnoreCase(ncon.getTypr())) {
-                dto.setReferenceType(ReferenceType.HAS_PART);
+                dto.getHasPart().add(referenceURI);
             } else {
-                dto.setReferenceType(ReferenceType.NARROWER);
+                dto.getNarrower().add(referenceURI);
             }
-            dto.setConceptURI(ncon.getHref());
         } else if (ref instanceof ECON econ) {
+            referenceURI = fixURI(econ.getHref(), prefix);
             var type = econ.getTypr();
             if ("exactMatch".equalsIgnoreCase(type)) {
-                dto.setReferenceType(ReferenceType.EXACT_MATCH);
+                dto.getExactMatch().add(referenceURI);
             } else if ("closeMatch".equalsIgnoreCase(type)) {
-                dto.setReferenceType(ReferenceType.CLOSE_MATCH);
+                dto.getCloseMatch().add(referenceURI);
             } else {
                 return null;
             }
-            dto.setConceptURI(econ.getHref());
         } else if (ref instanceof RCONEXT rconext) {
-            dto.setReferenceType(ReferenceType.RELATED_MATCH);
-            dto.setConceptURI(rconext.getHref());
+            referenceURI = fixURI(rconext.getHref(), prefix);
+            dto.getRelatedMatch().add(referenceURI);
         } else if (ref instanceof BCONEXT bconext) {
-            dto.setReferenceType(ReferenceType.BROAD_MATCH);
-            dto.setConceptURI(bconext.getHref());
+            referenceURI = fixURI(bconext.getHref(), prefix);
+            dto.getBroadMatch().add(referenceURI);
         } else if (ref instanceof NCONEXT nconext) {
-            dto.setReferenceType(ReferenceType.NARROW_MATCH);
-            dto.setConceptURI(nconext.getHref());
+            referenceURI = fixURI(nconext.getHref(), prefix);
+            dto.getNarrowMatch().add(referenceURI);
         } else {
             return null;
         }
-        var conceptURI = dto.getConceptURI();
-        if (conceptURI.startsWith("#")) {
-            var identifier = conceptURI.substring(1);
-            dto.setConceptURI(TerminologyURI.createConceptURI(prefix, identifier).getResourceURI());
-        } else if (conceptURI.contains("uri.suomi.fi/terminology")) {
-            dto.setConceptURI(conceptURI.replaceAll("^https?://uri.suomi.fi/terminology/", Constants.TERMINOLOGY_NAMESPACE));
-        }
 
-        return dto;
+        return referenceURI;
+    }
+
+    private static String fixURI(String uri, String prefix) {
+        if (uri.startsWith("#")) {
+            var identifier = uri.substring(1);
+            return TerminologyURI.createConceptURI(prefix, identifier).getResourceURI();
+        } else if (uri.contains("uri.suomi.fi/terminology")) {
+            return uri.replaceAll("^https?://uri.suomi.fi/terminology/", Constants.TERMINOLOGY_NAMESPACE);
+        } else {
+            return uri;
+        }
     }
 
     private static void handleTerm(
@@ -357,20 +362,10 @@ public class NTRFMapper {
         StringBuilder content = new StringBuilder();
 
         contentElements.forEach(c -> {
-            var reference = getConceptReference(c, model.getPrefix());
-
             if (c instanceof String s) {
                 addStringContent(content, s);
             } else if (c instanceof LINK link) {
                 addLink(content, link.getHref(), link.getContent(), model);
-            } else if (reference != null) {
-                try {
-                    var linkContent = (List<?>) c.getClass().getMethod("getContent").invoke(c);
-                    addLink(content, reference.getConceptURI(), linkContent, model);
-                    conceptDTO.getReferences().add(reference);
-                } catch (Exception e) {
-                    LOG.warn("Invalid concept reference for {}", conceptDTO.getIdentifier());
-                }
             } else if (c instanceof JAXBElement<?> el) {
                 var name = el.getName().toString().toLowerCase();
                 if (name.equalsIgnoreCase("HOGR")) {
@@ -388,6 +383,16 @@ public class NTRFMapper {
                                 .append(name)
                                 .append(">");
                     }
+                }
+            }
+
+            var reference = addAndReturnConceptReference(c, conceptDTO, model.getPrefix());
+            if (reference != null) {
+                try {
+                    var linkContent = (List<?>) c.getClass().getMethod("getContent").invoke(c);
+                    addLink(content, reference, linkContent, model);
+                } catch (Exception e) {
+                    LOG.warn("Invalid concept reference for {}", conceptDTO.getIdentifier());
                 }
             }
         });

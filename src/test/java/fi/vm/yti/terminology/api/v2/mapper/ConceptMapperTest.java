@@ -5,7 +5,6 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
 import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
 import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.enums.*;
@@ -63,13 +62,33 @@ class ConceptMapperTest {
         assertEquals(expectedLink.getName(), MapperUtils.localizedPropertyToMap(link, DCTerms.title));
         assertEquals(expectedLink.getDescription(), MapperUtils.localizedPropertyToMap(link, DCTerms.description));
         assertEquals(expectedLink.getUri(), link.getProperty(FOAF.homepage).getString());
+    }
 
-        ConceptMapper.internalRefProperties.forEach(prop -> assertEquals(graphURI + "concept-1000",
-                conceptResource.getProperty(prop).getObject().toString()));
+    @Test
+    void testMapConceptReferences() {
+        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
-        ConceptMapper.externalRefProperties.forEach(prop ->
-                assertEquals("https://iri.suomi.fi/terminology/external/concept-123",
-                        conceptResource.getProperty(prop).getObject().toString()));
+        var concept = getConceptData();
+
+        ConceptMapper.dtoToModel(model, concept, mockUser);
+
+        var conceptResource = model.getResourceById(concept.getIdentifier());
+
+        assertEquals(List.of("broader-1", "broader-2", "broader-3"),
+                MapperUtils.getResourceList(conceptResource, SKOS.broader).stream()
+                        .map(Resource::getLocalName)
+                        .toList());
+
+        assertEquals("narrower", MapperUtils.getResourceList(conceptResource, SKOS.narrower).get(0).getLocalName());
+        assertEquals("isPartOf", MapperUtils.getResourceList(conceptResource, DCTerms.isPartOf).get(0).getLocalName());
+        assertEquals("hasPart", MapperUtils.getResourceList(conceptResource, DCTerms.hasPart).get(0).getLocalName());
+        assertEquals("related", MapperUtils.getResourceList(conceptResource, SKOS.related).get(0).getLocalName());
+        assertEquals("broadMatch", MapperUtils.getResourceList(conceptResource, SKOS.broadMatch).get(0).getLocalName());
+        assertEquals("narrowMatch", MapperUtils.getResourceList(conceptResource, SKOS.narrowMatch).get(0).getLocalName());
+        assertEquals("exactMatch", MapperUtils.getResourceList(conceptResource, SKOS.exactMatch).get(0).getLocalName());
+        assertEquals("closeMatch", MapperUtils.getResourceList(conceptResource, SKOS.closeMatch).get(0).getLocalName());
+        assertEquals("relatedMatch", MapperUtils.getResourceList(conceptResource, SKOS.relatedMatch).get(0).getLocalName());
     }
 
     @Test
@@ -155,6 +174,14 @@ class ConceptMapperTest {
         dto.setSynonyms(synonyms);
         dto.setSearchTerms(searchTerms);
 
+        dto.setRelated(Set.of(
+                TerminologyURI.createConceptURI("test", "concept-1000").getResourceURI())
+        );
+        dto.setBroadMatch(Set.of(
+                TerminologyURI.createConceptURI("external", "concept-300").getResourceURI())
+        );
+
+        /*
         var ref1 = new ConceptReferenceDTO();
         ref1.setReferenceType(ReferenceType.RELATED);
         ref1.setConceptURI("https://iri.suomi.fi/terminology/test/concept-1000");
@@ -164,9 +191,10 @@ class ConceptMapperTest {
         ref2.setConceptURI("https://iri.suomi.fi/terminology/external/concept-300");
 
         dto.setReferences(Set.of(ref1, ref2));
-
+*/
         ConceptMapper.dtoToUpdateModel(model, "concept-1", dto, mockUser);
 
+        TestUtils.writeModel(model);
         var updatedResource = model.getResourceById("concept-1");
 
         assertEquals(Status.VALID, MapperUtils.getStatus(updatedResource));
@@ -191,15 +219,15 @@ class ConceptMapperTest {
         var hiddenLabels = updatedResource.getProperty(SKOS.hiddenLabel).getList();
         checkLabel("new search term", "en", hiddenLabels.get(0).asResource());
 
-        var related = updatedResource.listProperties(SKOS.related).toList();
-        var broadMatch = updatedResource.listProperties(SKOS.broadMatch).toList();
+        var related = MapperUtils.getList(updatedResource, SKOS.related);
+        var broadMatch = MapperUtils.getList(updatedResource, SKOS.broadMatch);
 
         assertEquals(1, related.size());
         assertEquals(1, broadMatch.size());
 
         assertEquals(0, updatedResource.listProperties(SKOS.broader).toList().size());
-        assertEquals("https://iri.suomi.fi/terminology/test/concept-1000", related.get(0).getObject().toString());
-        assertEquals("https://iri.suomi.fi/terminology/external/concept-300", broadMatch.get(0).getObject().toString());
+        assertEquals("https://iri.suomi.fi/terminology/test/concept-1000", related.get(0).asResource().getURI());
+        assertEquals("https://iri.suomi.fi/terminology/external/concept-300", broadMatch.get(0).asResource().getURI());
     }
 
     @Test
@@ -225,18 +253,12 @@ class ConceptMapperTest {
         assertEquals("description", link.getDescription().get("fi"));
         assertEquals("https://dvv.fi", link.getUri());
 
-        var internalRef = dto.getReferences().stream()
-                .filter(r -> r.getReferenceType().equals(ReferenceType.BROADER))
-                .findFirst();
-        assertTrue(internalRef.isPresent());
-        assertEquals(graphURI + "concept-2", internalRef.get().getConceptURI());
-        assertEquals("Suositettava termi", internalRef.get().getLabel().get("fi"));
+        var internalRef = dto.getBroader().iterator().next();
+        assertEquals(graphURI + "concept-2", internalRef.getConceptURI());
+        assertEquals("Suositettava termi", internalRef.getLabel().get("fi"));
 
-        var externalRef = dto.getReferences().stream()
-                .filter(r -> r.getReferenceType().equals(ReferenceType.NARROW_MATCH))
-                .findFirst();
-        assertTrue(externalRef.isPresent());
-        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.get().getConceptURI());
+        var externalRef = dto.getNarrowMatch().iterator().next();
+        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.getConceptURI());
     }
 
     @Test
