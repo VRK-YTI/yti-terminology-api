@@ -11,7 +11,6 @@ import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.TermDTO;
-import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
