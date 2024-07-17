@@ -9,10 +9,8 @@ import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
 import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
-import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.service.ConceptCollectionService;
@@ -22,7 +20,10 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.arq.querybuilder.UpdateBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.graph.NodeFactory;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.vocabulary.DCTerms;
@@ -201,11 +202,18 @@ public class TermedMigrationService {
                                                 .build()).retrieve().bodyToMono(JsonNode.class).block();
 
                                         if (result != null && !result.isEmpty()) {
-                                            var refDto = new ConceptReferenceDTO();
-                                            refDto.setConceptURI(TermedDataMapper.fixURI(result.get(0).get("uri").asText()));
-                                            refDto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-
-                                            concept.getReferences().add(refDto);
+                                            var refURI = TermedDataMapper.fixURI(result.get(0).get("uri").asText());
+                                            if (prop.equals(SKOS.broadMatch)) {
+                                                concept.getBroadMatch().add(refURI);
+                                            } else if (prop.equals(SKOS.narrowMatch)) {
+                                                concept.getNarrowMatch().add(refURI);
+                                            } else if (prop.equals(SKOS.relatedMatch)) {
+                                                concept.getRelatedMatch().add(refURI);
+                                            } else if (prop.equals(SKOS.exactMatch)) {
+                                                concept.getExactMatch().add(refURI);
+                                            } else if (prop.equals(SKOS.closeMatch)) {
+                                                concept.getCloseMatch().add(refURI);
+                                            }
                                         }
                                     }));
                     try {

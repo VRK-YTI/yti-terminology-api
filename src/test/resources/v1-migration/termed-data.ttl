@@ -120,7 +120,7 @@
         termed:lastModifiedDate   "2024-05-29T10:38:05" ;
         termed:number             "4000" ;
         termed:type               "Concept" ;
-        skos:broader              <http://uri.suomi.fi/terminology/test/braoder-test> ;
+        skos:broader              <http://uri.suomi.fi/terminology/test/broader-test> ;
         termed:uri                "http://uri.suomi.fi/terminology/test/c340" ;
         iow:conceptClass          "luokkakäsite" ;
         ts:notRecommendedSynonym  <http://uri.suomi.fi/terminology/test/term-d85cae62-1229-4c4e-920b-dcebdc25153c> , <http://uri.suomi.fi/terminology/test/term-e7cfe61b-962a-40e0-ab4d-c39bf63a4604> ;

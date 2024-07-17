@@ -10,7 +10,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import java.util.List;
 
 public class TermDTO {
-    private String identifier;
     private String language;
     private String label;
     private Integer homographNumber;
@@ -26,14 +25,6 @@ public class TermDTO {
     private WordClass wordClass;
     private List<String> sources = List.of();
     private List<String> editorialNotes = List.of();
-
-    public String getIdentifier() {
-        return identifier;
-    }
-
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
 
     public String getLanguage() {
         return language;

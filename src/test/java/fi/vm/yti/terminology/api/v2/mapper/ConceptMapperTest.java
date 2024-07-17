@@ -7,7 +7,10 @@ import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
 import fi.vm.yti.terminology.api.v2.dto.TermDTO;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Property;
@@ -23,7 +26,8 @@ import java.util.Set;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.getConceptData;
 import static fi.vm.yti.terminology.api.v2.TestUtils.mockUser;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ConceptMapperTest {
     @Test
@@ -57,7 +61,7 @@ class ConceptMapperTest {
         assertEquals(concept.getNotes().size(), notes.size());
         assertEquals(concept.getNotes().get(0), notes.get(0));
 
-        var link = conceptResource.getProperty(RDFS.seeAlso).getObject().asResource();
+        var link = MapperUtils.getResourceList(conceptResource, RDFS.seeAlso).get(0);
         var expectedLink = concept.getLinks().get(0);
         assertEquals(expectedLink.getName(), MapperUtils.localizedPropertyToMap(link, DCTerms.title));
         assertEquals(expectedLink.getDescription(), MapperUtils.localizedPropertyToMap(link, DCTerms.description));
@@ -149,7 +153,6 @@ class ConceptMapperTest {
 
         var recommendedTerms = new ArrayList<TermDTO>();
         var prefLabel = new TermDTO();
-        prefLabel.setIdentifier("term-614007ae-5d84-45d8-b473-6359c3cbc5ca");
         prefLabel.setLabel("pref term label");
         prefLabel.setTermFamily(TermFamily.FEMININE);
         prefLabel.setLanguage("fi");
@@ -157,7 +160,6 @@ class ConceptMapperTest {
 
         var synonyms = new ArrayList<TermDTO>();
         var altLabel = new TermDTO();
-        altLabel.setIdentifier("term-f04ce627-c799-4e9a-9b0c-71b65f69130b");
         altLabel.setStatus(Status.VALID);
         altLabel.setLabel("modified alt label");
         altLabel.setLanguage("fi");
@@ -181,20 +183,8 @@ class ConceptMapperTest {
                 TerminologyURI.createConceptURI("external", "concept-300").getResourceURI())
         );
 
-        /*
-        var ref1 = new ConceptReferenceDTO();
-        ref1.setReferenceType(ReferenceType.RELATED);
-        ref1.setConceptURI("https://iri.suomi.fi/terminology/test/concept-1000");
-
-        var ref2 = new ConceptReferenceDTO();
-        ref2.setReferenceType(ReferenceType.BROAD_MATCH);
-        ref2.setConceptURI("https://iri.suomi.fi/terminology/external/concept-300");
-
-        dto.setReferences(Set.of(ref1, ref2));
-*/
         ConceptMapper.dtoToUpdateModel(model, "concept-1", dto, mockUser);
 
-        TestUtils.writeModel(model);
         var updatedResource = model.getResourceById("concept-1");
 
         assertEquals(Status.VALID, MapperUtils.getStatus(updatedResource));
@@ -204,7 +194,8 @@ class ConceptMapperTest {
         assertEquals("new change", MapperUtils.propertyToString(updatedResource, SKOS.changeNote));
         assertEquals("new class", MapperUtils.propertyToString(updatedResource, Term.conceptClass));
 
-        var linkResource = updatedResource.getProperty(RDFS.seeAlso).getResource();
+
+        var linkResource = MapperUtils.getResourceList(updatedResource, RDFS.seeAlso).get(0);
         assertEquals(Map.of("fi", "link 2"), MapperUtils.localizedPropertyToMap(linkResource, DCTerms.title));
         assertEquals("https://dvv.fi/updated", MapperUtils.propertyToString(linkResource, FOAF.homepage));
 
@@ -307,6 +298,26 @@ class ConceptMapperTest {
         assertEquals(List.of("hakutermi"), dto.getSearchTerm().get("fi"));
         assertEquals("2024-05-06T05:00:00.000Z", dto.getCreated());
         assertEquals("2024-05-07T04:00:00.000Z", dto.getModified());
+    }
+
+    @Test
+    void testMapRemoveConcept() {
+        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
+        model.createResourceWithId("concept-test-123").addProperty(SKOS.note, "Test note");
+
+        var initialSize = model.size();
+
+        var dto = getConceptData();
+        dto.setRelated(
+                Set.of(TerminologyURI.createConceptURI("test", "concept-test-123").getResourceURI())
+        );
+
+        ConceptMapper.dtoToModel(model, dto, mockUser);
+        ConceptMapper.mapDeleteConcept(model, dto.getIdentifier());
+
+        // all triples related to removed concept should be removed
+        assertEquals(initialSize, model.size());
     }
 
     private static List<String> getList(Resource conceptResource, Property property) {

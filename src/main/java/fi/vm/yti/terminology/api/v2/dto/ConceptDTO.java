@@ -20,7 +20,6 @@ public class ConceptDTO {
     private String historyNote;
     private String conceptClass;
     private List<String> editorialNotes = new ArrayList<>();
-    private Set<ConceptReferenceDTO> references = new HashSet<>();
     private List<TermDTO> recommendedTerms = new ArrayList<>();
     private List<TermDTO> synonyms = new ArrayList<>();
     private List<TermDTO> notRecommendedTerms = new ArrayList<>();
@@ -132,14 +131,6 @@ public class ConceptDTO {
 
     public void setEditorialNotes(List<String> editorialNotes) {
         this.editorialNotes = editorialNotes;
-    }
-
-    public Set<ConceptReferenceDTO> getReferences() {
-        return references;
-    }
-
-    public void setReferences(Set<ConceptReferenceDTO> references) {
-        this.references = references;
     }
 
     public String getConceptClass() {

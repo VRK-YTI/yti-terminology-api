@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.mapper;
 
 import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
@@ -59,7 +60,7 @@ public class ConceptMapper {
 
         handleTerms(model, dto, conceptResource);
         mapReferencesToResource(model, dto, conceptResource);
-        dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
+        mapLinks(model, dto, languages, conceptResource);
 
         MapperUtils.addCreationMetadata(conceptResource, user);
     }
@@ -88,13 +89,14 @@ public class ConceptMapper {
         dto.setCloseMatch(mapConceptReferencesDTO(model, resource, SKOS.closeMatch));
         dto.setRelatedMatch(mapConceptReferencesDTO(model, resource, SKOS.relatedMatch));
 
-        var links = resource.listProperties(RDFS.seeAlso).mapWith(l -> {
-            var link = new LinkDTO();
-            link.setUri(MapperUtils.propertyToString(l.getResource(), FOAF.homepage));
-            link.setName(MapperUtils.localizedPropertyToMap(l.getResource(), DCTerms.title));
-            link.setDescription(MapperUtils.localizedPropertyToMap(l.getResource(), DCTerms.description));
-            return link;
-        });
+        var links = MapperUtils.getResourceList(resource, RDFS.seeAlso).stream()
+                .map(l -> {
+                    var link = new LinkDTO();
+                    link.setUri(MapperUtils.propertyToString(l, FOAF.homepage));
+                    link.setName(MapperUtils.localizedPropertyToMap(l, DCTerms.title));
+                    link.setDescription(MapperUtils.localizedPropertyToMap(l, DCTerms.description));
+                    return link;
+                });
         dto.setLinks(links.toList());
         dto.setSources(listToValues(resource, DCTerms.source));
 
@@ -138,9 +140,8 @@ public class ConceptMapper {
         addLiteralListProperty(conceptResource, DCTerms.source, dto.getSources());
 
         mapReferencesToResource(model, dto, conceptResource);
-
         handleTerms(model, dto, conceptResource);
-        dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
+        mapLinks(model, dto, languages, conceptResource);
 
         MapperUtils.addUpdateMetadata(conceptResource, user);
     }
@@ -172,18 +173,13 @@ public class ConceptMapper {
     public static void mapDeleteConcept(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
-        getTermSubjects(resource).forEach(term -> model.removeAll(term, null, null));
+        if (!resource.listProperties().hasNext()) {
+            throw new ResourceNotFoundException(identifier);
+        }
+
+        MapperUtils.removeAllLists(resource);
         model.removeAll(null, null, resource);
         model.removeAll(resource, null, null);
-    }
-
-    public static List<Resource> getTermSubjects(Resource conceptResource) {
-        return termProperties.stream()
-                .flatMap(prop -> conceptResource.listProperties(prop)
-                        .mapWith(Statement::getObject)
-                        .toList().stream())
-                .map(RDFNode::asResource)
-                .toList();
     }
 
     private static Map<String, List<String>> getIndexedTerm(Resource resource, Property property) {
@@ -246,13 +242,16 @@ public class ConceptMapper {
         addResourceListProperty(model, resource, SKOS.relatedMatch, dto.getRelatedMatch());
     }
 
-    private static void mapLinks(ModelWrapper model, LinkDTO link, Set<String> languages, Resource resource) {
-        var linkResource = model.createResource();
-        MapperUtils.addLocalizedProperty(languages, link.getName(), linkResource, DCTerms.title);
-        MapperUtils.addLocalizedProperty(languages, link.getDescription(), linkResource, DCTerms.description);
-        linkResource.addProperty(FOAF.homepage, link.getUri());
+    private static void mapLinks(Model model, ConceptDTO dto, Set<String> languages, Resource conceptResource) {
+        var links = dto.getLinks().stream().map(link -> {
+            var linkResource = model.createResource();
+            MapperUtils.addLocalizedProperty(languages, link.getName(), linkResource, DCTerms.title);
+            MapperUtils.addLocalizedProperty(languages, link.getDescription(), linkResource, DCTerms.description);
+            linkResource.addProperty(FOAF.homepage, link.getUri());
+            return linkResource;
+        }).toList();
 
-        resource.addProperty(RDFS.seeAlso, linkResource);
+        MapperUtils.addListProperty(conceptResource, RDFS.seeAlso, links);
     }
 
     private static void handleTerms(ModelWrapper model, ConceptDTO dto, Resource conceptResource) {
@@ -308,7 +307,6 @@ public class ConceptMapper {
             var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();
 
             var term = new TermDTO();
-            term.setIdentifier(termResource.getLocalName());
             term.setStatus(MapperUtils.getStatus(termResource));
             term.setLanguage(label.getLanguage());
             term.setHomographNumber(MapperUtils.getLiteral(termResource, Term.homographNumber, Integer.class));

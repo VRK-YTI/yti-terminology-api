@@ -2,7 +2,7 @@ package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,7 +43,7 @@ public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
 
     private Map<String, String> description = Map.of();
 
-    private Set<Concept> members = new HashSet<>();
+    private Set<Concept> members = new LinkedHashSet<>();
 
     public String getIdentifier() {
         return identifier;

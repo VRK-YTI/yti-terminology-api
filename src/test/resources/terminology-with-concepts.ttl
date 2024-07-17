@@ -27,10 +27,11 @@ test:   rdf:type                      skos:ConceptScheme;
 
 # Concept 1 with terms
 
-test:concept-1  rdfs:seeAlso          [ dcterms:description  "description"@fi;
-                                        dcterms:title        "link 1"@fi;
-                                        foaf:homepage        "https://dvv.fi"
-                                      ];
+test:concept-1  rdfs:seeAlso          ( [
+                                            dcterms:description  "description"@fi;
+                                            dcterms:title        "link 1"@fi;
+                                            foaf:homepage        "https://dvv.fi"
+                                      ] );
         dcterms:created               "2024-05-06T05:00:00.000Z"^^xsd:dateTime;
         dcterms:modified              "2024-05-07T04:00:00.000Z"^^xsd:dateTime;
         skos:altLabel                 ( [

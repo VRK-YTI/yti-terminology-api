@@ -68,17 +68,10 @@ public class ConceptValidator extends BaseValidator implements
         checkCommonTextField(context, dto.getConceptClass(), "conceptClass");
         dto.getSources().forEach(s -> checkCommonTextArea(context, s, "sources"));
         checkNotNull(context, dto.getStatus(), "status");
-        dto.getReferences().forEach(r -> {
-            checkHasValue(context, r.getConceptURI(), "references.conceptURI");
-            checkNotNull(context, r.getReferenceType(), "references.referenceType");
-        });
     }
 
     private void checkTermData(ConstraintValidatorContext context, List<TermDTO> terms) {
         terms.forEach(term -> {
-            if (!update && term.getIdentifier() != null) {
-                addConstraintViolation(context, ValidationConstants.MSG_NOT_ALLOWED_UPDATE, "identifier");
-            }
             checkCommonTextArea(context, term.getChangeNote(), "changeNote");
             checkCommonTextArea(context, term.getHistoryNote(), "usageHistory");
             checkCommonTextArea(context, term.getTermInfo(), "termInfo");

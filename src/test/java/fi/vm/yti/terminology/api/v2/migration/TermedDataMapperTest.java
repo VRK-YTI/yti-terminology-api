@@ -57,7 +57,7 @@ class TermedDataMapperTest {
         assertEquals(1, dto.getSynonyms().size());
         assertEquals(2, dto.getNotRecommendedTerms().size());
         assertEquals(1, dto.getSearchTerms().size());
-        assertEquals(1, dto.getReferences().size());
+        assertEquals(1, dto.getBroader().size());
         assertEquals(4, dto.getNotes().size());
 
         assertEquals("test definition", dto.getDefinition().get("fi"));
@@ -82,16 +82,14 @@ class TermedDataMapperTest {
         assertEquals(WordClass.ADJECTIVE, term.getWordClass());
         assertEquals(Status.VALID, term.getStatus());
         assertEquals(1, term.getHomographNumber());
-        assertEquals("term-9869b1f6-de6a-4d2b-8823-60750def6f30", term.getIdentifier());
         assertEquals("term muutoshistoria", term.getChangeNote());
         assertEquals(TermEquivalency.BROADER, term.getTermEquivalency());
         assertEquals(List.of("term muistiinpano"), term.getEditorialNotes());
         assertEquals(List.of("lähde 2", "termin lähde"), term.getSources());
 
-        var ref = dto.getReferences().iterator().next();
+        var ref = dto.getBroader().iterator().next();
 
-        assertEquals("https://iri.suomi.fi/terminology/test/braoder-test", ref.getConceptURI());
-        assertEquals(ReferenceType.BROADER, ref.getReferenceType());
+        assertEquals("https://iri.suomi.fi/terminology/test/broader-test", ref);
     }
 
     private Model getData() {
