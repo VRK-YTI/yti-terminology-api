@@ -10,7 +10,7 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
-import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -90,10 +91,8 @@ class ConceptServiceTest {
         assertNotNull(dto.getCreator().getName());
         assertNotNull(dto.getModifier().getName());
 
-        var extRef = dto.getReferences().stream().filter(r -> r.getReferenceType().equals(ReferenceType.NARROW_MATCH)).findFirst();
-
-        assertTrue(extRef.isPresent());
-        assertEquals(Map.of("fi", "Ext concept label"), extRef.get().getLabel());
+        var narrowMatch = dto.getNarrowMatch().iterator().next();
+        assertEquals(Map.of("fi", "Ext concept label"), narrowMatch.getLabel());
     }
 
     @Test
@@ -134,6 +133,11 @@ class ConceptServiceTest {
         var dto = new ConceptDTO();
         dto.setIdentifier(conceptURI.getResourceId());
         dto.setStatus(Status.DRAFT);
+
+        var term = new TermDTO();
+        term.setLanguage("en");
+        term.setLabel("test");
+        dto.setRecommendedTerms(List.of(term));
 
         conceptService.create(conceptURI.getPrefix(), dto);
 
@@ -206,6 +210,11 @@ class ConceptServiceTest {
         var dto = new ConceptDTO();
         dto.setIdentifier(conceptURI.getResourceId());
         dto.setStatus(Status.VALID);
+
+        var term = new TermDTO();
+        term.setLanguage("en");
+        term.setLabel("test");
+        dto.setRecommendedTerms(List.of(term));
 
         conceptService.update(conceptURI.getPrefix(), conceptURI.getResourceId(), dto);
 

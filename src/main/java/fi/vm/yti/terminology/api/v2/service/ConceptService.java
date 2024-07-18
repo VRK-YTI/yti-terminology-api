@@ -16,14 +16,17 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.arq.querybuilder.ConstructBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.sparql.path.PathFactory;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static fi.vm.yti.security.AuthorizationException.check;
 
@@ -62,14 +65,17 @@ public class ConceptService {
         }
 
         var dto = ConceptMapper.modelToDTO(model, conceptIdentifier, mapUser);
-        mapExternalReferenceLabels(dto.getReferences());
+        mapExternalReferenceLabels(dto);
         return dto;
     }
 
-    private void mapExternalReferenceLabels(Set<ConceptReferenceInfoDTO> references) {
-        var externalRefs = references.stream()
-                .filter(r -> r.getLabel() == null)
-                .toList();
+    private void mapExternalReferenceLabels(ConceptInfoDTO dto) {
+        var externalRefs = new ArrayList<ConceptReferenceInfoDTO>();
+        externalRefs.addAll(dto.getBroadMatch());
+        externalRefs.addAll(dto.getNarrowMatch());
+        externalRefs.addAll(dto.getRelatedMatch());
+        externalRefs.addAll(dto.getExactMatch());
+        externalRefs.addAll(dto.getCloseMatch());
 
         if (externalRefs.isEmpty()) {
             return;
@@ -78,8 +84,15 @@ public class ConceptService {
         var conceptVar = "?concept";
         var builder = new ConstructBuilder();
         builder.addConstruct(conceptVar, SKOSXL.literalForm, "?label");
+
+        var listPath = Stream.of(
+                PathFactory.pathLink(SKOS.prefLabel.asNode()),
+                PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
+                PathFactory.pathLink(RDF.first.asNode())
+        ).reduce(PathFactory::pathSeq).orElseThrow();
+
         var where = new WhereBuilder()
-                .addWhere(conceptVar, SKOS.prefLabel, "?prefLabel")
+                .addWhere(conceptVar, listPath, "?prefLabel")
                 .addWhere("?prefLabel", SKOSXL.literalForm, "?label");
 
         externalRefs.forEach(r -> where.addWhereValueVar(conceptVar,

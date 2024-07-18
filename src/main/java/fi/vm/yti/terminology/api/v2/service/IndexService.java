@@ -139,4 +139,15 @@ public class IndexService extends OpenSearchInitializer {
                 ))
                 .build();
     }
+
+    public void reindexTerminology(ModelWrapper model) {
+        deleteTerminologyFromIndex(model.getGraphURI());
+
+        var categories = frontendService.getServiceCategories();
+
+        var index = TerminologyMapper.toIndexDocument(model, categories);
+        client.putToIndex(TERMINOLOGY_INDEX, index);
+
+        initConceptIndex(model);
+    }
 }

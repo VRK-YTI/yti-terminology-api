@@ -1,28 +1,49 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.enums.Status;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ConceptDTO {
     private String identifier;
-    private Map<String, String> definition = Map.of();
-    private Map<String, String> subjectArea = Map.of();
-    private List<LocalizedValueDTO> notes = List.of();
-    private List<LocalizedValueDTO> examples = List.of();
+    private Map<String, String> definition = new HashMap<>();
+    private String subjectArea;
+    private List<LocalizedValueDTO> notes = new ArrayList<>();
+    private List<LocalizedValueDTO> examples = new ArrayList<>();
     private Status status;
-    private List<String> sources = List.of();
+    private List<String> sources = new ArrayList<>();
     private List<LinkDTO> links = List.of();
     private String changeNote;
     private String historyNote;
     private String conceptClass;
-    private List<String> editorialNotes = List.of();
-    private List<ConceptReferenceDTO> references = List.of();
-    private Set<TermDTO> terms = Set.of();
+    private List<String> editorialNotes = new ArrayList<>();
+    private List<TermDTO> recommendedTerms = new ArrayList<>();
+    private List<TermDTO> synonyms = new ArrayList<>();
+    private List<TermDTO> notRecommendedTerms = new ArrayList<>();
+    private List<TermDTO> searchTerms = new ArrayList<>();
+
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> broader = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> narrower = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> isPartOf = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> hasPart = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> related = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> broadMatch = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> narrowMatch = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> exactMatch = new LinkedHashSet<>();
+    private Set<String> closeMatch = new LinkedHashSet<>();
+    @JsonDeserialize(as=LinkedHashSet.class)
+    private Set<String> relatedMatch = new LinkedHashSet<>();
 
     public String getIdentifier() {
         return identifier;
@@ -40,11 +61,11 @@ public class ConceptDTO {
         this.definition = definition;
     }
 
-    public Map<String, String> getSubjectArea() {
+    public String getSubjectArea() {
         return subjectArea;
     }
 
-    public void setSubjectArea(Map<String, String> subjectArea) {
+    public void setSubjectArea(String subjectArea) {
         this.subjectArea = subjectArea;
     }
 
@@ -112,28 +133,124 @@ public class ConceptDTO {
         this.editorialNotes = editorialNotes;
     }
 
-    public List<ConceptReferenceDTO> getReferences() {
-        return references;
-    }
-
-    public void setReferences(List<ConceptReferenceDTO> references) {
-        this.references = references;
-    }
-
-    public Set<TermDTO> getTerms() {
-        return terms;
-    }
-
-    public void setTerms(Set<TermDTO> terms) {
-        this.terms = terms;
-    }
-
     public String getConceptClass() {
         return conceptClass;
     }
 
     public void setConceptClass(String conceptClass) {
         this.conceptClass = conceptClass;
+    }
+
+    public List<TermDTO> getRecommendedTerms() {
+        return recommendedTerms;
+    }
+
+    public void setRecommendedTerms(List<TermDTO> recommendedTerms) {
+        this.recommendedTerms = recommendedTerms;
+    }
+
+    public List<TermDTO> getSynonyms() {
+        return synonyms;
+    }
+
+    public void setSynonyms(List<TermDTO> synonyms) {
+        this.synonyms = synonyms;
+    }
+
+    public List<TermDTO> getNotRecommendedTerms() {
+        return notRecommendedTerms;
+    }
+
+    public void setNotRecommendedTerms(List<TermDTO> notRecommendedTerms) {
+        this.notRecommendedTerms = notRecommendedTerms;
+    }
+
+    public List<TermDTO> getSearchTerms() {
+        return searchTerms;
+    }
+
+    public void setSearchTerms(List<TermDTO> searchTerms) {
+        this.searchTerms = searchTerms;
+    }
+
+    public Set<String> getBroader() {
+        return broader;
+    }
+
+    public void setBroader(Set<String> broader) {
+        this.broader = broader;
+    }
+
+    public Set<String> getNarrower() {
+        return narrower;
+    }
+
+    public void setNarrower(Set<String> narrower) {
+        this.narrower = narrower;
+    }
+
+    public Set<String> getIsPartOf() {
+        return isPartOf;
+    }
+
+    public void setIsPartOf(Set<String> isPartOf) {
+        this.isPartOf = isPartOf;
+    }
+
+    public Set<String> getHasPart() {
+        return hasPart;
+    }
+
+    public void setHasPart(Set<String> hasPart) {
+        this.hasPart = hasPart;
+    }
+
+    public Set<String> getRelated() {
+        return related;
+    }
+
+    public void setRelated(Set<String> related) {
+        this.related = related;
+    }
+
+    public Set<String> getBroadMatch() {
+        return broadMatch;
+    }
+
+    public void setBroadMatch(Set<String> broadMatch) {
+        this.broadMatch = broadMatch;
+    }
+
+    public Set<String> getNarrowMatch() {
+        return narrowMatch;
+    }
+
+    public void setNarrowMatch(Set<String> narrowMatch) {
+        this.narrowMatch = narrowMatch;
+    }
+
+    public Set<String> getExactMatch() {
+        return exactMatch;
+    }
+
+    public void setExactMatch(Set<String> exactMatch) {
+        this.exactMatch = exactMatch;
+    }
+
+    public Set<String> getCloseMatch() {
+        return closeMatch;
+    }
+
+    public void setCloseMatch(Set<String> closeMatch) {
+        this.closeMatch = closeMatch;
+    }
+
+    public Set<String> getRelatedMatch() {
+        return relatedMatch;
+    }
+
+    public void setRelatedMatch(Set<String> relatedMatch) {
+        this.relatedMatch = relatedMatch;
     }
 
     @Override

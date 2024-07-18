@@ -4,21 +4,31 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.vm.yti.common.dto.*;
 import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.Role;
 import fi.vm.yti.security.YtiUser;
-import fi.vm.yti.terminology.api.v2.dto.*;
-import fi.vm.yti.terminology.api.v2.enums.*;
-import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
+import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.vocabulary.DCTerms;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -30,6 +40,18 @@ public class TestUtils {
         assertNotNull(stream);
         RDFDataMgr.read(model, stream, RDFLanguages.TURTLE);
         return new ModelWrapper(model, graphURI);
+    }
+
+    public static ModelWrapper getDefaultModel(String prefix) {
+        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+
+        var m = ModelFactory.createDefaultModel();
+        m.createResource(graphURI)
+                .addProperty(DCTerms.language, "fi")
+                .addProperty(DCTerms.language, "sv")
+                .addProperty(DCTerms.language, "en")
+                .addProperty(DCAP.preferredXMLNamespacePrefix, prefix);
+        return new ModelWrapper(m, graphURI);
     }
 
     public static final YtiUser mockUser = new YtiUser("test@localhost",
@@ -88,7 +110,7 @@ public class TestUtils {
         dto.setNotes(List.of(new LocalizedValueDTO("en", "note")));
         dto.setEditorialNotes(List.of("editorial"));
         dto.setHistoryNote("history");
-        dto.setSubjectArea(Map.of("en", "subject area"));
+        dto.setSubjectArea("subject area");
         dto.setSources(List.of("source"));
 
         var link = new LinkDTO();
@@ -97,24 +119,27 @@ public class TestUtils {
         link.setUri("https://dvv.fi");
         dto.setLinks(List.of(link));
 
-        var references = new ArrayList<ConceptReferenceDTO>();
-        ConceptMapper.internalRefProperties.forEach(prop -> {
-            var ref = new ConceptReferenceDTO();
-            ref.setConceptURI("https://iri.suomi.fi/terminology/test/concept-1000");
-            ref.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-            references.add(ref);
-        });
+        Function<String, String> refURI =
+                localName -> TerminologyURI.createConceptURI("test", localName).getResourceURI();
 
-        ConceptMapper.externalRefProperties.forEach(prop -> {
-            var ref = new ConceptReferenceDTO();
-            ref.setConceptURI("https://iri.suomi.fi/terminology/external/concept-123");
-            ref.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-            references.add(ref);
-        });
+        var broader = new LinkedHashSet<String>();
+        broader.add(refURI.apply("broader-1"));
+        broader.add(refURI.apply("broader-2"));
+        broader.add(refURI.apply("broader-3"));
+        dto.setBroader(broader);
+        dto.setNarrower(Set.of(refURI.apply("narrower")));
+        dto.setIsPartOf(Set.of(refURI.apply("isPartOf")));
+        dto.setHasPart(Set.of(refURI.apply("hasPart")));
+        dto.setRelated(Set.of(refURI.apply("related")));
+        dto.setBroadMatch(Set.of(refURI.apply("broadMatch")));
+        dto.setNarrowMatch(Set.of(refURI.apply("narrowMatch")));
+        dto.setExactMatch(Set.of(refURI.apply("exactMatch")));
+        dto.setCloseMatch(Set.of(refURI.apply("closeMatch")));
+        dto.setRelatedMatch(Set.of(refURI.apply("relatedMatch")));
 
-        dto.setReferences(references);
-
-        dto.setTerms(Set.of(getTermDTO()));
+        var recommendedTerms = new ArrayList<TermDTO>();
+        recommendedTerms.add(getTermDTO());
+        dto.setRecommendedTerms(recommendedTerms);
 
         return dto;
     }
@@ -136,7 +161,6 @@ public class TestUtils {
 
     public static TermDTO getTermDTO() {
         var term = new TermDTO();
-        term.setTermType(TermType.RECOMMENDED);
         term.setHomographNumber(1);
         term.setLabel("term label");
         term.setChangeNote("change");
@@ -156,5 +180,9 @@ public class TestUtils {
     public static String getJsonString(String file) throws Exception {
         return new String(TestUtils.class
                 .getResourceAsStream(file).readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    public static void writeModel(Model model) {
+        RDFDataMgr.write(System.out, model, Lang.TURTLE);
     }
 }

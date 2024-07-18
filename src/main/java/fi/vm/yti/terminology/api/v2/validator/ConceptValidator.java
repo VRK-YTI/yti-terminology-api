@@ -4,11 +4,10 @@ import fi.vm.yti.common.validator.BaseValidator;
 import fi.vm.yti.common.validator.ValidationConstants;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.TermDTO;
-import fi.vm.yti.terminology.api.v2.enums.TermType;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConceptValidator extends BaseValidator implements
@@ -25,25 +24,25 @@ public class ConceptValidator extends BaseValidator implements
     public boolean isValid(ConceptDTO value, ConstraintValidatorContext context) {
         setConstraintViolationAdded(false);
         checkConceptData(context, value);
-        checkRecommendedTerms(value.getTerms(), context);
-        checkTermData(context, value.getTerms());
+        checkRecommendedTerms(value.getRecommendedTerms(), context);
+        checkTermData(context, value.getRecommendedTerms());
+        checkTermData(context, value.getSynonyms());
+        checkTermData(context, value.getSearchTerms());
+        checkTermData(context, value.getNotRecommendedTerms());
         return !isConstraintViolationAdded();
     }
 
-    private void checkRecommendedTerms(Set<TermDTO> terms, ConstraintValidatorContext context) {
-        var recommendedTerms = terms.stream()
-                .filter(t -> t.getTermType().equals(TermType.RECOMMENDED))
-                .toList();
+    private void checkRecommendedTerms(List<TermDTO> terms, ConstraintValidatorContext context) {
 
-        if (recommendedTerms.isEmpty()) {
+        if (terms.isEmpty()) {
             addConstraintViolation(context, "missing-recommended-term", "terms");
         }
 
-        recommendedTerms.stream()
+        terms.stream()
                 .collect(Collectors.groupingBy(TermDTO::getLanguage))
                 .forEach((key, value) -> {
                     if (value.size() > 1) {
-                        addConstraintViolation(context, "too-many-recommended-terms-" + key, "terms");
+                        addConstraintViolation(context, "too-many-recommended-terms-" + key, "recommendedTerms");
                     }
                 });
     }
@@ -57,7 +56,7 @@ public class ConceptValidator extends BaseValidator implements
         checkCommonTextArea(context, dto.getChangeNote(), "changeNote");
         checkCommonTextArea(context, dto.getHistoryNote(), "historyNote");
         dto.getDefinition().forEach((key, value) -> checkCommonTextArea(context, value, "definition"));
-        dto.getSubjectArea().forEach((key, value) -> checkCommonTextField(context, value, "subjectArea"));
+        checkCommonTextField(context, dto.getSubjectArea(), "subjectArea");
         dto.getExamples().forEach(e -> checkCommonTextArea(context, e.getValue(), "examples"));
         dto.getNotes().forEach(e -> checkCommonTextArea(context, e.getValue(), "notes"));
         dto.getEditorialNotes().forEach(e -> checkCommonTextArea(context, e, "editorialNotes"));
@@ -69,17 +68,10 @@ public class ConceptValidator extends BaseValidator implements
         checkCommonTextField(context, dto.getConceptClass(), "conceptClass");
         dto.getSources().forEach(s -> checkCommonTextArea(context, s, "sources"));
         checkNotNull(context, dto.getStatus(), "status");
-        dto.getReferences().forEach(r -> {
-            checkHasValue(context, r.getConceptURI(), "references.conceptURI");
-            checkNotNull(context, r.getReferenceType(), "references.referenceType");
-        });
     }
 
-    private void checkTermData(ConstraintValidatorContext context, Set<TermDTO> terms) {
+    private void checkTermData(ConstraintValidatorContext context, List<TermDTO> terms) {
         terms.forEach(term -> {
-            if (!update && term.getIdentifier() != null) {
-                addConstraintViolation(context, ValidationConstants.MSG_NOT_ALLOWED_UPDATE, "identifier");
-            }
             checkCommonTextArea(context, term.getChangeNote(), "changeNote");
             checkCommonTextArea(context, term.getHistoryNote(), "usageHistory");
             checkCommonTextArea(context, term.getTermInfo(), "termInfo");

@@ -2,12 +2,16 @@ package fi.vm.yti.terminology.api.v2.mapper;
 
 import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.*;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import org.apache.jena.rdf.model.*;
@@ -44,20 +48,19 @@ public class ConceptMapper {
         MapperUtils.addStatus(conceptResource, dto.getStatus());
 
         MapperUtils.addLocalizedProperty(languages, dto.getDefinition(), conceptResource, SKOS.definition);
-        MapperUtils.addLocalizedProperty(languages, dto.getSubjectArea(), conceptResource, Term.subjectArea);
-
+        MapperUtils.addOptionalStringProperty(conceptResource, Term.subjectArea, dto.getSubjectArea());
         MapperUtils.addOptionalStringProperty(conceptResource, SKOS.changeNote, dto.getChangeNote());
         MapperUtils.addOptionalStringProperty(conceptResource, SKOS.historyNote, dto.getHistoryNote());
         MapperUtils.addOptionalStringProperty(conceptResource, Term.conceptClass, dto.getConceptClass());
 
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
-        addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, Term.source, dto.getSources());
+        addLiteralListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
+        addLiteralListProperty(conceptResource, DCTerms.source, dto.getSources());
 
-        dto.getTerms().forEach(term -> mapTerm(model, term, conceptResource));
-        mapReferencesToResource(dto, conceptResource);
-        dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
+        handleTerms(model, dto, conceptResource);
+        mapReferencesToResource(model, dto, conceptResource);
+        mapLinks(model, dto, languages, conceptResource);
 
         MapperUtils.addCreationMetadata(conceptResource, user);
     }
@@ -73,19 +76,29 @@ public class ConceptMapper {
 
         dto.setExamples(listToLocalizedValues(resource, SKOS.example));
         dto.setNotes(listToLocalizedValues(resource, SKOS.note));
-        dto.setSubjectArea(MapperUtils.localizedPropertyToMap(resource, Term.subjectArea));
+        dto.setSubjectArea(MapperUtils.propertyToString(resource, Term.subjectArea));
 
-        dto.setReferences(mapConceptReferencesDTO(model, resource));
+        dto.setBroader(mapConceptReferencesDTO(model, resource, SKOS.broader));
+        dto.setNarrower(mapConceptReferencesDTO(model, resource, SKOS.narrower));
+        dto.setHasPart(mapConceptReferencesDTO(model, resource, DCTerms.hasPart));
+        dto.setIsPartOf(mapConceptReferencesDTO(model, resource, DCTerms.isPartOf));
+        dto.setRelated(mapConceptReferencesDTO(model, resource, SKOS.related));
+        dto.setBroadMatch(mapConceptReferencesDTO(model, resource, SKOS.broadMatch));
+        dto.setNarrowMatch(mapConceptReferencesDTO(model, resource, SKOS.narrowMatch));
+        dto.setExactMatch(mapConceptReferencesDTO(model, resource, SKOS.exactMatch));
+        dto.setCloseMatch(mapConceptReferencesDTO(model, resource, SKOS.closeMatch));
+        dto.setRelatedMatch(mapConceptReferencesDTO(model, resource, SKOS.relatedMatch));
 
-        var links = resource.listProperties(RDFS.seeAlso).mapWith(l -> {
-            var link = new LinkDTO();
-            link.setUri(MapperUtils.propertyToString(l.getResource(), FOAF.homepage));
-            link.setName(MapperUtils.localizedPropertyToMap(l.getResource(), DCTerms.title));
-            link.setDescription(MapperUtils.localizedPropertyToMap(l.getResource(), DCTerms.description));
-            return link;
-        });
+        var links = MapperUtils.getResourceList(resource, RDFS.seeAlso).stream()
+                .map(l -> {
+                    var link = new LinkDTO();
+                    link.setUri(MapperUtils.propertyToString(l, FOAF.homepage));
+                    link.setName(MapperUtils.localizedPropertyToMap(l, DCTerms.title));
+                    link.setDescription(MapperUtils.localizedPropertyToMap(l, DCTerms.description));
+                    return link;
+                });
         dto.setLinks(links.toList());
-        dto.setSources(listToValues(resource, Term.source));
+        dto.setSources(listToValues(resource, DCTerms.source));
 
         dto.setChangeNote(MapperUtils.propertyToString(resource, SKOS.changeNote));
         dto.setHistoryNote(MapperUtils.propertyToString(resource, SKOS.historyNote));
@@ -97,7 +110,10 @@ public class ConceptMapper {
 
         dto.setConceptClass(MapperUtils.propertyToString(resource, Term.conceptClass));
 
-        dto.setTerms(mapTermDTO(resource, model));
+        dto.setRecommendedTerms(mapTermDTO(resource, SKOS.prefLabel));
+        dto.setSynonyms(mapTermDTO(resource, SKOS.altLabel));
+        dto.setNotRecommendedTerms(mapTermDTO(resource, Term.notRecommendedSynonym));
+        dto.setSearchTerms(mapTermDTO(resource, SKOS.hiddenLabel));
 
         MapperUtils.mapCreationInfo(dto, resource, mapUser);
         return dto;
@@ -113,36 +129,19 @@ public class ConceptMapper {
         MapperUtils.addStatus(conceptResource, dto.getStatus());
 
         MapperUtils.updateLocalizedProperty(languages, dto.getDefinition(), conceptResource, SKOS.definition);
-        MapperUtils.updateLocalizedProperty(languages, dto.getSubjectArea(), conceptResource, Term.subjectArea);
-
+        MapperUtils.updateStringProperty(conceptResource, Term.subjectArea, dto.getSubjectArea());
         MapperUtils.updateStringProperty(conceptResource, SKOS.changeNote, dto.getChangeNote());
         MapperUtils.updateStringProperty(conceptResource, SKOS.historyNote, dto.getHistoryNote());
         MapperUtils.updateStringProperty(conceptResource, Term.conceptClass, dto.getConceptClass());
 
         addLocalizedListProperty(conceptResource, SKOS.example, dto.getExamples());
         addLocalizedListProperty(conceptResource, SKOS.note, dto.getNotes());
-        addListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
-        addListProperty(conceptResource, Term.source, dto.getSources());
+        addLiteralListProperty(conceptResource, SKOS.editorialNote, dto.getEditorialNotes());
+        addLiteralListProperty(conceptResource, DCTerms.source, dto.getSources());
 
-        mapReferencesToResource(dto, conceptResource);
-
-        // remove terms not included to payload
-        var termURIs = dto.getTerms().stream()
-                .filter(t -> t.getIdentifier() != null)
-                .map(t -> model.getModelResource().getNameSpace() + t.getIdentifier())
-                .toList();
-
-        var removedTerms = getTermSubjects(conceptResource).stream()
-                .filter(t -> !termURIs.contains(t.getURI()))
-                .toList();
-
-        removedTerms.forEach(removed -> {
-            model.removeAll(conceptResource, null, removed);
-            model.removeAll(removed.asResource(), null, null);
-        });
-
-        dto.getTerms().forEach(term -> mapTerm(model, term, conceptResource));
-        dto.getLinks().forEach(link -> mapLinks(model, link, languages, conceptResource));
+        mapReferencesToResource(model, dto, conceptResource);
+        handleTerms(model, dto, conceptResource);
+        mapLinks(model, dto, languages, conceptResource);
 
         MapperUtils.addUpdateMetadata(conceptResource, user);
     }
@@ -150,9 +149,7 @@ public class ConceptMapper {
     public static IndexConcept toIndexDocument(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
-        var prefLabels = resource.listProperties(SKOS.prefLabel)
-                .mapWith(s -> model.getResource(s.getObject().toString()))
-                .toList()
+        var prefLabels = MapperUtils.getResourceList(resource, SKOS.prefLabel)
                 .stream().collect(Collectors.toMap(
                         r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
                         r -> r.getProperty(SKOSXL.literalForm).getString()));
@@ -163,9 +160,9 @@ public class ConceptMapper {
         indexConcept.setStatus(MapperUtils.getStatus(resource));
         indexConcept.setNamespace(resource.getNameSpace());
         indexConcept.setLabel(prefLabels);
-        indexConcept.setAltLabel(getIndexedTerm(model, resource, SKOS.altLabel));
-        indexConcept.setNotRecommendedSynonym(getIndexedTerm(model, resource, Term.notRecommendedSynonym));
-        indexConcept.setSearchTerm(getIndexedTerm(model, resource, SKOS.hiddenLabel));
+        indexConcept.setAltLabel(getIndexedTerm(resource, SKOS.altLabel));
+        indexConcept.setNotRecommendedSynonym(getIndexedTerm(resource, Term.notRecommendedSynonym));
+        indexConcept.setSearchTerm(getIndexedTerm(resource, SKOS.hiddenLabel));
         indexConcept.setDefinition(MapperUtils.localizedPropertyToMap(resource, SKOS.definition));
         indexConcept.setCreated(MapperUtils.getLiteral(resource, DCTerms.created, String.class));
         indexConcept.setModified(MapperUtils.getLiteral(resource, DCTerms.modified, String.class));
@@ -176,152 +173,120 @@ public class ConceptMapper {
     public static void mapDeleteConcept(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
-        getTermSubjects(resource).forEach(term -> model.removeAll(term, null, null));
+        if (!resource.listProperties().hasNext()) {
+            throw new ResourceNotFoundException(identifier);
+        }
+
+        MapperUtils.removeAllLists(resource);
         model.removeAll(null, null, resource);
         model.removeAll(resource, null, null);
     }
 
-    private static Map<String, List<String>> getIndexedTerm(ModelWrapper model, Resource resource, Property property) {
-        return resource.listProperties(property)
-                .mapWith(s -> model.getResource(s.getObject().toString()))
-                .filterKeep(r -> r.hasProperty(SKOSXL.literalForm))
-                .toList().stream()
+    private static Map<String, List<String>> getIndexedTerm(Resource resource, Property property) {
+        return MapperUtils.getResourceList(resource, property).stream()
+                .filter(r -> r.hasProperty(SKOSXL.literalForm))
                 .collect(Collectors.groupingBy(
                         r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
                         Collectors.mapping(r -> r.getProperty(SKOSXL.literalForm).getString(), Collectors.toList())));
     }
 
-    private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(ModelWrapper model, Resource resource) {
-        var references = new HashSet<ConceptReferenceInfoDTO>();
+    private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(Model model, Resource resource, Property property) {
+        var result = new LinkedHashSet<ConceptReferenceInfoDTO>();
+        MapperUtils.getResourceList(resource, property).forEach(ref -> {
+            var refDTO = new ConceptReferenceInfoDTO();
+            refDTO.setConceptURI(ref.getURI());
 
-        internalRefProperties.forEach(prop -> {
-            var ref = MapperUtils.propertyToString(resource, prop);
-
-            if (ref != null) {
-                var dto = new ConceptReferenceInfoDTO();
-                dto.setConceptURI(ref);
-
-                var label = new HashMap<String, String>();
-                model.listStatements(ResourceFactory.createResource(ref), SKOS.prefLabel, (RDFNode) null)
-                        .forEach(s -> {
-                            var r = s.getObject().asResource().getProperty(SKOSXL.literalForm);
-                            label.put(r.getLanguage(), r.getString());
-                        });
-                dto.setLabel(label);
-                dto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-                references.add(dto);
-            }
+            var label = new HashMap<String, String>();
+            MapperUtils.getResourceList(model.getResource(ref.getURI()), SKOS.prefLabel).forEach(r -> {
+                var value = r.getProperty(SKOSXL.literalForm);
+                label.put(value.getLanguage(), value.getString());
+            });
+            refDTO.setLabel(label);
+            result.add(refDTO);
         });
-
-        // at this point, populate URI and type for external references,
-        // labels for them must be fetched from index / fuseki
-        externalRefProperties.forEach(prop -> {
-            var ref = MapperUtils.propertyToString(resource, prop);
-            if (ref != null) {
-                var dto = new ConceptReferenceInfoDTO();
-                dto.setConceptURI(ref);
-                dto.setReferenceType(ReferenceType.getByPropertyName(prop.getLocalName()));
-                references.add(dto);
-            }
-        });
-        return references;
+        return result;
     }
 
-    private static void addLocalizedListProperty(Resource resource, Property property, List<LocalizedValueDTO> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
-                .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
-                .iterator());
-        resource.addProperty(property, list);
-    }
-
-    private static void addListProperty(Resource resource, Property property, List<String> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
+    private static void addLiteralListProperty(Resource resource, Property property, Collection<String> values) {
+        var literalValues = values.stream()
                 .map(ResourceFactory::createStringLiteral)
-                .iterator());
-        resource.addProperty(property, list);
-    }
-
-    private static void mapReferencesToResource(ConceptDTO dto, Resource resource) {
-        internalRefProperties.forEach(resource::removeAll);
-        externalRefProperties.forEach(resource::removeAll);
-
-        dto.getReferences().forEach(ref -> {
-            switch (ref.getReferenceType()) {
-                case BROADER -> MapperUtils.addOptionalUriProperty(resource, SKOS.broader, ref.getConceptURI());
-                case NARROWER -> MapperUtils.addOptionalUriProperty(resource, SKOS.narrower, ref.getConceptURI());
-                case RELATED -> MapperUtils.addOptionalUriProperty(resource, SKOS.related, ref.getConceptURI());
-                case IS_PART_OF -> MapperUtils.addOptionalUriProperty(resource, DCTerms.isPartOf, ref.getConceptURI());
-                case HAS_PART -> MapperUtils.addOptionalUriProperty(resource, DCTerms.hasPart, ref.getConceptURI());
-                case BROAD_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.broadMatch, ref.getConceptURI());
-                case NARROW_MATCH ->
-                        MapperUtils.addOptionalUriProperty(resource, SKOS.narrowMatch, ref.getConceptURI());
-                case CLOSE_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.closeMatch, ref.getConceptURI());
-                case RELATED_MATCH ->
-                        MapperUtils.addOptionalUriProperty(resource, SKOS.relatedMatch, ref.getConceptURI());
-                case EXACT_MATCH -> MapperUtils.addOptionalUriProperty(resource, SKOS.exactMatch, ref.getConceptURI());
-            }
-        });
-    }
-
-    private static void mapLinks(ModelWrapper model, LinkDTO link, Set<String> languages, Resource resource) {
-        var linkResource = model.createResource();
-        MapperUtils.addLocalizedProperty(languages, link.getName(), linkResource, DCTerms.title);
-        MapperUtils.addLocalizedProperty(languages, link.getDescription(), linkResource, DCTerms.description);
-        linkResource.addProperty(FOAF.homepage, link.getUri());
-
-        resource.addProperty(RDFS.seeAlso, linkResource);
-    }
-
-    private static List<Resource> getTermSubjects(Resource conceptResource) {
-        return termProperties.stream()
-                .flatMap(prop -> conceptResource.listProperties(prop)
-                        .mapWith(Statement::getObject)
-                        .toList().stream())
-                .map(RDFNode::asResource)
                 .toList();
+
+        MapperUtils.addListProperty(resource, property, literalValues);
     }
 
-    private static void mapTerm(ModelWrapper model, TermDTO term, Resource resource) {
-        Resource termResource;
-        String language;
+    private static void addLocalizedListProperty(Resource resource, Property property, Collection<LocalizedValueDTO> values) {
+        var literalValues = values.stream()
+                .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
+                .toList();
+        MapperUtils.addListProperty(resource, property, literalValues);
+    }
 
-        if (term.getIdentifier() == null) {
-            termResource = model.createResourceWithId("term-" + UUID.randomUUID());
-            termResource.addProperty(RDF.type, SKOSXL.Label);
-            language = term.getLanguage();
-        } else {
-            termResource = model.getResourceById(term.getIdentifier());
+    private static void addResourceListProperty(Model model, Resource resource, Property property, Collection<String> values) {
+        var resourceValues = values.stream()
+                .map(model::getResource)
+                .toList();
+        MapperUtils.addListProperty(resource, property, resourceValues);
+    }
 
-            // In migration, term doesn't exist yet in the model
-            // check can be removed after migration
-            if (model.containsResource(termResource)) {
-                language = termResource.getProperty(SKOSXL.literalForm).getLanguage();
-            } else {
-                language = term.getLanguage();
-            }
-        }
+    private static void mapReferencesToResource(Model model, ConceptDTO dto, Resource resource) {
+        addResourceListProperty(model, resource, SKOS.broader, dto.getBroader());
+        addResourceListProperty(model, resource, SKOS.narrower, dto.getNarrower());
+        addResourceListProperty(model, resource, DCTerms.hasPart, dto.getHasPart());
+        addResourceListProperty(model, resource, DCTerms.isPartOf, dto.getIsPartOf());
+        addResourceListProperty(model, resource, SKOS.related, dto.getRelated());
+        addResourceListProperty(model, resource, SKOS.broadMatch, dto.getBroadMatch());
+        addResourceListProperty(model, resource, SKOS.narrowMatch, dto.getNarrowMatch());
+        addResourceListProperty(model, resource, SKOS.exactMatch, dto.getExactMatch());
+        addResourceListProperty(model, resource, SKOS.closeMatch, dto.getCloseMatch());
+        addResourceListProperty(model, resource, SKOS.relatedMatch, dto.getRelatedMatch());
+    }
 
-        termResource.removeAll(SuomiMeta.publicationStatus);
-        termResource.removeAll(SKOSXL.literalForm);
-        termResource.removeAll(DCTerms.source);
-        termResource.removeAll(SKOS.editorialNote);
+    private static void mapLinks(Model model, ConceptDTO dto, Set<String> languages, Resource conceptResource) {
+        var links = dto.getLinks().stream().map(link -> {
+            var linkResource = model.createResource();
+            MapperUtils.addLocalizedProperty(languages, link.getName(), linkResource, DCTerms.title);
+            MapperUtils.addLocalizedProperty(languages, link.getDescription(), linkResource, DCTerms.description);
+            linkResource.addProperty(FOAF.homepage, link.getUri());
+            return linkResource;
+        }).toList();
 
-        termResource.addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral(term.getLabel(), language));
-        MapperUtils.updateLiteral(termResource, Term.homographNumber, term.getHomographNumber());
+        MapperUtils.addListProperty(conceptResource, RDFS.seeAlso, links);
+    }
+
+    private static void handleTerms(ModelWrapper model, ConceptDTO dto, Resource conceptResource) {
+        MapperUtils.addListProperty(conceptResource, SKOS.prefLabel,
+                dto.getRecommendedTerms().stream()
+                        .map(term -> mapTerm(model, term))
+                        .toList());
+
+        MapperUtils.addListProperty(conceptResource, SKOS.altLabel,
+                dto.getSynonyms().stream()
+                        .map(term -> mapTerm(model, term))
+                        .toList());
+
+        MapperUtils.addListProperty(conceptResource, Term.notRecommendedSynonym,
+                dto.getNotRecommendedTerms().stream()
+                        .map(term -> mapTerm(model, term))
+                        .toList());
+
+        MapperUtils.addListProperty(conceptResource, SKOS.hiddenLabel,
+                dto.getSearchTerms().stream()
+                        .map(term -> mapTerm(model, term))
+                        .toList());
+    }
+
+    private static Resource mapTerm(ModelWrapper model, TermDTO term) {
+        var termResource = model.createResource();
+        termResource.addProperty(RDF.type, SKOSXL.Label);
+        termResource.addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral(term.getLabel(), term.getLanguage()));
+        MapperUtils.addLiteral(termResource, Term.homographNumber, term.getHomographNumber());
         MapperUtils.addStatus(termResource, term.getStatus());
-        MapperUtils.updateStringProperty(termResource, Term.termInfo, term.getTermInfo());
-        MapperUtils.updateStringProperty(termResource, Term.scope, term.getScope());
-        MapperUtils.updateStringProperty(termResource, SKOS.historyNote, term.getHistoryNote());
-        MapperUtils.updateStringProperty(termResource, SKOS.changeNote, term.getChangeNote());
-        MapperUtils.updateStringProperty(termResource, Term.termStyle, term.getTermStyle());
+        MapperUtils.addOptionalStringProperty(termResource, Term.termInfo, term.getTermInfo());
+        MapperUtils.addOptionalStringProperty(termResource, Term.scope, term.getScope());
+        MapperUtils.addOptionalStringProperty(termResource, SKOS.historyNote, term.getHistoryNote());
+        MapperUtils.addOptionalStringProperty(termResource, SKOS.changeNote, term.getChangeNote());
+        MapperUtils.addOptionalStringProperty(termResource, Term.termStyle, term.getTermStyle());
         addOptionalEnumProperty(termResource, Term.termFamily, term.getTermFamily());
         addOptionalEnumProperty(termResource, Term.termConjugation, term.getTermConjugation());
         addOptionalEnumProperty(termResource, Term.termEquivalency, term.getTermEquivalency());
@@ -329,52 +294,38 @@ public class ConceptMapper {
         term.getEditorialNotes().forEach(e -> termResource.addProperty(SKOS.editorialNote, e));
         term.getSources().forEach(e -> termResource.addProperty(DCTerms.source, e));
 
-        switch (term.getTermType()) {
-            case RECOMMENDED -> MapperUtils.addOptionalUriProperty(resource, SKOS.prefLabel, termResource.getURI());
-            case SYNONYM -> MapperUtils.addOptionalUriProperty(resource, SKOS.altLabel, termResource.getURI());
-            case NOT_RECOMMENDED ->
-                    MapperUtils.addOptionalUriProperty(resource, Term.notRecommendedSynonym, termResource.getURI());
-            case SEARCH_TERM -> MapperUtils.addOptionalUriProperty(resource, SKOS.hiddenLabel, termResource.getURI());
-        }
+        return termResource;
     }
 
-    private static Set<TermDTO> mapTermDTO(Resource resource, ModelWrapper model) {
+    private static List<TermDTO> mapTermDTO(Resource resource, Property property) {
 
-        var terms = new HashSet<TermDTO>();
-        termProperties.forEach(property -> {
-            var termRefs = MapperUtils.arrayPropertyToList(resource, property);
+        var terms = new ArrayList<TermDTO>();
 
-            if (termRefs.isEmpty()) {
-                return;
-            }
+        var termResources = MapperUtils.getResourceList(resource, property);
 
-            termRefs.forEach(termRef -> {
-                var termResource = model.getResource(termRef);
-                var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();
+        termResources.forEach(termResource -> {
+            var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();
 
-                var term = new TermDTO();
-                term.setIdentifier(termResource.getLocalName());
-                term.setTermType(TermType.getByPropertyName(property.getLocalName()));
-                term.setStatus(MapperUtils.getStatus(termResource));
-                term.setLanguage(label.getLanguage());
-                term.setHomographNumber(MapperUtils.getLiteral(termResource, Term.homographNumber, Integer.class));
+            var term = new TermDTO();
+            term.setStatus(MapperUtils.getStatus(termResource));
+            term.setLanguage(label.getLanguage());
+            term.setHomographNumber(MapperUtils.getLiteral(termResource, Term.homographNumber, Integer.class));
 
-                term.setLabel(label.getString());
-                term.setTermInfo(MapperUtils.propertyToString(termResource, Term.termInfo));
-                term.setChangeNote(MapperUtils.propertyToString(termResource, SKOS.changeNote));
-                term.setHistoryNote(MapperUtils.propertyToString(termResource, SKOS.historyNote));
-                term.setScope(MapperUtils.propertyToString(termResource, Term.scope));
+            term.setLabel(label.getString());
+            term.setTermInfo(MapperUtils.propertyToString(termResource, Term.termInfo));
+            term.setChangeNote(MapperUtils.propertyToString(termResource, SKOS.changeNote));
+            term.setHistoryNote(MapperUtils.propertyToString(termResource, SKOS.historyNote));
+            term.setScope(MapperUtils.propertyToString(termResource, Term.scope));
 
-                term.setTermConjugation(getEnumValue(termResource, Term.termConjugation, TermConjugation.class));
-                term.setTermEquivalency(getEnumValue(termResource, Term.termEquivalency, TermEquivalency.class));
-                term.setWordClass(getEnumValue(termResource, Term.wordClass, WordClass.class));
-                term.setTermStyle(MapperUtils.propertyToString(termResource, Term.termStyle));
-                term.setTermFamily(getEnumValue(termResource, Term.termFamily, TermFamily.class));
+            term.setTermConjugation(getEnumValue(termResource, Term.termConjugation, TermConjugation.class));
+            term.setTermEquivalency(getEnumValue(termResource, Term.termEquivalency, TermEquivalency.class));
+            term.setWordClass(getEnumValue(termResource, Term.wordClass, WordClass.class));
+            term.setTermStyle(MapperUtils.propertyToString(termResource, Term.termStyle));
+            term.setTermFamily(getEnumValue(termResource, Term.termFamily, TermFamily.class));
 
-                term.setSources(MapperUtils.arrayPropertyToList(termResource, DCTerms.source));
-                term.setEditorialNotes(MapperUtils.arrayPropertyToList(termResource, SKOS.editorialNote));
-                terms.add(term);
-            });
+            term.setSources(MapperUtils.arrayPropertyToList(termResource, DCTerms.source));
+            term.setEditorialNotes(MapperUtils.arrayPropertyToList(termResource, SKOS.editorialNote));
+            terms.add(term);
         });
 
         return terms;

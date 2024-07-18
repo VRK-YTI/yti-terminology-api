@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <RECORD numb="c100" stat="DRAFT">
+        <LANG value="en">
+            <TE stat="DRAFT">
+                <TERM>Test term</TERM>
+            </TE>
+            <DEF>
+                Definition with <RCON href="#rcon-1">rcon</RCON>, <NCON href="#ncon-1">ncon</NCON> and <BCON href="#bcon-1">bcon</BCON>.
+            </DEF>
+            <NOTE>
+                Note with external <RCONEXT href="http://uri.suomi.fi/terminology/ext/rconext-1">rconext</RCONEXT> references.
+            </NOTE>
+        </LANG>
+        <BCON href="#bcon-2" />
+        <BCON href="#bcon-3" />
+        <BCON href="#isPartOf-1" typr="partitive" />
+
+        <NCON href="#ncon-2" />
+        <NCON href="#ncon-3" />
+        <NCON href="#hasPart-1" typr="partitive" />
+
+        <RCON href="#rcon-2" />
+        <RCON href="#rcon-3" />
+
+        <ECON href="http://uri.suomi.fi/terminology/ext/concept-1"
+              typr="exactMatch">ext exactMatch
+        </ECON>
+        <ECON href="http://uri.suomi.fi/terminology/ext/concept-1"
+              typr="closeMatch">ext closeMatch
+        </ECON>
+        <RCONEXT href="http://uri.suomi.fi/terminology/ext/rconext-2" />
+        <NCONEXT href="http://uri.suomi.fi/terminology/ext/nconext" typr="generic" />
+        <BCONEXT href="http://uri.suomi.fi/terminology/ext/bconext" typr="generic" />
+    </RECORD>
+</VOCABULARY>

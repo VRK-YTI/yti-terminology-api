@@ -1,15 +1,15 @@
 package fi.vm.yti.terminology.api.v2.dto;
 
 import fi.vm.yti.common.enums.Status;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
-import java.util.Objects;
 
 public class TermDTO {
-    private String identifier;
-    private TermType termType;
     private String language;
     private String label;
     private Integer homographNumber;
@@ -25,22 +25,6 @@ public class TermDTO {
     private WordClass wordClass;
     private List<String> sources = List.of();
     private List<String> editorialNotes = List.of();
-
-    public String getIdentifier() {
-        return identifier;
-    }
-
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
-
-    public TermType getTermType() {
-        return termType;
-    }
-
-    public void setTermType(TermType termType) {
-        this.termType = termType;
-    }
 
     public String getLanguage() {
         return language;
@@ -160,22 +144,6 @@ public class TermDTO {
 
     public void setEditorialNotes(List<String> editorialNotes) {
         this.editorialNotes = editorialNotes;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TermDTO termDTO = (TermDTO) o;
-        return termType == termDTO.termType
-               && Objects.equals(language, termDTO.language)
-               && Objects.equals(label, termDTO.label)
-               && status == termDTO.status;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(termType, language, label, status);
     }
 
     @Override

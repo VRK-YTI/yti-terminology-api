@@ -88,11 +88,7 @@ public class TermedDataMapper {
         concept.setConceptClass(MapperUtils.propertyToString(c, Termed.conceptClass));
         concept.setHistoryNote(MapperUtils.propertyToString(c, SKOS.historyNote));
         concept.setChangeNote(MapperUtils.propertyToString(c, SKOS.changeNote));
-
-        var subjectArea = MapperUtils.propertyToString(c, Termed.subjectArea);
-        if (subjectArea != null) {
-            concept.setSubjectArea(Map.of(defaultLanguage, subjectArea));
-        }
+        concept.setSubjectArea(MapperUtils.propertyToString(c, Termed.subjectArea));
         concept.setEditorialNotes(MapperUtils.arrayPropertyToList(c, SKOS.editorialNote));
         concept.setSources(MapperUtils.arrayPropertyToList(c, DCTerms.source));
 
@@ -116,28 +112,33 @@ public class TermedDataMapper {
 
         concept.setLinks(links);
 
-        var terms = new HashSet<TermDTO>();
         MapperUtils.arrayPropertyToList(c, SKOSXL.prefLabel)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.RECOMMENDED)));
+                .forEach(t -> concept.getRecommendedTerms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.synonym)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.SYNONYM)));
+                .forEach(t -> concept.getSynonyms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.notRecommended)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.NOT_RECOMMENDED)));
+                .forEach(t -> concept.getNotRecommendedTerms().add(getTerm(oldData.getResource(t))));
 
         MapperUtils.arrayPropertyToList(c, Termed.searchTerm)
-                .forEach(t -> terms.add(getTerm(oldData.getResource(t), TermType.SEARCH_TERM)));
-
-        concept.setTerms(terms);
-
-        var references = new ArrayList<ConceptReferenceDTO>();
+                .forEach(t -> concept.getSearchTerms().add(getTerm(oldData.getResource(t))));
 
         ConceptMapper.internalRefProperties.forEach(prop ->
-                MapperUtils.arrayPropertyToList(c, prop)
-                    .forEach(r -> references.add(getReference(r, ReferenceType.getByPropertyName(prop.getLocalName())))));
-
-        concept.setReferences(references);
+                MapperUtils.arrayPropertyToList(c, prop).forEach(ref -> {
+                    ref = fixURI(ref);
+                    if (prop.equals(SKOS.broader)) {
+                        concept.getBroader().add(ref);
+                    } else if (prop.equals(SKOS.narrower)) {
+                        concept.getNarrower().add(ref);
+                    } else if (prop.equals(SKOS.related)) {
+                        concept.getRelated().add(ref);
+                    } else if (prop.equals(DCTerms.isPartOf)) {
+                        concept.getIsPartOf().add(ref);
+                    } else if (prop.equals(DCTerms.hasPart)) {
+                        concept.getHasPart().add(ref);
+                    }
+                }));
         return concept;
     }
 
@@ -148,20 +149,11 @@ public class TermedDataMapper {
         return uri.replace(URI_SUOMI_FI, "https://iri.suomi.fi");
     }
 
-    private static ConceptReferenceDTO getReference(String uri, ReferenceType referenceType) {
-        var dto = new ConceptReferenceDTO();
-        dto.setConceptURI(fixURI(uri));
-        dto.setReferenceType(referenceType);
-        return  dto;
-    }
-
-    private static TermDTO getTerm(Resource resource, TermType type) {
+    private static TermDTO getTerm(Resource resource) {
         var dto = new TermDTO();
         var label = resource.getProperty(SKOSXL.literalForm);
         dto.setLanguage(label.getLanguage());
         dto.setLabel(label.getString());
-        dto.setTermType(type);
-        dto.setIdentifier("term-" + MapperUtils.propertyToString(resource, Termed.id));
         dto.setStatus(Status.valueOf(MapperUtils.propertyToString(resource, Termed.status)));
         dto.setHistoryNote(MapperUtils.propertyToString(resource, SKOS.historyNote));
         dto.setChangeNote(MapperUtils.propertyToString(resource, SKOS.changeNote));

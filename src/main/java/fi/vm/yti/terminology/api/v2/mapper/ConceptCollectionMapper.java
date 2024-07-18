@@ -1,18 +1,17 @@
 package fi.vm.yti.terminology.api.v2.mapper;
 
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
-import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class ConceptCollectionMapper {
@@ -44,11 +43,10 @@ public class ConceptCollectionMapper {
                 conceptCollectionResource,
                 RDFS.comment);
 
-        var conceptURIs = dto.getMembers().stream().toList();
-        addListProperty(
+        addMembers(
+                model,
                 conceptCollectionResource,
-                SKOS.member,
-                conceptURIs);
+                dto.getMembers());
 
         MapperUtils.addCreationMetadata(
                 conceptCollectionResource,
@@ -76,11 +74,10 @@ public class ConceptCollectionMapper {
                 conceptCollectionResource,
                 RDFS.comment);
 
-        conceptCollectionResource.removeAll(SKOS.member);
-        dto.getMembers().stream().forEach(conceptUri -> {
-            var conceptResource = model.getResource(conceptUri);
-            conceptCollectionResource.addProperty(SKOS.member, conceptResource);
-        });
+        addMembers(
+                model,
+                conceptCollectionResource,
+                dto.getMembers());
 
         MapperUtils.addUpdateMetadata(conceptCollectionResource, user);
     }
@@ -90,6 +87,11 @@ public class ConceptCollectionMapper {
             String conceptCollectionIdentifier,
             Consumer<ResourceCommonInfoDTO> mapUser) {
         var resource = model.getResourceById(conceptCollectionIdentifier);
+
+        if (!MapperUtils.hasType(resource, SKOS.Collection)
+            || !model.contains(resource, null)) {
+            throw new ResourceNotFoundException(conceptCollectionIdentifier);
+        }
         var dto = new ConceptCollectionInfoDTO();
 
         dto.setIdentifier(resource.getLocalName());
@@ -98,18 +100,16 @@ public class ConceptCollectionMapper {
         dto.setLabel(MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel));
         dto.setDescription(MapperUtils.localizedPropertyToMap(resource, RDFS.comment));
 
-        MapperUtils.arrayPropertyToSet(
-                        resource,
-                        SKOS.member)
-                .stream()
-                .forEach((conceptUri) -> {
-                    var concept = model.getResource(conceptUri);
+        MapperUtils.getResourceList(resource, SKOS.member)
+                .forEach(concept -> {
                     var labelMap = new HashMap<String, String>();
-                    MapperUtils.arrayPropertyToList(concept, SKOS.prefLabel).forEach(term -> {
-                        var labelProperty = model.getResource(term).getProperty(SKOSXL.literalForm);
-                        labelMap.put(labelProperty.getLanguage(), labelProperty.getString());
+                    MapperUtils.getResourceList(concept, SKOS.prefLabel).forEach(term -> {
+                        if (term.hasProperty(SKOSXL.literalForm)) {
+                            var labelProperty = term.getProperty(SKOSXL.literalForm);
+                            labelMap.put(labelProperty.getLanguage(), labelProperty.getString());
+                        }
                     });
-                    dto.addMember(concept.getLocalName(), conceptUri, labelMap);
+                    dto.addMember(concept.getLocalName(), concept.getURI(), labelMap);
                 });
 
         MapperUtils.mapCreationInfo(dto, resource, mapUser);
@@ -124,14 +124,11 @@ public class ConceptCollectionMapper {
         model.removeAll(resource, null, null);
     }
 
-    private static void addListProperty(Resource resource, Property property, List<String> values) {
-        resource.removeAll(property);
-        if (values.isEmpty()) {
-            return;
-        }
-        var list = resource.getModel().createList(values.stream()
-                .map(ResourceFactory::createResource)
-                .iterator());
-        resource.addProperty(property, list);
+    private static void addMembers(ModelWrapper model, Resource resource, Set<String> values) {
+        var resources = values.stream()
+                .map(model::getResourceById)
+                .toList();
+
+        MapperUtils.addListProperty(resource, SKOS.member, resources);
     }
 }

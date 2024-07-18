@@ -5,7 +5,6 @@ import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.TestUtils;
-import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.enums.*;
 import fi.vm.yti.terminology.api.v2.migration.v1.TermedDataMapper;
 import org.apache.jena.rdf.model.Model;
@@ -19,7 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TermedDataMapperTest {
 
@@ -53,8 +53,11 @@ class TermedDataMapperTest {
         var dto = TermedDataMapper.mapConcept(oldData, oldData.getResource("http://uri.suomi.fi/terminology/test/c340"),
                 new ObjectMapper(), "fi");
 
-        assertEquals(5, dto.getTerms().size());
-        assertEquals(1, dto.getReferences().size());
+        assertEquals(1, dto.getRecommendedTerms().size());
+        assertEquals(1, dto.getSynonyms().size());
+        assertEquals(2, dto.getNotRecommendedTerms().size());
+        assertEquals(1, dto.getSearchTerms().size());
+        assertEquals(1, dto.getBroader().size());
         assertEquals(4, dto.getNotes().size());
 
         assertEquals("test definition", dto.getDefinition().get("fi"));
@@ -64,19 +67,10 @@ class TermedDataMapperTest {
         assertEquals("käyttö", dto.getHistoryNote());
         assertEquals(List.of("muistiinpano"), dto.getEditorialNotes());
         assertEquals(Status.VALID, dto.getStatus());
-        assertEquals(Map.of("fi", "Test aihealue"), dto.getSubjectArea());
+        assertEquals("Test aihealue", dto.getSubjectArea());
 
-        var prefTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.RECOMMENDED)).findFirst();
-        var synonym = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SYNONYM)).findFirst();
-        var searchTerm = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.SEARCH_TERM)).findFirst();
-        var notRecommended = dto.getTerms().stream().filter(t -> t.getTermType().equals(TermType.NOT_RECOMMENDED)).toList();
+        var term = dto.getRecommendedTerms().iterator().next();
 
-        assertTrue(prefTerm.isPresent());
-        assertTrue(synonym.isPresent());
-        assertTrue(searchTerm.isPresent());
-        assertEquals(2, notRecommended.size());
-
-        var term = prefTerm.get();
         assertEquals("pref term label", term.getLabel());
         assertEquals("fi", term.getLanguage());
         assertEquals("lisätieto", term.getTermInfo());
@@ -88,16 +82,14 @@ class TermedDataMapperTest {
         assertEquals(WordClass.ADJECTIVE, term.getWordClass());
         assertEquals(Status.VALID, term.getStatus());
         assertEquals(1, term.getHomographNumber());
-        assertEquals("term-9869b1f6-de6a-4d2b-8823-60750def6f30", term.getIdentifier());
         assertEquals("term muutoshistoria", term.getChangeNote());
         assertEquals(TermEquivalency.BROADER, term.getTermEquivalency());
         assertEquals(List.of("term muistiinpano"), term.getEditorialNotes());
         assertEquals(List.of("lähde 2", "termin lähde"), term.getSources());
 
-        var ref = dto.getReferences().get(0);
+        var ref = dto.getBroader().iterator().next();
 
-        assertEquals("https://iri.suomi.fi/terminology/test/braoder-test", ref.getConceptURI());
-        assertEquals(ReferenceType.BROADER, ref.getReferenceType());
+        assertEquals("https://iri.suomi.fi/terminology/test/broader-test", ref);
     }
 
     private Model getData() {

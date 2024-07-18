@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="file://localhost/T:/XML/NTRF.css" type="text/css"?><!DOCTYPE VOCABULARY SYSTEM
+        "file://localhost/x:/NTRF.dtd">
+<VOCABULARY>
+    <RECORD numb="c100" stat="VALID">
+        <SUBJ>Subject area</SUBJ>
+
+        <LANG value="en">
+            <TE stat="VALID">
+                <TERM>Test term <GRAM gend="f" value="pl" pos="verb">recommended</GRAM></TERM>
+                <HOGR>2</HOGR>
+                <SCOPE>Term scope</SCOPE>
+                <!-- source of recommended term = sources of the concept -->
+                <SOURF>Term source</SOURF>
+                <ADD>Term additional info</ADD>
+                <REMK>Editorial note term</REMK>
+            </TE>
+            <SY>
+                <EQUI value="narrower" />
+                <TERM>Test synonym 1</TERM>
+                <SOURF>Source synonym</SOURF>
+            </SY>
+            <SY>
+                <TERM>Test synonym 2</TERM>
+            </SY>
+            <DTE stat="RETIRED">
+                <EQUI value="broader">test</EQUI>
+                <TERM>Not recommended term 1</TERM>
+            </DTE>
+            <DTEA>
+                <TERM>Not recommended term 2</TERM>
+            </DTEA>
+            <DEF>Concept definition</DEF>
+            <NOTE>Note 1</NOTE>
+            <NOTE>Note 2</NOTE>
+            <EXAMP>Example 1</EXAMP>
+            <EXAMP>Example 2</EXAMP>
+            <STE>
+                <TERM>Search term</TERM>
+            </STE>
+        </LANG>
+        <LANG value="fi">
+            <TE stat="VALID">
+                <TERM>Test term recommended FI</TERM>
+            </TE>
+            <DEF>Definition FI</DEF>
+            <NOTE>Note 1 FI</NOTE>
+            <NOTE>Note 2 FI</NOTE>
+            <EXAMP>Example 1 FI</EXAMP>
+            <EXAMP>Example 2 FI</EXAMP>
+        </LANG>
+        <REMK>Editorial note 1</REMK>
+        <REMK>Editorial note 2</REMK>
+        <SOURC>Source 1</SOURC>
+        <SOURC>Source 2</SOURC>
+        <CLAS>Concept class</CLAS>
+    </RECORD>
+</VOCABULARY>

@@ -5,9 +5,7 @@ import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.validator.ValidationConstants;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptInfoDTO;
-import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceDTO;
 import fi.vm.yti.terminology.api.v2.dto.LocalizedValueDTO;
-import fi.vm.yti.terminology.api.v2.enums.ReferenceType;
 import fi.vm.yti.terminology.api.v2.exception.TerminologyExceptionHandlerAdvice;
 import fi.vm.yti.terminology.api.v2.service.ConceptService;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -26,8 +24,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.*;
 import static org.hamcrest.Matchers.containsString;
@@ -216,63 +212,57 @@ class ConceptControllerTest {
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
-        dto.setSubjectArea(Map.of("en", longTextField));
+        dto.setSubjectArea(longTextField);
         args.add(new ConceptWithError("value-over-character-limit", dto));
-
-        dto = getConceptData();
-        var ref = new ConceptReferenceDTO();
-        ref.setReferenceType(ReferenceType.BROADER);
-        dto.setReferences(List.of(ref));
-        args.add(new ConceptWithError("should-have-value", dto));
 
         // check term data
 
         dto = getConceptData();
         var term = getTermDTO();
         term.setLanguage("");
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("should-have-value", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setLabel(longTextField);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setLabel("");
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("should-have-value", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setTermStyle(longTextField);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setScope(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setTermInfo(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setHistoryNote(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         dto = getConceptData();
         term = getTermDTO();
         term.setChangeNote(longTextArea);
-        dto.setTerms(Set.of(term));
+        dto.setRecommendedTerms(List.of(term));
         args.add(new ConceptWithError("value-over-character-limit", dto));
 
         return args;

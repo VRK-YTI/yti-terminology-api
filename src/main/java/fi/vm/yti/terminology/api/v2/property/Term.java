@@ -15,7 +15,6 @@ public class Term {
     public static final Property conceptClass = ResourceFactory.createProperty(URI, "conceptClass");
     public static final Property subjectArea = ResourceFactory.createProperty(URI, "subjectArea");
 
-    public static final Property source = ResourceFactory.createProperty(URI, "source");
     public static final Property homographNumber = ResourceFactory.createProperty(URI, "homographNumber");
     public static final Property termInfo = ResourceFactory.createProperty(URI, "termInfo");
     public static final Property scope = ResourceFactory.createProperty(URI, "scope");
