@@ -8,6 +8,8 @@ import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -65,7 +67,7 @@ class TerminologyMapperTest {
         var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
         var newOrganization = UUID.randomUUID();
-        var modifiedOrig = getDate(MapperUtils.propertyToString(model.getModelResource(), DCTerms.modified));
+        var modifiedOrig = getDate(model.getModelResource(), DCTerms.modified);
 
         var dto = new TerminologyDTO();
         dto.setGraphType(GraphType.OTHER_VOCABULARY);
@@ -110,7 +112,8 @@ class TerminologyMapperTest {
         assertTrue(languages.contains("en"));
 
         assertEquals(user.getId().toString(), MapperUtils.propertyToString(resource, SuomiMeta.modifier));
-        var modified = getDate(MapperUtils.propertyToString(resource, DCTerms.modified));
+
+        var modified = getDate(resource, DCTerms.modified);
 
         assertTrue(modified.isAfter(modifiedOrig));
     }
@@ -166,8 +169,8 @@ class TerminologyMapperTest {
         assertTrue(indexDTO.getOrganizations().contains(TestUtils.organizationId));
     }
 
-    private static LocalDateTime getDate(String date) {
-        // strip milliseconds from date string
-        return LocalDateTime.parse(date.split("\\.")[0]);
+    private static LocalDateTime getDate(Resource resource, Property property) {
+        var date = resource.getProperty(property).getLiteral().getString();
+        return LocalDateTime.parse(date.replaceAll("Z$", ""));
     }
 }
