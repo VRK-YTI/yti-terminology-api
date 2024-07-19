@@ -8,7 +8,7 @@ plugins {
     id 'jacoco'
     id 'org.owasp.dependencycheck' version '9.0.10'
     id 'com.github.ben-manes.versions' version '0.39.0'
-    id 'com.gorylenko.gradle-git-properties' version '2.3.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
     id 'com.intershop.gradle.jaxb' version '7.0.0'
 }
 
@@ -60,7 +60,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-webflux"
 
     implementation "fi.vm.yti:yti-spring-security:0.4.0"
-    implementation "fi.vm.yti:yti-spring-migration:0.2.0"
+    implementation "fi.vm.yti:yti-spring-migration:0.3.0"
     implementation "fi.vm.yti:yti-common-backend:0.2.0-SNAPSHOT"
 
     implementation "org.springframework.cloud:spring-cloud-starter-config"
