@@ -23,8 +23,6 @@ public class StartUpListener {
                     GroupManagementService groupManagementService) {
         this.indexService = indexService;
         this.groupManagementService = groupManagementService;
-        // TODO: should start migration automatically. Imports javax.* should be changed to jakarta.* in yti-spring-migration
-        migrationInitializer.onInit();
     }
 
     @PostConstruct
