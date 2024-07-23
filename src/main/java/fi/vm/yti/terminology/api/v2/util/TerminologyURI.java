@@ -1,26 +1,18 @@
 package fi.vm.yti.terminology.api.v2.util;
 
 import fi.vm.yti.common.Constants;
-import fi.vm.yti.common.exception.MappingError;
-import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.util.GraphURI;
-import fi.vm.yti.common.util.MapperUtils;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.SKOS;
+
+import java.util.regex.Pattern;
 
 public class TerminologyURI extends GraphURI {
 
+    private static final Pattern iriPattern = Pattern.compile("https?://iri.suomi.fi/terminology/" +
+                                                              "(?<prefix>[\\w-]+)/" +
+                                                              "(?<resource>[\\w-]+)?");
+
     public static TerminologyURI createTerminologyURI(String prefix) {
         return new TerminologyURI(prefix);
-    }
-
-    public static TerminologyURI createTerminologyURI(Model model) {
-        var subj = model.listSubjectsWithProperty(RDF.type, SKOS.ConceptScheme);
-        if (!subj.hasNext()) {
-            throw new MappingError("Not a valid model");
-        }
-        return new TerminologyURI(MapperUtils.propertyToString(subj.next(), DCAP.preferredXMLNamespacePrefix));
     }
 
     public static TerminologyURI createConceptURI(String prefix, String conceptId) {
@@ -29,6 +21,20 @@ public class TerminologyURI extends GraphURI {
 
     public static TerminologyURI createConceptCollectionURI(String prefix, String conceptCollectionId) {
         return new TerminologyURI(prefix, conceptCollectionId);
+    }
+
+    public static TerminologyURI fromUri(String uri) {
+        var matcher = iriPattern.matcher(uri);
+        if (matcher.matches()) {
+            var prefix = matcher.group("prefix");
+            var resourceId = matcher.group("resource");
+
+            if (resourceId != null) {
+                return new TerminologyURI(prefix, resourceId);
+            }
+            return new TerminologyURI(prefix);
+        }
+        return new TerminologyURI(uri);
     }
 
     private TerminologyURI(String prefix) {
