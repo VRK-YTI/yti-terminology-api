@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,12 +22,12 @@ public class IntegrationController {
 
     @GetMapping("/containers")
     public IntegrationResponse getContainers() {
-        return service.getContainers(Set.of());
+        return service.getContainers(new ContainerRequest());
     }
 
     @PostMapping("/containers")
     public IntegrationResponse getContainers(@RequestBody ContainerRequest request) {
-        return service.getContainers(request.getUri());
+        return service.getContainers(request);
     }
 
 
@@ -55,7 +56,7 @@ public class IntegrationController {
     }
 
     public static class ContainerRequest {
-        private Set<String> uri;
+        private Set<String> uri = new HashSet<>();
 
         public Set<String> getUri() {
             return uri;
@@ -68,6 +69,7 @@ public class IntegrationController {
 
     public static class ResourceRequest {
         private List<String> container = new ArrayList<>();
+        private String before;
         private String after;
         private Integer pageSize;
         private String searchTerm;
@@ -79,6 +81,14 @@ public class IntegrationController {
 
         public void setContainer(List<String> container) {
             this.container = container;
+        }
+
+        public String getBefore() {
+            return before;
+        }
+
+        public void setBefore(String before) {
+            this.before = before;
         }
 
         public String getAfter() {

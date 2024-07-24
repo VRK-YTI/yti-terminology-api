@@ -1,0 +1,10 @@
+{
+  "query": {
+    "terms": {
+      "uri": [
+        "https://iri.suomi.fi/terminology/test/"
+      ]
+    }
+  },
+  "size": 1000
+}

@@ -1,9 +1,6 @@
 package fi.vm.yti.terminology.api.v2.integration;
 
-import fi.vm.yti.common.opensearch.IndexBase;
-import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
-import fi.vm.yti.common.opensearch.QueryFactoryUtils;
-import fi.vm.yti.common.opensearch.SearchResponseDTO;
+import fi.vm.yti.common.opensearch.*;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.service.IndexService;
@@ -17,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class IntegrationService {
@@ -28,17 +24,23 @@ public class IntegrationService {
         this.client = client;
     }
 
-    public IntegrationResponse getContainers(Set<String> uris) {
-        var request = new SearchRequest.Builder();
+    public IntegrationResponse getContainers(IntegrationController.ContainerRequest req) {
+        var builder = new SearchRequest.Builder();
 
-        request.size(1000);
-        request.index(IndexService.TERMINOLOGY_INDEX);
+        builder.size(1000);
+        builder.index(IndexService.TERMINOLOGY_INDEX);
+
+        var uris = req.getUri();
 
         if (!uris.isEmpty()) {
-            request.query(QueryFactoryUtils.termsQuery("uri", fixURIs(uris)));
+            builder.query(QueryFactoryUtils.termsQuery("uri", fixURIs(uris)));
         }
 
-        var result = client.search(request.build(), IndexTerminology.class);
+        var request = builder.build();
+
+        OpenSearchUtil.logPayload(request, "terminologies_v2");
+
+        var result = client.search(request, IndexTerminology.class);
 
         var response = new IntegrationResponse();
         response.setMeta(getMeta(result));
@@ -48,10 +50,10 @@ public class IntegrationService {
     }
 
     public IntegrationResponse getContainerResources(IntegrationController.ResourceRequest req) {
-        var request = new SearchRequest.Builder();
+        var builder = new SearchRequest.Builder();
 
-        request.size(req.getPageSize() != null ? req.getPageSize() : 20);
-        request.index(IndexService.CONCEPT_INDEX);
+        builder.size(req.getPageSize() != null ? req.getPageSize() : 20);
+        builder.index(IndexService.CONCEPT_INDEX);
 
         var queries = new ArrayList<Query>();
 
@@ -61,12 +63,17 @@ public class IntegrationService {
             );
         }
 
-        if (req.getAfter() != null) {
-            queries.add(new RangeQuery.Builder()
-                    .field("modified")
-                    .gte(JsonData.of(req.getAfter()))
-                    .build()
-                    .toQuery());
+        if (req.getAfter() != null || req.getBefore() != null) {
+            var rangeBuilder = new RangeQuery.Builder()
+                    .field("modified");
+
+            if (req.getAfter() != null) {
+                rangeBuilder.gte(JsonData.of(req.getAfter()));
+            }
+            if (req.getBefore() != null) {
+                rangeBuilder.lte(JsonData.of(req.getBefore()));
+            }
+            queries.add(rangeBuilder.build().toQuery());
         }
         if (req.getSearchTerm() != null && !req.getSearchTerm().isBlank()) {
             queries.add(QueryFactoryUtils.labelQuery(req.getSearchTerm()));
@@ -75,13 +82,16 @@ public class IntegrationService {
             queries.add(QueryFactoryUtils.termQuery("status", req.getStatus().name()));
         }
 
-        request.query(QueryBuilders
+        var request = builder.query(QueryBuilders
                 .bool()
                 .must(queries)
                 .build()
-                .toQuery());
+                .toQuery())
+            .build();
 
-        var result = client.search(request.build(), IndexConcept.class);
+        OpenSearchUtil.logPayload(request, "concepts_v2");
+
+        var result = client.search(request, IndexConcept.class);
 
         var response = new IntegrationResponse();
         response.setMeta(getMeta(result));
