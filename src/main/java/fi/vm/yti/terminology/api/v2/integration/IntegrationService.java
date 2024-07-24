@@ -117,7 +117,13 @@ public class IntegrationService {
 
     private static Collection<String> fixURIs(Collection<String> uris) {
         return uris.stream()
-                .map(u -> u.replace("http://uri.suomi.fi", "https://iri.suomi.fi"))
-                .toList();
+            .map(u -> {
+                u = u.replace("http://uri.suomi.fi", "https://iri.suomi.fi");
+                if (!u.endsWith("/")) {
+                    u = u + "/";
+                }
+                return u;
+            })
+            .toList();
     }
 }
