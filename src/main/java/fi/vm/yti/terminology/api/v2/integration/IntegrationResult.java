@@ -2,9 +2,7 @@ package fi.vm.yti.terminology.api.v2.integration;
 
 import fi.vm.yti.common.enums.Status;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class IntegrationResult {
@@ -15,7 +13,6 @@ public class IntegrationResult {
     private String created;
     private String modified;
     private String type;
-    private List<String> languages = new ArrayList<>();
 
     public String getUri() {
         return uri;
@@ -63,14 +60,6 @@ public class IntegrationResult {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public List<String> getLanguages() {
-        return languages;
-    }
-
-    public void setLanguages(List<String> languages) {
-        this.languages = languages;
     }
 
     public Map<String, String> getDescription() {

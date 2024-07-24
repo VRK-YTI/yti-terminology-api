@@ -4,10 +4,12 @@ import fi.vm.yti.common.enums.Status;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("api/v1/integration")
+@RequestMapping(value = { "api/v1/integration", "v2/integration" })
 @Tag(name = "Integration")
 public class IntegrationController {
 
@@ -30,14 +32,16 @@ public class IntegrationController {
 
     @GetMapping("/resources")
     public IntegrationResponse getResources(
-            @RequestParam String containerUri,
+            @RequestParam(required = false) String containerUri,
             @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false) String after,
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) Integer pageSize
     ) {
         var request = new ResourceRequest();
-        request.setContainer(containerUri);
+        if (containerUri != null) {
+            request.setContainer(List.of(containerUri));
+        }
         request.setSearchTerm(searchTerm);
         request.setAfter(after);
         request.setPageSize(pageSize);
@@ -63,17 +67,17 @@ public class IntegrationController {
     }
 
     public static class ResourceRequest {
-        private String container;
+        private List<String> container = new ArrayList<>();
         private String after;
         private Integer pageSize;
         private String searchTerm;
         private Status status;
 
-        public String getContainer() {
+        public List<String> getContainer() {
             return container;
         }
 
-        public void setContainer(String container) {
+        public void setContainer(List<String> container) {
             this.container = container;
         }
 

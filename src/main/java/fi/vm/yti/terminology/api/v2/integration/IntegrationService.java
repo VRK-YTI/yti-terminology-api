@@ -1,6 +1,9 @@
 package fi.vm.yti.terminology.api.v2.integration;
 
-import fi.vm.yti.common.opensearch.*;
+import fi.vm.yti.common.opensearch.IndexBase;
+import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
+import fi.vm.yti.common.opensearch.QueryFactoryUtils;
+import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.service.IndexService;
@@ -12,8 +15,9 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class IntegrationService {
@@ -25,30 +29,20 @@ public class IntegrationService {
     }
 
     public IntegrationResponse getContainers(Set<String> uris) {
-        uris = uris.stream()
-                .map(IntegrationService::fixURI)
-                .collect(Collectors.toSet());
-
         var request = new SearchRequest.Builder();
 
         request.size(1000);
         request.index(IndexService.TERMINOLOGY_INDEX);
 
         if (!uris.isEmpty()) {
-            request.query(QueryFactoryUtils.termsQuery("uri", uris));
+            request.query(QueryFactoryUtils.termsQuery("uri", fixURIs(uris)));
         }
 
         var result = client.search(request.build(), IndexTerminology.class);
 
-        var containers = result.getResponseObjects().stream()
-                .map(o -> getContainerResult(o, "terminology"))
-                .toList();
-
         var response = new IntegrationResponse();
-        var meta = getMeta(result);
-
-        response.setResults(containers);
-        response.setMeta(meta);
+        response.setMeta(getMeta(result));
+        response.setResults(getResults(result.getResponseObjects(), "terminology"));
 
         return response;
     }
@@ -60,9 +54,12 @@ public class IntegrationService {
         request.index(IndexService.CONCEPT_INDEX);
 
         var queries = new ArrayList<Query>();
-        queries.add(
-                QueryFactoryUtils.termsQuery("namespace", Set.of(fixURI(req.getContainer())))
-        );
+
+        if (!req.getContainer().isEmpty()) {
+            queries.add(
+                    QueryFactoryUtils.termsQuery("namespace", fixURIs(req.getContainer()))
+            );
+        }
 
         if (req.getAfter() != null) {
             queries.add(new RangeQuery.Builder()
@@ -85,31 +82,30 @@ public class IntegrationService {
                 .toQuery());
 
         var result = client.search(request.build(), IndexConcept.class);
-        var resources = result.getResponseObjects().stream()
-                .map(o -> getContainerResult(o, "concept"))
-                .toList();
 
         var response = new IntegrationResponse();
         response.setMeta(getMeta(result));
-        response.setResults(resources);
+        response.setResults(getResults(result.getResponseObjects(), "concept"));
         return response;
     }
 
-    private static IntegrationResult getContainerResult(IndexBase index, String type) {
-        var container = new IntegrationResult();
-        container.setUri(index.getUri());
-        container.setType(type);
-        container.setPrefLabel(index.getLabel());
+    private static List<IntegrationResult> getResults(List<? extends IndexBase> responseObjects, String type) {
+        return responseObjects.stream().map(index -> {
+            var container = new IntegrationResult();
+            container.setUri(index.getUri());
+            container.setType(type);
+            container.setPrefLabel(index.getLabel());
 
-        if (index instanceof IndexConcept concept) {
-            container.setDescription(concept.getDefinition());
-        } else {
-            container.setDescription(index.getDescription());
-        }
-        container.setCreated(index.getCreated());
-        container.setModified(index.getModified());
-        container.setStatus(index.getStatus());
-        return container;
+            if (index instanceof IndexConcept concept) {
+                container.setDescription(concept.getDefinition());
+            } else {
+                container.setDescription(index.getDescription());
+            }
+            container.setCreated(index.getCreated());
+            container.setModified(index.getModified());
+            container.setStatus(index.getStatus());
+            return container;
+        }).toList();
     }
 
     private static Meta getMeta(SearchResponseDTO<? extends IndexBase> result) {
@@ -119,7 +115,9 @@ public class IntegrationService {
         return meta;
     }
 
-    private static String fixURI(String u) {
-        return u.replace("http://uri.suomi.fi", "https://iri.suomi.fi");
+    private static Collection<String> fixURIs(Collection<String> uris) {
+        return uris.stream()
+                .map(u -> u.replace("http://uri.suomi.fi", "https://iri.suomi.fi"))
+                .toList();
     }
 }
