@@ -118,7 +118,9 @@ public class IntegrationService {
     private static Collection<String> fixURIs(Collection<String> uris) {
         return uris.stream()
             .map(u -> {
-                u = u.replace("http://uri.suomi.fi", "https://iri.suomi.fi");
+                u = u
+                        .replace("http://uri.suomi.fi", "https://iri.suomi.fi")
+                        .replaceAll("terminological-vocabulary-\\d$", "");
                 if (!u.endsWith("/")) {
                     u = u + "/";
                 }
