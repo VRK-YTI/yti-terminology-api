@@ -1,0 +1,40 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "terms": {
+            "namespace": [
+              "https://iri.suomi.fi/terminology/test/"
+            ]
+          }
+        },
+        {
+          "range": {
+            "modified": {
+              "gte": "2024-07-24T00:00:00",
+              "lte": "2024-07-25T00:00:00"
+            }
+          }
+        },
+        {
+          "query_string": {
+            "fields": [
+              "label.*"
+            ],
+            "fuzziness": "2",
+            "query": "*Search*"
+          }
+        },
+        {
+          "term": {
+            "status": {
+              "value": "DRAFT"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "size": 50
+}
