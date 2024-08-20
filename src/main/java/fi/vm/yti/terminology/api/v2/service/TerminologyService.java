@@ -1,17 +1,27 @@
 package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
+import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.service.GroupManagementService;
+import fi.vm.yti.common.util.MapperUtils;
+import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.vocabulary.SKOS;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.Consumer;
@@ -99,5 +109,47 @@ public class TerminologyService {
     public boolean exists(String prefix) {
         var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
         return terminologyRepository.graphExists(graphURI);
+    }
+
+    public ResponseEntity<String> export(String prefix, String accept) {
+
+        ModelWrapper model;
+
+        try {
+            model = terminologyRepository.fetchByPrefix(prefix);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        var hasRights = authorizationManager.hasRightsToTerminology(prefix, model);
+
+        if (!hasRights) {
+            if (Status.INCOMPLETE.equals(MapperUtils.getStatus(model.getModelResource()))) {
+                return ResponseEntity.status(403).build();
+            }
+
+            var hiddenValues = model.listStatements(null, SKOS.editorialNote, (String) null);
+            model.remove(hiddenValues);
+        }
+
+        var stringWriter = new StringWriter();
+
+        switch (accept) {
+            case "text/turtle":
+                RDFDataMgr.write(stringWriter, model, Lang.TURTLE);
+                break;
+            case "application/rdf+xml":
+                RDFDataMgr.write(stringWriter, model, Lang.RDFXML);
+                break;
+            case "application/ld+json":
+            default:
+                RDFDataMgr.write(stringWriter, model, Lang.JSONLD);
+        }
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .body(stringWriter.toString());
     }
 }
