@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterStyle;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,5 +32,17 @@ public class ImportController {
                                      @RequestPart(value = "file") MultipartFile file) {
         ntrfImportService.importNTRF(prefix, file);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Initiate simple Excel import job", description = "Start the procedure to import concepts from Excel file")
+    @ApiResponse(
+            responseCode = "200",
+            description = "If import process started successfully then job token is returned as JSON")
+    @PostMapping(path = "simpleExcel/{prefix}", consumes = MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<Void> importSimpleExcel(@Parameter(description = "The ID of the terminology to import concepts to")
+                                                             @PathVariable("prefix") String prefix,
+                                                             @RequestPart(value = "file") MultipartFile file) {
+        // TODO: implement simple excel import
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 }
