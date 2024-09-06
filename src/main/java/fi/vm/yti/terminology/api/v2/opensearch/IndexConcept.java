@@ -7,6 +7,7 @@ import java.util.Map;
 
 public class IndexConcept extends IndexBase {
     private String namespace;
+    private String identifier;
     private Map<String, String> definition;
     private Map<String, List<String>> altLabel;
     private Map<String, List<String>> searchTerm;
@@ -18,6 +19,14 @@ public class IndexConcept extends IndexBase {
 
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
 
     public Map<String, String> getDefinition() {

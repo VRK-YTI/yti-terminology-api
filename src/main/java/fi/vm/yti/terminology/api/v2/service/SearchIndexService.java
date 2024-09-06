@@ -5,23 +5,22 @@ import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
+import fi.vm.yti.terminology.api.v2.dto.SimpleTerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologySearchResultDTO;
-import fi.vm.yti.terminology.api.v2.opensearch.ConceptQueryFactory;
-import fi.vm.yti.terminology.api.v2.opensearch.ConceptSearchRequest;
-import fi.vm.yti.terminology.api.v2.opensearch.TerminologyQueryFactory;
-import fi.vm.yti.terminology.api.v2.opensearch.TerminologySearchRequest;
+import fi.vm.yti.terminology.api.v2.opensearch.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
 
 @Service
 public class SearchIndexService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OpenSearchClientWrapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(SearchIndexService.class);
 
     private final OpenSearchClientWrapper client;
 
@@ -101,6 +100,26 @@ public class SearchIndexService {
         var query = ConceptQueryFactory.createConceptQuery(request, user.isSuperuser(), incompleteFromTerminologies);
         var concepts = client.search(query, ConceptSearchResultDTO.class);
 
+        if (request.isExtendTerminologies()) {
+            var terminologyIds = concepts.getResponseObjects().stream()
+                    .map(IndexConcept::getNamespace)
+                    .collect(Collectors.toSet());
+
+            var terminologiesQuery = TerminologyQueryFactory.createFetchTerminologiesByNamespaceQuery(terminologyIds);
+            var terminologies = client.search(terminologiesQuery, TerminologySearchResultDTO.class);
+
+            concepts.getResponseObjects().forEach(r -> {
+                var terminology = terminologies.getResponseObjects().stream()
+                        .filter(t -> t.getUri().equals(r.getNamespace()))
+                        .findFirst();
+                terminology.ifPresent(t -> {
+                    var dto = new SimpleTerminologyDTO();
+                    dto.setPrefix(t.getPrefix());
+                    dto.setLabel(t.getLabel());
+                    r.setTerminology(dto);
+                });
+            });
+        }
         return concepts;
     }
 

@@ -6,15 +6,20 @@ import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.util.MapperUtils;
+import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptInfoDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
+import fi.vm.yti.terminology.api.v2.exception.ResourceInUseException;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.arq.querybuilder.ConstructBuilder;
+import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.sparql.path.PathFactory;
 import org.apache.jena.vocabulary.RDF;
@@ -66,7 +71,33 @@ public class ConceptService {
 
         var dto = ConceptMapper.modelToDTO(model, conceptIdentifier, mapUser);
         mapExternalReferenceLabels(dto);
+        mapCollections(dto, model);
         return dto;
+    }
+
+    private void mapCollections(ConceptInfoDTO dto, ModelWrapper model) {
+        var path = Stream.of(
+                PathFactory.pathLink(SKOS.member.asNode()),
+                PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
+                PathFactory.pathLink(RDF.first.asNode())
+        ).reduce(PathFactory::pathSeq).orElseThrow();
+
+        SelectBuilder select = new SelectBuilder();
+        select.addGraph(NodeFactory.createURI(model.getGraphURI()), new WhereBuilder().addWhere(
+                "?collection", path, NodeFactory.createURI(dto.getUri())));
+
+        var collections = new ArrayList<String>();
+        repository.querySelect(select.build(), (var row) -> collections.add(row.get("collection").toString()));
+
+        collections.forEach(collection -> {
+            var resource = model.getResource(collection);
+            var ref = new ConceptReferenceInfoDTO();
+            ref.setLabel(MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel));
+            ref.setReferenceURI(resource.getURI());
+            ref.setIdentifier(resource.getLocalName());
+            ref.setPrefix(model.getPrefix());
+            dto.getMemberOf().add(ref);
+        });
     }
 
     private void mapExternalReferenceLabels(ConceptInfoDTO dto) {
@@ -82,8 +113,11 @@ public class ConceptService {
         }
 
         var conceptVar = "?concept";
+        var schemeVar = "?scheme";
         var builder = new ConstructBuilder();
-        builder.addConstruct(conceptVar, SKOSXL.literalForm, "?label");
+        builder
+                .addConstruct(conceptVar, SKOSXL.literalForm, "?label")
+                .addConstruct(schemeVar, SKOS.prefLabel, "?terminologyLabel");
 
         var listPath = Stream.of(
                 PathFactory.pathLink(SKOS.prefLabel.asNode()),
@@ -93,17 +127,21 @@ public class ConceptService {
 
         var where = new WhereBuilder()
                 .addWhere(conceptVar, listPath, "?prefLabel")
-                .addWhere("?prefLabel", SKOSXL.literalForm, "?label");
+                .addWhere("?prefLabel", SKOSXL.literalForm, "?label")
+                .addWhere(conceptVar, SKOS.inScheme, schemeVar)
+                .addWhere(schemeVar, SKOS.prefLabel, "?terminologyLabel");
 
         externalRefs.forEach(r -> where.addWhereValueVar(conceptVar,
-                ResourceFactory.createResource(r.getConceptURI())));
-        builder.addWhere(where);
+                ResourceFactory.createResource(r.getReferenceURI())));
+        builder.addGraph("?g", where);
 
         var result = repository.queryConstruct(builder.build());
 
         externalRefs.forEach(ref -> {
-            var extResource = result.getResource(ref.getConceptURI());
+            var extResource = result.getResource(ref.getReferenceURI());
+            var terminologyResource = result.getResource(extResource.getNameSpace());
             ref.setLabel(MapperUtils.localizedPropertyToMap(extResource, SKOSXL.literalForm));
+            ref.setTerminologyLabel(MapperUtils.localizedPropertyToMap(terminologyResource, SKOS.prefLabel));
         });
     }
 
@@ -155,6 +193,8 @@ public class ConceptService {
             throw new ResourceNotFoundException(resourceURI);
         }
 
+        checkResourceInUse(model, resourceURI);
+
         ConceptMapper.mapDeleteConcept(model, conceptIdentifier);
         repository.put(model.getGraphURI(), model);
 
@@ -165,5 +205,55 @@ public class ConceptService {
     public boolean exists(String prefix, String conceptIdentifier) {
         var u = TerminologyURI.createConceptURI(prefix, conceptIdentifier);
         return repository.resourceExistsInGraph(u.getGraphURI(), u.getResourceURI());
+    }
+
+    /**
+     * Checks if concept added as a reference to other resources, e.g. skos:broader, skos:member...
+     * @param model terminology model
+     * @param resourceURI concept URI
+     */
+    private void checkResourceInUse(ModelWrapper model, String resourceURI) {
+        var properties = new ArrayList<>(ConceptMapper.internalRefProperties);
+        properties.add(SKOS.member);
+
+        var builder = new ConstructBuilder();
+
+        var w = new WhereBuilder();
+        for (Property ref : properties) {
+
+            var path = Stream.of(
+                    PathFactory.pathLink(ref.asNode()),
+                    PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
+                    PathFactory.pathLink(RDF.first.asNode())
+            ).reduce(PathFactory::pathSeq).orElseThrow();
+
+            var varName = "?" + ref.getLocalName();
+            var bindVar = "?bind_" + ref.getLocalName();
+            var objectVar = "?o_" + ref.getLocalName();
+
+            builder.addConstruct(bindVar, ref, objectVar);
+
+            w.addOptional(new WhereBuilder()
+                    .addWhere(varName, path, NodeFactory.createURI(resourceURI))
+                    .addBind(varName, bindVar)
+                    .addWhere(bindVar, ref, objectVar));
+        }
+
+        builder.addGraph(NodeFactory.createURI(model.getGraphURI()), w);
+
+        var result = repository.queryConstruct(builder.build());
+
+        var refList = new ArrayList<ResourceInUseException.ReferenceDetail>();
+        result.listSubjects().forEach(subj ->
+                subj.listProperties().forEach(prop -> {
+                    var detail = new ResourceInUseException.ReferenceDetail();
+                    detail.setProperty(prop.getPredicate().getLocalName());
+                    detail.setUri(subj.getURI());
+                    refList.add(detail);
+        }));
+
+        if (!refList.isEmpty()) {
+            throw new ResourceInUseException(refList);
+        }
     }
 }

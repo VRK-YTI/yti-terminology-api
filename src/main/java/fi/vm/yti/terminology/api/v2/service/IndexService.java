@@ -130,6 +130,7 @@ public class IndexService extends OpenSearchInitializer {
                         getDynamicTemplate("notRecommendedSynonym", "notRecommendedSynonym.*")))
                 .properties(Map.ofEntries(
                         Map.entry("id", getKeywordProperty()),
+                        Map.entry("identifier", getKeywordProperty()),
                         Map.entry("uri", getKeywordProperty()),
                         Map.entry("status", getKeywordProperty()),
                         Map.entry("namespace", getKeywordProperty()),

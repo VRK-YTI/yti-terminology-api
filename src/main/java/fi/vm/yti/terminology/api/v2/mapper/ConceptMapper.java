@@ -14,6 +14,7 @@ import fi.vm.yti.terminology.api.v2.enums.TermFamily;
 import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.property.Term;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
@@ -157,6 +158,7 @@ public class ConceptMapper {
         var indexConcept = new IndexConcept();
         indexConcept.setId(resource.getURI());
         indexConcept.setUri(resource.getURI());
+        indexConcept.setIdentifier(resource.getLocalName());
         indexConcept.setStatus(MapperUtils.getStatus(resource));
         indexConcept.setNamespace(resource.getNameSpace());
         indexConcept.setLabel(prefLabels);
@@ -194,8 +196,10 @@ public class ConceptMapper {
         var result = new LinkedHashSet<ConceptReferenceInfoDTO>();
         MapperUtils.getResourceList(resource, property).forEach(ref -> {
             var refDTO = new ConceptReferenceInfoDTO();
-            refDTO.setConceptURI(ref.getURI());
-
+            var terminologyURI = TerminologyURI.fromUri(ref.getURI());
+            refDTO.setReferenceURI(terminologyURI.getResourceURI());
+            refDTO.setIdentifier(terminologyURI.getResourceId());
+            refDTO.setPrefix(terminologyURI.getPrefix());
             var label = new HashMap<String, String>();
             MapperUtils.getResourceList(model.getResource(ref.getURI()), SKOS.prefLabel).forEach(r -> {
                 var value = r.getProperty(SKOSXL.literalForm);
