@@ -11,10 +11,13 @@ import fi.vm.yti.terminology.api.v2.mapper.ConceptCollectionMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -23,19 +26,24 @@ import static fi.vm.yti.security.AuthorizationException.check;
 public class ConceptCollectionService {
     private final TerminologyRepository repository;
     private final TerminologyAuthorizationManager authorizationManager;
-    private final IndexService indexService;
     private final AuditService auditService;
     private final GroupManagementService groupManagementService;
 
     public ConceptCollectionService(TerminologyRepository repository,
                                     TerminologyAuthorizationManager authorizationManager,
-                                    IndexService indexService,
                                     GroupManagementService groupManagementService) {
         this.repository = repository;
         this.authorizationManager = authorizationManager;
-        this.indexService = indexService;
         this.groupManagementService = groupManagementService;
         this.auditService = new AuditService("CONCEPTCOLLECTION");
+    }
+
+    public List<ConceptCollectionInfoDTO> list(String prefix) {
+        var model = repository.fetchByPrefix(prefix);
+
+        return model.listSubjectsWithProperty(RDF.type, SKOS.Collection)
+            .mapWith(s -> ConceptCollectionMapper.modelToDTO(model, s.getLocalName(), null))
+            .toList();
     }
 
     public ConceptCollectionInfoDTO get(String prefix, String conceptCollectionIdentifier) {

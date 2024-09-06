@@ -109,7 +109,7 @@ public class ConceptCollectionMapper {
                             labelMap.put(labelProperty.getLanguage(), labelProperty.getString());
                         }
                     });
-                    dto.addMember(concept.getLocalName(), concept.getURI(), labelMap);
+                    dto.addMember(concept.getLocalName(), concept.getURI(), labelMap, model.getPrefix());
                 });
 
         MapperUtils.mapCreationInfo(dto, resource, mapUser);

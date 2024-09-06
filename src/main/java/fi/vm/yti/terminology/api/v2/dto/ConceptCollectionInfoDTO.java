@@ -7,43 +7,12 @@ import java.util.Map;
 import java.util.Set;
 
 public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
-    class Concept {
-        private String identifier;
-
-        private String uri;
-
-        private Map<String, String> label = Map.of();
-
-        public String getIdentifier() {
-            return identifier;
-        }
-
-        public void setIdentifier(String identifier) {
-            this.identifier = identifier;
-        }
-
-        public String getUri() {
-            return uri;
-        }
-
-        public void setUri(String uri) {
-            this.uri = uri;
-        }
-
-        public Map<String, String> getLabel() {
-            return label;
-        }
-
-        public void setLabel(Map<String, String> label) {
-            this.label = label;
-        }
-    }
 
     private String identifier;
 
     private Map<String, String> description = Map.of();
 
-    private Set<Concept> members = new LinkedHashSet<>();
+    private Set<ConceptReferenceInfoDTO> members = new LinkedHashSet<>();
 
     public String getIdentifier() {
         return identifier;
@@ -61,19 +30,20 @@ public class ConceptCollectionInfoDTO extends ResourceCommonInfoDTO {
         this.description = description;
     }
 
-    public Set<Concept> getMembers() {
+    public Set<ConceptReferenceInfoDTO> getMembers() {
         return members;
     }
 
-    public void setMembers(Set<Concept> members) {
+    public void setMembers(Set<ConceptReferenceInfoDTO> members) {
         this.members = members;
     }
 
-    public void addMember(String identifier, String uri, Map<String, String> label) {
-        Concept concept = new Concept();
-        concept.identifier = identifier;
-        concept.uri = uri;
-        concept.label = label;
+    public void addMember(String identifier, String uri, Map<String, String> label, String prefix) {
+        ConceptReferenceInfoDTO concept = new ConceptReferenceInfoDTO();
+        concept.setIdentifier(identifier);
+        concept.setReferenceURI(uri);
+        concept.setLabel(label);
+        concept.setPrefix(prefix);
         members.add(concept);
     }
 }
