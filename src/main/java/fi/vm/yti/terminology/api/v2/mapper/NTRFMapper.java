@@ -78,10 +78,7 @@ public class NTRFMapper {
         dto.setIdentifier(collection.getNumb());
 
         var members = new LinkedHashSet<String>();
-        collection.getLINK().forEach(member -> {
-            var conceptId = member.getHref().substring(1);
-            members.add(TerminologyURI.createConceptURI(model.getPrefix(), conceptId).getResourceURI());
-        });
+        collection.getLINK().forEach(member -> members.add(member.getHref().substring(1)));
         dto.setMembers(members);
 
         var collectionResource = model.getResourceById(collection.getNumb());
