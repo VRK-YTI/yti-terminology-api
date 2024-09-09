@@ -126,7 +126,9 @@ public class ConceptCollectionMapper {
 
     private static void addMembers(ModelWrapper model, Resource resource, Set<String> values) {
         var resources = values.stream()
-                .map(model::getResourceById)
+                .map(value -> value.contains("://")
+                        ? model.getResource(value)
+                        : model.getResourceById(value))
                 .toList();
 
         MapperUtils.addListProperty(resource, SKOS.member, resources);
