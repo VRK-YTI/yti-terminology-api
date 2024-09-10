@@ -30,7 +30,7 @@ public class ConceptCollectionController {
         this.conceptCollectionService = conceptCollectionService;
     }
 
-    @Operation(summary = "Get add concept collection in terminology")
+    @Operation(summary = "Get concept collections in terminology")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Concept collections fetched successfully"),
     })
