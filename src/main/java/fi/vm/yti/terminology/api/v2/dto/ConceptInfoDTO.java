@@ -33,6 +33,7 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
     private List<TermDTO> synonyms = new ArrayList<>();
     private List<TermDTO> notRecommendedTerms = new ArrayList<>();
     private List<TermDTO> searchTerms = new ArrayList<>();
+    private List<ConceptReferenceInfoDTO> memberOf = new ArrayList<>();
 
     public String getIdentifier() {
         return identifier;
@@ -240,5 +241,13 @@ public class ConceptInfoDTO extends ResourceCommonInfoDTO {
 
     public void setSearchTerms(List<TermDTO> searchTerms) {
         this.searchTerms = searchTerms;
+    }
+
+    public List<ConceptReferenceInfoDTO> getMemberOf() {
+        return memberOf;
+    }
+
+    public void setMemberOf(List<ConceptReferenceInfoDTO> memberOf) {
+        this.memberOf = memberOf;
     }
 }

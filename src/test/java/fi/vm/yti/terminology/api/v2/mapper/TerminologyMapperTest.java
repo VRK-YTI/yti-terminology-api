@@ -129,7 +129,7 @@ class TerminologyMapperTest {
 
         assertEquals("test", dto.getPrefix());
         assertEquals(graphURI, dto.getUri());
-        assertEquals(GraphType.TERMINOLOGICAL_VOCABULARY, dto.getModelType());
+        assertEquals(GraphType.TERMINOLOGICAL_VOCABULARY, dto.getGraphType());
         assertEquals(Status.DRAFT, dto.getStatus());
         assertEquals("Label fi", dto.getLabel().get("fi"));
         assertEquals("Label en", dto.getLabel().get("en"));

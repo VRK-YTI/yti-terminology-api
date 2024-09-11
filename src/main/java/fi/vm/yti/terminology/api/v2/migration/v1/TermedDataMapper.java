@@ -52,7 +52,9 @@ public class TermedDataMapper {
         terminologyDTO.setOrganizations(organizations);
 
         var groups = MapperUtils.arrayPropertyToSet(metaResource, DCTerms.isPartOf);
-
+        LOG.info("Found groups {}", groups);
+        LOG.info("All groups {}", allCategories.size());
+        LOG.info("sample {}, {}", allCategories.get(0).getId(), allCategories.get(0).getIdentifier());
         var newGroups = new HashSet<String>();
         groups.forEach(group ->
                 allCategories.stream()

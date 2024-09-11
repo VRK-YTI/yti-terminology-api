@@ -68,7 +68,7 @@ public class TerminologyMapper {
         dto.setLabel(MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel));
         dto.setDescription(MapperUtils.localizedPropertyToMap(resource, RDFS.comment));
         dto.setContact(MapperUtils.propertyToString(resource, SuomiMeta.contact));
-        dto.setModelType(GraphType.valueOf(MapperUtils.propertyToString(resource, Term.terminologyType)));
+        dto.setGraphType(getTerminologyType(resource));
         dto.setLanguages(MapperUtils.arrayPropertyToSet(resource, DCTerms.language));
         dto.setStatus(MapperUtils.getStatus(resource));
 
@@ -105,7 +105,7 @@ public class TerminologyMapper {
         index.setStatus(MapperUtils.getStatus(terminologyResource));
         index.setModified(terminologyResource.getProperty(DCTerms.modified).getString());
         index.setCreated(terminologyResource.getProperty(DCTerms.created).getString());
-
+        index.setType(getTerminologyType(terminologyResource));
         var organizations = MapperUtils.arrayPropertyToSet(terminologyResource, DCTerms.contributor)
                 .stream()
                 .map(o -> o.replace(Constants.URN_UUID, ""))
@@ -160,5 +160,14 @@ public class TerminologyMapper {
                 DCTerms.contributor,
                 ResourceFactory.createResource(Constants.URN_UUID + org)
         ));
+    }
+
+    private static GraphType getTerminologyType(Resource resource) {
+        try {
+            return GraphType.valueOf(MapperUtils.propertyToString(resource, Term.terminologyType));
+        } catch (IllegalArgumentException e) {
+            // invalid type
+        }
+        return null;
     }
 }

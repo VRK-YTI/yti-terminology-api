@@ -7,6 +7,8 @@ import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.security.AuthenticatedUserProvider;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
+import fi.vm.yti.terminology.api.v2.dto.CountSearchResponse;
+import fi.vm.yti.terminology.api.v2.dto.StatusCountResponse;
 import fi.vm.yti.terminology.api.v2.dto.TerminologySearchResultDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.ConceptSearchRequest;
 import fi.vm.yti.terminology.api.v2.opensearch.TerminologySearchRequest;
@@ -81,5 +83,29 @@ public class FrontendController {
             @Parameter(description = "Concept search parameters") ConceptSearchRequest request
     ) {
         return searchIndexService.searchConcepts(request, userProvider.getUser());
+    }
+
+    @Operation(summary = "Get frontpage counts")
+    @ApiResponse(responseCode = "200", description = "")
+    @GetMapping(value = "/counts", produces = APPLICATION_JSON_VALUE)
+    public CountSearchResponse getCounts() {
+        // TODO: placeholder
+        return new CountSearchResponse();
+    }
+
+    @Operation(summary = "Get concept counts")
+    @ApiResponse(responseCode = "200", description = "")
+    @GetMapping(value = "/concept-counts", produces = APPLICATION_JSON_VALUE)
+    public CountSearchResponse getConceptCounts(@RequestParam String prefix) {
+        // TODO: placeholder
+        return new CountSearchResponse();
+    }
+
+    @Operation(summary = "Get status counts")
+    @ApiResponse(responseCode = "200", description = "")
+    @GetMapping(value = "/status-counts", produces = APPLICATION_JSON_VALUE)
+    public StatusCountResponse getStatusCounts(@RequestParam String prefix) {
+        // TODO: placeholder
+        return new StatusCountResponse();
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URISyntaxException;
+import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -27,6 +28,15 @@ public class ConceptCollectionController {
 
     public ConceptCollectionController(ConceptCollectionService conceptCollectionService) {
         this.conceptCollectionService = conceptCollectionService;
+    }
+
+    @Operation(summary = "Get concept collections in terminology")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Concept collections fetched successfully"),
+    })
+    @GetMapping(path = "/{prefix}")
+    public List<ConceptCollectionInfoDTO> list(@PathVariable @Parameter(description = "Terminology prefix") String prefix) {
+        return conceptCollectionService.list(prefix);
     }
 
     @Operation(summary = "Get concept collection information")

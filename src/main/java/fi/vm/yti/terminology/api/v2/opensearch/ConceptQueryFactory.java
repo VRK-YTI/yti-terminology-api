@@ -14,7 +14,8 @@ import java.util.Set;
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
 
 public class ConceptQueryFactory {
-    public ConceptQueryFactory() {
+    private ConceptQueryFactory() {
+        // static methods
     }
 
     public static SearchRequest createConceptQuery(
@@ -83,6 +84,16 @@ public class ConceptQueryFactory {
                             .field("namespace")
                             .value(FieldValue.of(request.getNamespace())))
                     .toQuery());
+        }
+
+        if (request.getExcludeNamespace() != null) {
+            allQueries.add(QueryBuilders.bool()
+                    .mustNot(
+                        TermQuery.of(q -> q
+                                .field("namespace")
+                                .value(FieldValue.of(request.getExcludeNamespace())))
+                        .toQuery())
+                    .build().toQuery());
         }
 
         if (!isSuperUser) {

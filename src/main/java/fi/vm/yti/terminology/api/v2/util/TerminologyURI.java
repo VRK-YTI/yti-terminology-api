@@ -24,6 +24,8 @@ public class TerminologyURI extends GraphURI {
     }
 
     public static TerminologyURI fromUri(String uri) {
+        // remove query parameters
+        uri = uri.split("\\?")[0];
         var matcher = iriPattern.matcher(uri);
         if (matcher.matches()) {
             var prefix = matcher.group("prefix");

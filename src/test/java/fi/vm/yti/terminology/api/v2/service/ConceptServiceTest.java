@@ -263,7 +263,7 @@ class ConceptServiceTest {
 
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
         when(repository.resourceExistsInGraph(conceptURI.getGraphURI(), conceptURI.getResourceURI())).thenReturn(true);
-
+        when(repository.queryConstruct(any(Query.class))).thenReturn(ModelFactory.createDefaultModel());
         conceptService.delete("test", "concept-2");
 
         // resource concept-2 should not exists and it should not exists as an object either

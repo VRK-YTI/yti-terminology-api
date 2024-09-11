@@ -245,11 +245,11 @@ class ConceptMapperTest {
         assertEquals("https://dvv.fi", link.getUri());
 
         var internalRef = dto.getBroader().iterator().next();
-        assertEquals(graphURI + "concept-2", internalRef.getConceptURI());
+        assertEquals(graphURI + "concept-2", internalRef.getReferenceURI());
         assertEquals("Suositettava termi", internalRef.getLabel().get("fi"));
 
         var externalRef = dto.getNarrowMatch().iterator().next();
-        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.getConceptURI());
+        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.getReferenceURI());
     }
 
     @Test

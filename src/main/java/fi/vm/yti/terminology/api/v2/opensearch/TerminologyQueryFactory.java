@@ -1,12 +1,9 @@
 package fi.vm.yti.terminology.api.v2.opensearch;
 
-import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
 import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.opensearch.QueryFactoryUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
 import fi.vm.yti.terminology.api.v2.service.IndexService;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.jena.query.QueryFactory;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.*;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -16,13 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
 
 public class TerminologyQueryFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(OpenSearchClientWrapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(TerminologyQueryFactory.class);
 
     private TerminologyQueryFactory() {
     }
@@ -242,11 +238,25 @@ public class TerminologyQueryFactory {
                                 .map(FieldValue::of)
                                 .toList())))
                 .toQuery();
-        var sr = new SearchRequest.Builder()
+        return new SearchRequest.Builder()
                 .index(IndexService.TERMINOLOGY_INDEX)
                 .size(10000)
                 .query(q1)
                 .build();
-        return sr;
+    }
+
+    public static SearchRequest createFetchTerminologiesByNamespaceQuery(Set<String> namespaces) {
+        var query = TermsQuery.of(q -> q
+                .field("uri")
+                .terms(t -> t.value(namespaces
+                        .stream()
+                        .map(FieldValue::of)
+                        .toList())
+                )).toQuery();
+        return new SearchRequest.Builder()
+                .index(IndexService.TERMINOLOGY_INDEX)
+                .size(10000)
+                .query(query)
+                .build();
     }
 }
