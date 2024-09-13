@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public class TerminologyURI extends GraphURI {
 
     private static final Pattern iriPattern = Pattern.compile("https?://iri.suomi.fi/terminology/" +
-                                                              "(?<prefix>[\\w-]+)/" +
+                                                              "(?<prefix>[\\w-]+)/?" +
                                                               "(?<resource>[\\w-]+)?");
 
     public static TerminologyURI createTerminologyURI(String prefix) {

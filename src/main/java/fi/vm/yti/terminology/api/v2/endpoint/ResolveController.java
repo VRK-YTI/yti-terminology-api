@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.endpoint;
 
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.terminology.api.v2.service.UriResolveService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,9 +38,13 @@ public class ResolveController {
     public ResponseEntity<Void> resolveV1URL(@RequestParam String termedId) {
         HttpHeaders headers = new HttpHeaders();
 
-        var url = uriResolveService.resolveLegacyURL(termedId);
+        String url;
+        try {
+            url = uriResolveService.resolveLegacyURL(termedId);
+        } catch (ResourceNotFoundException e) {
+            url = "/404";
+        }
         headers.add(HttpHeaders.LOCATION, url);
-
         return new ResponseEntity<>(headers, HttpStatus.MOVED_PERMANENTLY);
     }
 }
