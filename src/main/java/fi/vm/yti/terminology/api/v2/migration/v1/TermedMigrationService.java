@@ -121,6 +121,7 @@ public class TermedMigrationService {
         }
     }
 
+    @Async
     public void migrate(final String terminologyId) throws URISyntaxException {
         if (!userProvider.getUser().isSuperuser()) {
             throw new AuthorizationException("Not allowed");
@@ -162,33 +163,35 @@ public class TermedMigrationService {
 
         handleConcepts(terminologyId, oldData, terminologyDTO, defaultLanguage);
         handleCollections(terminologyDTO.getPrefix(), oldData);
+        LOG.info("Terminology {} migrated", terminologyId);
     }
 
     private void handleConcepts(String terminologyId, Model oldData, TerminologyDTO terminologyDTO, String defaultLanguage) {
         oldData.listSubjectsWithProperty(RDF.type, SKOS.Concept)
                 .filterKeep(c -> c.getURI().startsWith(TermedDataMapper.URI_SUOMI_FI))
                 .forEach(resource -> {
-                    var concept = TermedDataMapper.mapConcept(oldData, resource, mapper, defaultLanguage);
+                    try {
+                        var concept = TermedDataMapper.mapConcept(oldData, resource, mapper, defaultLanguage);
 
-                    // fetch data from termed because export doesn't maintain the order
-                    if (!concept.getNotes().isEmpty() || !concept.getExamples().isEmpty()) {
-                        var conceptTermedId = MapperUtils.propertyToString(resource, Termed.id);
-                        var conceptResult = webClient.get().uri(builder -> builder
-                                .pathSegment(terminologyId, "node-trees")
-                                .queryParam("select", "id,properties.*")
-                                .queryParam("where", "id:" + conceptTermedId)
-                                .build()).retrieve().bodyToMono(JsonNode.class).block();
+                        // fetch data from termed because export doesn't maintain the order
+                        if (concept.getNotes().size() > 1 || concept.getExamples().size() > 1) {
+                            var conceptTermedId = MapperUtils.propertyToString(resource, Termed.id);
+                            var conceptResult = webClient.get().uri(builder -> builder
+                                    .pathSegment(terminologyId, "node-trees")
+                                    .queryParam("select", "id,properties.*")
+                                    .queryParam("where", "id:" + conceptTermedId)
+                                    .build()).retrieve().bodyToMono(JsonNode.class).block();
 
-                        if (conceptResult != null && !conceptResult.isEmpty()) {
-                            JsonNode properties = conceptResult.get(0).get("properties");
-                            concept.setNotes(handleOrder(properties, "note"));
-                            concept.setExamples(handleOrder(properties, "example"));
+                            if (conceptResult != null && !conceptResult.isEmpty()) {
+                                JsonNode properties = conceptResult.get(0).get("properties");
+                                concept.setNotes(handleOrder(properties, "note"));
+                                concept.setExamples(handleOrder(properties, "example"));
+                            }
                         }
-                    }
 
-                    ConceptMapper.externalRefProperties.forEach(prop ->
-                            MapperUtils.arrayPropertyToList(resource, prop)
-                                    .forEach(r -> {
+                        ConceptMapper.externalRefProperties.forEach(prop ->
+                                MapperUtils.arrayPropertyToList(resource, prop)
+                                        .forEach(r -> {
                                         var conceptLink = oldData.getResource(r);
                                         var linkedTerminology = MapperUtils.propertyToString(conceptLink, Termed.targetUri);
                                         var linkedConcept = MapperUtils.propertyToString(conceptLink, Termed.targetId);
@@ -216,11 +219,11 @@ public class TermedMigrationService {
                                             }
                                         }
                                     }));
-                    try {
                         conceptService.create(terminologyDTO.getPrefix(), concept);
                         updateTimestamps(resource, terminologyDTO.getPrefix(), concept.getIdentifier());
                         addTermedId(terminologyDTO.getPrefix(), concept.getIdentifier(), MapperUtils.propertyToString(resource, Termed.id));
-                    } catch (URISyntaxException e) {
+                    } catch (Exception e) {
+                        LOG.warn("Unhandled exception in terminology {}, concept {}", terminologyId, resource.getURI());
                         LOG.error(e.getMessage(), e);
                     }
                 });

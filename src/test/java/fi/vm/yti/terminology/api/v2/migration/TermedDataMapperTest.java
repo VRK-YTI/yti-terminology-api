@@ -27,7 +27,7 @@ class TermedDataMapperTest {
     void testMapTerminology() {
         var oldData = getData();
 
-        var serviceCategory = new ServiceCategoryDTO("http://urn.fi/URN:NBN:fi:au:ptvl/v1090",
+        var serviceCategory = new ServiceCategoryDTO("http://urn.fi/URN:NBN:fi:au:ptvl:v1090",
                 Map.of("fi", "Asuminen"), "P10");
 
         var dto = TermedDataMapper.mapTerminology(oldData.getResource("http://uri.suomi.fi/terminology/test"), List.of(serviceCategory));

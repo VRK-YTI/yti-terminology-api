@@ -30,7 +30,23 @@ public class TermedDataMapper {
 
     public static final String URI_SUOMI_FI = "http://uri.suomi.fi";
 
-    private TermedDataMapper() {}
+    private static final Map<String, Enum<?>> enumValueMap = Map.ofEntries(
+            Map.entry("maskuliini", TermFamily.MASCULINE),
+            Map.entry("feminiini", TermFamily.FEMININE),
+            Map.entry("neutri", TermFamily.NEUTRAL),
+            Map.entry("monikko", TermConjugation.PLURAL),
+            Map.entry("yksikkö", TermConjugation.SINGULAR),
+            Map.entry(">", TermEquivalency.BROADER),
+            Map.entry("<", TermEquivalency.NARROWER),
+            Map.entry("~", TermEquivalency.CLOSE),
+            Map.entry("near-equivalent", TermEquivalency.CLOSE),
+            Map.entry("adj.", WordClass.ADJECTIVE),
+            Map.entry("verbi", WordClass.VERB),
+            Map.entry("verb/verbi", WordClass.VERB)
+    );
+
+    private TermedDataMapper() {
+    }
 
     public static TerminologyDTO mapTerminology(Resource metaResource, List<ServiceCategoryDTO> allCategories) {
         var terminologyDTO = new TerminologyDTO();
@@ -51,10 +67,11 @@ public class TermedDataMapper {
                 .collect(Collectors.toSet());
         terminologyDTO.setOrganizations(organizations);
 
-        var groups = MapperUtils.arrayPropertyToSet(metaResource, DCTerms.isPartOf);
-        LOG.info("Found groups {}", groups);
-        LOG.info("All groups {}", allCategories.size());
-        LOG.info("sample {}, {}", allCategories.get(0).getId(), allCategories.get(0).getIdentifier());
+        // fix group URIs stored in Termed :ptvl/v1000 -> :ptvl:v1000
+        var groups = MapperUtils.arrayPropertyToSet(metaResource, DCTerms.isPartOf)
+                .stream().map(g -> g.replace(":ptvl/", ":ptvl:"))
+                .collect(Collectors.toSet());
+
         var newGroups = new HashSet<String>();
         groups.forEach(group ->
                 allCategories.stream()
@@ -161,16 +178,7 @@ public class TermedDataMapper {
         dto.setChangeNote(MapperUtils.propertyToString(resource, SKOS.changeNote));
         dto.setTermFamily(getEnumValue(resource, Termed.termFamily, TermFamily.class));
         dto.setTermConjugation(getEnumValue(resource, Termed.termConjugation, TermConjugation.class));
-
-        var equivalency = MapperUtils.propertyToString(resource, Termed.termEquivalency);
-        if ("~".equals(equivalency)) {
-            dto.setTermEquivalency(TermEquivalency.CLOSE);
-        } else if (">".equals(equivalency)) {
-            dto.setTermEquivalency(TermEquivalency.BROADER);
-        } else if ("<".equals(equivalency)) {
-            dto.setTermEquivalency(TermEquivalency.NARROWER);
-        }
-
+        dto.setTermEquivalency(getEnumValue(resource, Termed.termEquivalency, TermEquivalency.class));
         dto.setScope(MapperUtils.propertyToString(resource, Termed.scope));
         dto.setTermInfo(MapperUtils.propertyToString(resource, Termed.termInfo));
         dto.setTermStyle(MapperUtils.propertyToString(resource, Termed.termStyle));
@@ -189,6 +197,9 @@ public class TermedDataMapper {
         }
 
         try {
+            if (enumValueMap.containsKey(value.toLowerCase())) {
+                return (E) enumValueMap.get(value.toLowerCase());
+            }
             return Enum.valueOf(e, value.toUpperCase());
         } catch (Exception ex) {
             LOG.error("Invalid enum value {}, {}", value, e);

@@ -80,7 +80,7 @@
         iow:scope                "skooppi" ;
         ts:termConjugation       "singular" ;
         ts:termEquivalency       ">" ;
-        ts:termFamily            "masculine" ;
+        ts:termFamily            "maskuliini" ;
         ts:termHomographNumber   "1" ;
         ts:termInfo              "lisätieto" ;
         ts:termStyle             "tyyli" ;
