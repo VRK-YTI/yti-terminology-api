@@ -191,7 +191,14 @@ public class TermedDataMapper {
     }
 
     private static <E extends Enum<E>> E getEnumValue(Resource resource, Property property, Class<E> e) {
-        var value = MapperUtils.propertyToString(resource, property);
+        var obj = resource.getProperty(property);
+        String value;
+        if (obj != null) {
+            value = obj.getString();
+        } else {
+            return null;
+        }
+
         if (value == null) {
             return null;
         }
@@ -202,7 +209,7 @@ public class TermedDataMapper {
             }
             return Enum.valueOf(e, value.toUpperCase());
         } catch (Exception ex) {
-            LOG.error("Invalid enum value {}, {}", value, e);
+            LOG.error("Invalid enum value {}, {}", obj, e);
             return null;
         }
     }
