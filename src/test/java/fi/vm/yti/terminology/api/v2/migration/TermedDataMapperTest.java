@@ -1,18 +1,17 @@
 package fi.vm.yti.terminology.api.v2.migration;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
-import fi.vm.yti.terminology.api.v2.TestUtils;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.migration.v1.TermedDataMapper;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFLanguages;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,12 +24,9 @@ class TermedDataMapperTest {
 
     @Test
     void testMapTerminology() {
-        var oldData = getData();
+        var oldData = getTermedData("termed-terminology.json");
 
-        var serviceCategory = new ServiceCategoryDTO("http://urn.fi/URN:NBN:fi:au:ptvl:v1090",
-                Map.of("fi", "Asuminen"), "P10");
-
-        var dto = TermedDataMapper.mapTerminology(oldData.getResource("http://uri.suomi.fi/terminology/test"), List.of(serviceCategory));
+        var dto = TermedDataMapper.mapTerminology(oldData);
 
         assertNotNull(dto);
         assertEquals("test", dto.getPrefix());
@@ -39,6 +35,11 @@ class TermedDataMapperTest {
                 "sv", "test sv",
                 "en", "test en"
             ), dto.getLabel());
+        assertEquals(Map.of(
+                "fi", "desc fi",
+                "sv", "desc sv",
+                "en", "desc en"
+        ), dto.getDescription());
         assertEquals(Status.VALID, dto.getStatus());
         assertEquals(Set.of(UUID.fromString("7d3a3c00-5a6b-489b-a3ed-63bb58c26a63")), dto.getOrganizations());
         assertEquals("yhteentoimivuus@dvv.fi", dto.getContact());
@@ -48,10 +49,9 @@ class TermedDataMapperTest {
 
     @Test
     void testMapConcept() {
-        var oldData = getData();
+        var oldData = getTermedData("termed-concept.json");
 
-        var dto = TermedDataMapper.mapConcept(oldData, oldData.getResource("http://uri.suomi.fi/terminology/test/c340"),
-                new ObjectMapper(), "fi");
+        var dto = TermedDataMapper.mapConcept(oldData,"fi");
 
         assertEquals(1, dto.getRecommendedTerms().size());
         assertEquals(1, dto.getSynonyms().size());
@@ -92,12 +92,23 @@ class TermedDataMapperTest {
         assertEquals("https://iri.suomi.fi/terminology/test/broader-test", ref);
     }
 
-    private Model getData() {
-        var model = ModelFactory.createDefaultModel();
-        var stream = TestUtils.class.getResourceAsStream("/v1-migration/termed-data.ttl");
-        assertNotNull(stream);
-        RDFDataMgr.read(model, stream, RDFLanguages.TURTLE);
+    @Test
+    void testMapCollection() {
+        var oldData = getTermedData("termed-collection.json");
 
-        return model;
+        var dto = TermedDataMapper.mapCollection(oldData);
+
+        assertEquals("Testikokoelma", dto.getLabel().get("fi"));
+        assertEquals("Kuvaus", dto.getDescription().get("fi"));
+        assertEquals(Set.of("c1", "c2"), dto.getMembers());
+    }
+
+    private JsonNode getTermedData(String file) {
+        try {
+            return new ObjectMapper().readTree(
+                    TermedDataMapperTest.class.getResourceAsStream("/v1-migration/" + file));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

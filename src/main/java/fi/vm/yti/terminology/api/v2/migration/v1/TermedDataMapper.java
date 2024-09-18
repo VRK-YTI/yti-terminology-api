@@ -3,21 +3,23 @@ package fi.vm.yti.terminology.api.v2.migration.v1;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterables;
 import fi.vm.yti.common.dto.LinkDTO;
-import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
-import fi.vm.yti.common.util.MapperUtils;
-import fi.vm.yti.terminology.api.v2.dto.*;
-import fi.vm.yti.terminology.api.v2.enums.*;
+import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
+import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
+import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
+import fi.vm.yti.terminology.api.v2.enums.TermEquivalency;
+import fi.vm.yti.terminology.api.v2.enums.TermFamily;
+import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.graph.NodeFactory;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
-import org.apache.jena.vocabulary.SKOSXL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,8 @@ public class TermedDataMapper {
     private static final Logger LOG = LoggerFactory.getLogger(TermedDataMapper.class);
 
     public static final String URI_SUOMI_FI = "http://uri.suomi.fi";
+
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final Map<String, Enum<?>> enumValueMap = Map.ofEntries(
             Map.entry("maskuliini", TermFamily.MASCULINE),
@@ -48,70 +52,56 @@ public class TermedDataMapper {
     private TermedDataMapper() {
     }
 
-    public static TerminologyDTO mapTerminology(Resource metaResource, List<ServiceCategoryDTO> allCategories) {
+    public static TerminologyDTO mapTerminology(JsonNode json) {
+        var data = new TermedDataParser(json);
+
         var terminologyDTO = new TerminologyDTO();
 
-        var terminologyURI = NodeFactory.createURI(MapperUtils.propertyToString(metaResource, Termed.uri));
+        var uri = data.getString(Termed.uri.getLocalName());
+        var uriParts = Arrays.stream(uri.split("/"))
+                .filter(p -> !p.isEmpty())
+                .toList();
 
-        terminologyDTO.setPrefix(terminologyURI.getLocalName());
-        terminologyDTO.setLanguages(MapperUtils.arrayPropertyToSet(metaResource, DCTerms.language));
-        terminologyDTO.setLabel(MapperUtils.localizedPropertyToMap(metaResource, SKOS.prefLabel));
-        terminologyDTO.setDescription(MapperUtils.localizedPropertyToMap(metaResource, DCTerms.description));
-        terminologyDTO.setStatus(Status.valueOf(MapperUtils.propertyToString(metaResource, Termed.status)));
-
-        var organizations = MapperUtils.arrayPropertyToSet(metaResource, DCTerms.contributor).stream()
-                .map(o -> {
-                    var parts = o.split("/");
-                    return UUID.fromString(parts[parts.length - 1]);
-                })
-                .collect(Collectors.toSet());
-        terminologyDTO.setOrganizations(organizations);
-
-        // fix group URIs stored in Termed :ptvl/v1000 -> :ptvl:v1000
-        var groups = MapperUtils.arrayPropertyToSet(metaResource, DCTerms.isPartOf)
-                .stream().map(g -> g.replace(":ptvl/", ":ptvl:"))
-                .collect(Collectors.toSet());
-
-        var newGroups = new HashSet<String>();
-        groups.forEach(group ->
-                allCategories.stream()
-                        .filter(grp -> grp.getId().equals(group))
-                        .findFirst()
-                        .ifPresent(g -> newGroups.add(g.getIdentifier()))
-        );
-        terminologyDTO.setGroups(newGroups);
-
-        var type = GraphType.TERMINOLOGICAL_VOCABULARY;
-        if (metaResource.hasProperty(Termed.terminologyType)) {
-            type = GraphType.valueOf(MapperUtils.propertyToString(metaResource, Termed.terminologyType));
+        var prefix = Iterables.getLast(uriParts, null);
+        if (Character.isDigit(prefix.charAt(0))) {
+            prefix = "a" + prefix;
         }
-        terminologyDTO.setGraphType(type);
-        terminologyDTO.setContact(MapperUtils.propertyToString(metaResource, Termed.contact));
+        terminologyDTO.setPrefix(prefix);
+        terminologyDTO.setLanguages(new HashSet<>(data.getListProperty(DCTerms.language.getLocalName())));
+        terminologyDTO.setLabel(data.getLocalizedProperty(SKOS.prefLabel.getLocalName()));
+        terminologyDTO.setDescription(data.getLocalizedProperty(DCTerms.description.getLocalName()));
+        var type = getEnumValue(data, Termed.terminologyType.getLocalName(), GraphType.class);
+        terminologyDTO.setStatus(getStatus(data));
+        terminologyDTO.setGraphType(type != null ? type : GraphType.TERMINOLOGICAL_VOCABULARY);
+        terminologyDTO.setContact(data.getProperty(Termed.contact.getLocalName()));
+
+        var groups = data.getReferenceNodes("inGroup").stream()
+                .map(group -> new TermedDataParser(group).getProperty(SKOS.notation.getLocalName()))
+                .collect(Collectors.toSet());
+        var organizations = data.getReferenceNodes("contributor").stream()
+                .map(org -> UUID.fromString(org.get("id").asText()))
+                .collect(Collectors.toSet());
+        terminologyDTO.setGroups(groups);
+        terminologyDTO.setOrganizations(organizations);
         return terminologyDTO;
     }
 
-    public static ConceptDTO mapConcept(Model oldData, Resource c, ObjectMapper mapper, String defaultLanguage) {
+    public static ConceptDTO mapConcept(JsonNode termedData, String defaultLanguage) {
+        var data = new TermedDataParser(termedData);
         var concept = new ConceptDTO();
-        concept.setIdentifier(c.getLocalName());
-        concept.setStatus(Status.valueOf(MapperUtils.propertyToString(c, Termed.status)));
-        concept.setDefinition(MapperUtils.localizedPropertyToMap(c, SKOS.definition));
+        concept.setIdentifier(data.getString("code"));
+        concept.setStatus(getStatus(data));
+        concept.setDefinition(data.getLocalizedProperty(SKOS.definition.getLocalName()));
+        concept.setExamples(data.getLocalizedListValue(SKOS.example.getLocalName()));
+        concept.setNotes(data.getLocalizedListValue(SKOS.note.getLocalName()));
+        concept.setConceptClass(data.getProperty(Termed.conceptClass.getLocalName()));
+        concept.setHistoryNote(data.getProperty(SKOS.historyNote.getLocalName()));
+        concept.setChangeNote(data.getProperty(SKOS.changeNote.getLocalName()));
+        concept.setSubjectArea(data.getProperty(Termed.subjectArea.getLocalName()));
+        concept.setEditorialNotes(data.getListProperty(SKOS.editorialNote.getLocalName()));
+        concept.setSources(data.getListProperty(DCTerms.source.getLocalName()));
 
-        var examples = c.listProperties(SKOS.example)
-                .mapWith(e -> new LocalizedValueDTO(e.getLanguage(), e.getString()))
-                .toList();
-        var notes = c.listProperties(SKOS.note)
-                .mapWith(e -> new LocalizedValueDTO(e.getLanguage(), e.getString()))
-                .toList();
-        concept.setExamples(examples);
-        concept.setNotes(notes);
-        concept.setConceptClass(MapperUtils.propertyToString(c, Termed.conceptClass));
-        concept.setHistoryNote(MapperUtils.propertyToString(c, SKOS.historyNote));
-        concept.setChangeNote(MapperUtils.propertyToString(c, SKOS.changeNote));
-        concept.setSubjectArea(MapperUtils.propertyToString(c, Termed.subjectArea));
-        concept.setEditorialNotes(MapperUtils.arrayPropertyToList(c, SKOS.editorialNote));
-        concept.setSources(MapperUtils.arrayPropertyToList(c, DCTerms.source));
-
-        var links = MapperUtils.arrayPropertyToList(c, Termed.link).stream().map(l -> {
+        var links = data.getListProperty(Termed.link.getLocalName()).stream().map(l -> {
             try {
                 l = l.replace("\\\"", "\"");
                 l = l.replace("\"{", "{");
@@ -131,73 +121,115 @@ public class TermedDataMapper {
 
         concept.setLinks(links);
 
-        MapperUtils.arrayPropertyToList(c, SKOSXL.prefLabel)
-                .forEach(t -> concept.getRecommendedTerms().add(getTerm(oldData.getResource(t))));
+        data.getReferenceNodes("prefLabelXl").stream()
+                .map(TermedDataMapper::getTerm)
+                .filter(Objects::nonNull)
+                .forEach(term -> concept.getRecommendedTerms().add(term));
+        data.getReferenceNodes("altLabelXl").stream()
+                .map(TermedDataMapper::getTerm)
+                .filter(Objects::nonNull)
+                .forEach(term -> concept.getSynonyms().add(term));
+        data.getReferenceNodes("notRecommendedSynonym").stream()
+                .map(TermedDataMapper::getTerm)
+                .filter(Objects::nonNull)
+                .forEach(term -> concept.getNotRecommendedTerms().add(term));
+        data.getReferenceNodes("searchTerm").stream()
+                .map(TermedDataMapper::getTerm)
+                .filter(Objects::nonNull)
+                .forEach(term -> concept.getSearchTerms().add(term));
 
-        MapperUtils.arrayPropertyToList(c, Termed.synonym)
-                .forEach(t -> concept.getSynonyms().add(getTerm(oldData.getResource(t))));
-
-        MapperUtils.arrayPropertyToList(c, Termed.notRecommended)
-                .forEach(t -> concept.getNotRecommendedTerms().add(getTerm(oldData.getResource(t))));
-
-        MapperUtils.arrayPropertyToList(c, Termed.searchTerm)
-                .forEach(t -> concept.getSearchTerms().add(getTerm(oldData.getResource(t))));
-
-        ConceptMapper.internalRefProperties.forEach(prop ->
-                MapperUtils.arrayPropertyToList(c, prop).forEach(ref -> {
-                    ref = fixURI(ref);
-                    if (prop.equals(SKOS.broader)) {
-                        concept.getBroader().add(ref);
-                    } else if (prop.equals(SKOS.narrower)) {
-                        concept.getNarrower().add(ref);
-                    } else if (prop.equals(SKOS.related)) {
-                        concept.getRelated().add(ref);
-                    } else if (prop.equals(DCTerms.isPartOf)) {
-                        concept.getIsPartOf().add(ref);
-                    } else if (prop.equals(DCTerms.hasPart)) {
-                        concept.getHasPart().add(ref);
-                    }
-                }));
+        ConceptMapper.internalRefProperties.forEach(prop -> {
+            var references = data.getReferences(prop.getLocalName());
+            if (prop.equals(SKOS.broader)) {
+                concept.getBroader().addAll(references);
+            } else if (prop.equals(SKOS.narrower)) {
+                concept.getNarrower().addAll(references);
+            } else if (prop.equals(SKOS.related)) {
+                concept.getRelated().addAll(references);
+            } else if (prop.equals(DCTerms.isPartOf)) {
+                concept.getIsPartOf().addAll(references);
+            } else if (prop.equals(DCTerms.hasPart)) {
+                concept.getHasPart().addAll(references);
+            }
+        });
         return concept;
+    }
+
+    public static ConceptCollectionDTO mapCollection(JsonNode termedData) {
+        var data = new TermedDataParser(termedData);
+
+        var dto = new ConceptCollectionDTO();
+
+        var label = data.getLocalizedProperty(SKOS.prefLabel.getLocalName());
+        var description = data.getLocalizedProperty(SKOS.definition.getLocalName());
+
+        dto.setIdentifier(data.getString("code"));
+        dto.setLabel(label);
+        dto.setDescription(description);
+        data.getReferences("member").forEach(member ->
+                dto.addMember(NodeFactory.createURI(member).getLocalName()));
+
+        return dto;
     }
 
     public static String fixURI(String uri) {
         if (uri == null) {
             return null;
         }
-        return uri.replace(URI_SUOMI_FI, "https://iri.suomi.fi");
+        uri = uri.replace(URI_SUOMI_FI, "https://iri.suomi.fi");
+
+        // add 'a' to prefix if the old prefix starts with number
+        var terminologyURI = TerminologyURI.fromUri(uri);
+        if (terminologyURI.getPrefix() != null && Character.isDigit(terminologyURI.getPrefix().charAt(0))) {
+            uri = uri.replace("/terminology/", "/terminology/a");
+        }
+        return uri;
     }
 
-    private static TermDTO getTerm(Resource resource) {
+    public static TermDTO getTerm(JsonNode json) {
         var dto = new TermDTO();
-        var label = resource.getProperty(SKOSXL.literalForm);
-        dto.setLanguage(label.getLanguage());
-        dto.setLabel(label.getString());
-        dto.setStatus(Status.valueOf(MapperUtils.propertyToString(resource, Termed.status)));
-        dto.setHistoryNote(MapperUtils.propertyToString(resource, SKOS.historyNote));
-        dto.setChangeNote(MapperUtils.propertyToString(resource, SKOS.changeNote));
-        dto.setTermFamily(getEnumValue(resource, Termed.termFamily, TermFamily.class));
-        dto.setTermConjugation(getEnumValue(resource, Termed.termConjugation, TermConjugation.class));
-        dto.setTermEquivalency(getEnumValue(resource, Termed.termEquivalency, TermEquivalency.class));
-        dto.setScope(MapperUtils.propertyToString(resource, Termed.scope));
-        dto.setTermInfo(MapperUtils.propertyToString(resource, Termed.termInfo));
-        dto.setTermStyle(MapperUtils.propertyToString(resource, Termed.termStyle));
-        dto.setHomographNumber(MapperUtils.getLiteral(resource, Termed.homographNumber, Integer.class));
-        dto.setWordClass(getEnumValue(resource, Termed.wordClass, WordClass.class));
-        dto.setEditorialNotes(MapperUtils.arrayPropertyToList(resource, SKOS.editorialNote));
-        dto.setSources(MapperUtils.arrayPropertyToList(resource, DCTerms.source));
+        var data = new TermedDataParser(json);
+        var label = data.getLocalizedProperty(SKOS.prefLabel.getLocalName());
+        if (label == null || label.isEmpty()) {
+            var uri = data.getString("uri");
+            LOG.warn("Skip term with empty label {}", uri);
+            return null;
+        }
+        var language = label.keySet().iterator().next();
+        dto.setLabel(label.get(language));
+        dto.setLanguage(language);
+        dto.setStatus(getStatus(data));
+        dto.setHistoryNote(data.getProperty(SKOS.historyNote.getLocalName()));
+        dto.setChangeNote(data.getProperty(SKOS.changeNote.getLocalName()));
+        dto.setTermFamily(getEnumValue(data, Termed.termFamily.getLocalName(), TermFamily.class));
+        dto.setTermConjugation(getEnumValue(data, Termed.termConjugation.getLocalName(), TermConjugation.class));
+        dto.setTermEquivalency(getEnumValue(data, Termed.termEquivalency.getLocalName(), TermEquivalency.class));
+        dto.setScope(data.getProperty(Termed.scope.getLocalName()));
+        dto.setTermInfo(data.getProperty(Termed.termInfo.getLocalName()));
+        dto.setTermStyle(data.getProperty(Termed.termStyle.getLocalName()));
 
+        var homograph = data.getProperty(Termed.homographNumber.getLocalName());
+        try {
+            if (homograph != null) {
+                dto.setHomographNumber(Integer.valueOf(homograph));
+            }
+        } catch (NumberFormatException e) {
+            LOG.warn("Invalid term homograph number {}", homograph);
+        }
+
+        dto.setWordClass(getEnumValue(data, "wordClass", WordClass.class));
+        dto.setEditorialNotes(data.getListProperty(SKOS.editorialNote.getLocalName()));
+        dto.setSources(data.getListProperty(DCTerms.source.getLocalName()));
         return dto;
     }
 
-    private static <E extends Enum<E>> E getEnumValue(Resource resource, Property property, Class<E> e) {
-        var obj = resource.getProperty(property);
-        String value;
-        if (obj != null) {
-            value = obj.getString();
-        } else {
-            return null;
-        }
+    private static Status getStatus(TermedDataParser data) {
+        var status = getEnumValue(data, "status", Status.class);
+        return status != null ? status : Status.DRAFT;
+    }
+
+    private static <E extends Enum<E>> E getEnumValue(TermedDataParser parser, String property, Class<E> e) {
+        var value = parser.getProperty(property);
 
         if (value == null) {
             return null;
@@ -209,9 +241,8 @@ public class TermedDataMapper {
             }
             return Enum.valueOf(e, value.toUpperCase());
         } catch (Exception ex) {
-            LOG.error("Invalid enum value {}, {}", obj, e);
+            LOG.error("Invalid enum value {}, {}", value, e);
             return null;
         }
     }
-
 }

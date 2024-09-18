@@ -1,0 +1,288 @@
+{
+  "id": "487ddf2b-833e-47f4-b1af-4660ce5b76b7",
+  "code": "c340",
+  "uri": "http://uri.suomi.fi/terminology/181f5f11/c340",
+  "number": 3004,
+  "createdBy": "0e9bc795-dd69-4bbe-b3eb-21e67e3f3ff6",
+  "createdDate": "2024-09-17T07:14:13Z",
+  "lastModifiedBy": "0e9bc795-dd69-4bbe-b3eb-21e67e3f3ff6",
+  "lastModifiedDate": "2024-09-17T07:16:26Z",
+  "type": {
+    "id": "Concept",
+    "graph": {
+      "id": "40d6be90-c354-4ca1-a562-b2142f3f5f0d"
+    }
+  },
+  "properties": {
+    "note": [
+      {
+        "lang": "fi",
+        "value": "note 1",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "fi",
+        "value": "note 2",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "fi",
+        "value": "note 3",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "fi",
+        "value": "note 4",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "editorialNote": [
+      {
+        "lang": "",
+        "value": "muistiinpano",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "subjectArea": [
+      {
+        "lang": "",
+        "value": "Test aihealue",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "definition": [
+      {
+        "lang": "fi",
+        "value": "test definition",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "historyNote": [
+      {
+        "lang": "",
+        "value": "käyttö",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "changeNote": [
+      {
+        "lang": "",
+        "value": "muutos",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "conceptClass": [
+      {
+        "lang": "",
+        "value": "luokkakäsite",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "status": [
+      {
+        "lang": "",
+        "value": "VALID",
+        "regex": "(?s)^.*$"
+      }
+    ]
+  },
+  "references": {
+    "broader": [
+      {
+        "id": "adecfb88-f2dd-43a2-ad9f-4aa1eeace448",
+        "code": "broader-test",
+        "uri": "http://uri.suomi.fi/terminology/test/broader-test",
+        "references": {},
+        "referrers": {}
+      }
+    ],
+    "altLabelXl": [
+      {
+        "id": "4ee48413-2a66-43b5-94c1-b64d67532ac3",
+        "code": "term-3011",
+        "uri": "http://uri.suomi.fi/terminology/181f5f11/term-3011",
+        "properties": {
+          "prefLabel": [
+            {
+              "lang": "fi",
+              "value": "synonyymi",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        }
+      }
+    ],
+    "searchTerm": [
+      {
+        "id": "7ae60814-0035-46fc-a6a7-00708a791f90",
+        "code": "term-3013",
+        "uri": "http://uri.suomi.fi/terminology/181f5f11/term-3013",
+        "properties": {
+          "prefLabel": [
+            {
+              "lang": "fi",
+              "value": "hakutermi",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        }
+      }
+    ],
+    "notRecommendedSynonym": [
+      {
+        "id": "0ebda969-de6f-4aeb-b5d6-3b02402749b6",
+        "code": "term-3012",
+        "uri": "http://uri.suomi.fi/terminology/181f5f11/term-3012",
+        "properties": {
+          "prefLabel": [
+            {
+              "lang": "fi",
+              "value": "ei suositettava 1",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        }
+      },
+      {
+        "id": "0ebda969-de6f-4aeb-b5d6-3b02402749b6",
+        "code": "term-3012",
+        "uri": "http://uri.suomi.fi/terminology/181f5f11/term-3014",
+        "properties": {
+          "prefLabel": [
+            {
+              "lang": "fi",
+              "value": "ei suositettava 2",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        }
+      }
+    ],
+    "prefLabelXl": [
+      {
+        "id": "e2cb3975-ec5d-4823-97fd-6d15700d622c",
+        "code": "term-3010",
+        "uri": "http://uri.suomi.fi/terminology/181f5f11/term-3010",
+        "number": 3010,
+        "createdBy": "0e9bc795-dd69-4bbe-b3eb-21e67e3f3ff6",
+        "createdDate": "2024-09-17T07:14:13Z",
+        "lastModifiedBy": "0e9bc795-dd69-4bbe-b3eb-21e67e3f3ff6",
+        "lastModifiedDate": "2024-09-17T07:16:26Z",
+        "type": {
+          "id": "Term",
+          "graph": {
+            "id": "40d6be90-c354-4ca1-a562-b2142f3f5f0d"
+          }
+        },
+        "properties": {
+          "termFamily": [
+            {
+              "lang": "",
+              "value": "masculine",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "editorialNote": [
+            {
+              "lang": "",
+              "value": "term muistiinpano",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "wordClass": [
+            {
+              "lang": "",
+              "value": "adjective",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "termConjugation": [
+            {
+              "lang": "",
+              "value": "singular",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "termStyle": [
+            {
+              "lang": "",
+              "value": "tyyli",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "changeNote": [
+            {
+              "lang": "",
+              "value": "term muutoshistoria",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "termEquivalency": [
+            {
+              "lang": "",
+              "value": ">",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "scope": [
+            {
+              "lang": "",
+              "value": "skooppi",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "termInfo": [
+            {
+              "lang": "",
+              "value": "lisätieto",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "termHomographNumber": [
+            {
+              "lang": "",
+              "value": "1",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "historyNote": [
+            {
+              "lang": "",
+              "value": "term käytönhistoria",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "status": [
+            {
+              "lang": "",
+              "value": "VALID",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "prefLabel": [
+            {
+              "lang": "fi",
+              "value": "pref term label",
+              "regex": "(?s)^.*$"
+            }
+          ],
+          "source": [
+            {
+              "lang": "",
+              "value": "lähde 2",
+              "regex": "(?s)^.*$"
+            },
+            {
+              "lang": "",
+              "value": "termin lähde",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        },
+        "references": {},
+        "referrers": {}
+      }
+    ]
+  },
+  "referrers": {}
+}

@@ -1,0 +1,36 @@
+{
+  "id": "4af8c5bb-d71c-4033-8468-4e230efaf713",
+  "code": "collection-0",
+  "uri": "http://uri.suomi.fi/terminology/181f5f11/collection-0",
+  "properties": {
+    "prefLabel": [
+      {
+        "lang": "fi",
+        "value": "Testikokoelma",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "definition": [
+      {
+        "lang": "fi",
+        "value": "Kuvaus",
+        "regex": "(?s)^.*$"
+      }
+    ]
+  },
+  "references": {
+    "member": [
+      {
+        "id": "adecfb88-f2dd-43a2-ad9f-4aa1eeace448",
+        "code": "concept-3003",
+        "uri": "http://uri.suomi.fi/terminology/test/c1"
+      },
+      {
+        "id": "361d0aee-7e82-40d6-8ab3-fef39c1e0ccf",
+        "code": "c19",
+        "uri": "http://uri.suomi.fi/terminology/test/c2"
+      }
+    ]
+  },
+  "referrers": {}
+}
