@@ -68,9 +68,8 @@ public class UriResolveService {
 
         var select = new SelectBuilder();
         select.addVar("?subject")
-                .addWhere(new WhereBuilder()
-                        .addWhere("?subject", Termed.id, termedId)
-                );
+                .addGraph("?g",
+                        new WhereBuilder().addWhere("?subject", Termed.id, termedId));
 
         var result = new ArrayList<String>();
         repository.querySelect(select.build(), row -> result.add(row.get("subject").toString()));

@@ -1,0 +1,125 @@
+{
+  "id": "8ea9f925-3dc2-47d4-b800-30837ec3d23f",
+  "code": "terminological-vocabulary-0",
+  "uri": "http://uri.suomi.fi/terminology/test",
+  "number": 0,
+  "createdBy": "0e9bc795-dd69-4bbe-b3eb-21e67e3f3ff6",
+  "createdDate": "2022-09-06T09:27:34Z",
+  "lastModifiedBy": "admin",
+  "lastModifiedDate": "2023-06-28T07:58:59Z",
+  "type": {
+    "id": "TerminologicalVocabulary",
+    "graph": {
+      "id": "40d6be90-c354-4ca1-a562-b2142f3f5f0d"
+    }
+  },
+  "properties": {
+    "terminologyType": [
+      {
+        "lang": "",
+        "value": "OTHER_VOCABULARY",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "status": [
+      {
+        "lang": "",
+        "value": "VALID",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "prefLabel": [
+      {
+        "lang": "fi",
+        "value": "test fi",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "sv",
+        "value": "test sv",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "en",
+        "value": "test en",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "description": [
+      {
+        "lang": "fi",
+        "value": "desc fi",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "sv",
+        "value": "desc sv",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "en",
+        "value": "desc en",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "language": [
+      {
+        "lang": "",
+        "value": "fi",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "",
+        "value": "sv",
+        "regex": "(?s)^.*$"
+      },
+      {
+        "lang": "",
+        "value": "en",
+        "regex": "(?s)^.*$"
+      }
+    ],
+    "contact": [
+      {
+        "lang": "",
+        "value": "yhteentoimivuus@dvv.fi",
+        "regex": "(?s)^.*$"
+      }
+    ]
+  },
+  "references": {
+    "inGroup": [
+      {
+        "id": "9f69e282-b4d9-3cc0-a0d2-e7ccd861266a",
+        "code": "v1090",
+        "uri": "http://urn.fi/URN:NBN:fi:au:ptvl/v1090",
+        "properties": {
+          "notation": [
+            {
+              "lang": "",
+              "value": "P10",
+              "regex": "(?s)^.*$"
+            }
+          ]
+        },
+        "references": {},
+        "referrers": {}
+      }
+    ],
+    "contributor": [
+      {
+        "id": "7d3a3c00-5a6b-489b-a3ed-63bb58c26a63",
+        "type": {
+          "id": "Organization",
+          "graph": {
+            "id": "228cce1e-8360-4039-a3f7-725df5643354"
+          }
+        },
+        "properties": {},
+        "references": {},
+        "referrers": {}
+      }
+    ]
+  },
+  "referrers": {}
+}

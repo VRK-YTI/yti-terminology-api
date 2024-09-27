@@ -15,7 +15,7 @@ public class Termed {
     public static final Property createdBy = ResourceFactory.createProperty("http://purl.org/termed/properties/createdBy");
     public static final Property type = ResourceFactory.createProperty("http://purl.org/termed/properties/type");
     public static final Property id = ResourceFactory.createProperty("http://purl.org/termed/properties/id");
-    public static final Property link = ResourceFactory.createProperty("http://uri.suomi.fi/datamodel/ns/term#ExternalLink");
+    public static final Property link = ResourceFactory.createProperty("http://uri.suomi.fi/datamodel/ns/term#externalLink");
     public static final Property terminologyType = ResourceFactory.createProperty("http://uri.suomi.fi/datamodel/ns/term/#terminologyType");
     public static final Property contact = ResourceFactory.createProperty("http://uri.suomi.fi/datamodel/ns/st#contact");
     public static final Property conceptClass = ResourceFactory.createProperty("http://uri.suomi.fi/datamodel/ns/iow#conceptClass");
