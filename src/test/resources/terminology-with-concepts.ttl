@@ -67,7 +67,7 @@ test:concept-1  rdfs:seeAlso          ( [
                                              term:scope                    "scope";
                                              term:termConjugation          "SINGULAR";
                                              term:termEquivalency          "BROADER";
-                                             term:termFamily               "NEUTRAL";
+                                             term:termFamily               "NEUTER";
                                              term:termInfo                 "info";
                                              term:termStyle                "term style";
                                              term:wordClass                "ADJECTIVE"
