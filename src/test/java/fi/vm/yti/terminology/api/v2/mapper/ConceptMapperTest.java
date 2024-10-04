@@ -276,7 +276,7 @@ class ConceptMapperTest {
         assertEquals(2, term.getHomographNumber());
         assertEquals(Status.DRAFT, term.getStatus());
         assertEquals(TermConjugation.SINGULAR, term.getTermConjugation());
-        assertEquals(TermFamily.NEUTRAL, term.getTermFamily());
+        assertEquals(TermFamily.NEUTER, term.getTermFamily());
         assertEquals(WordClass.ADJECTIVE, term.getWordClass());
         assertEquals(TermEquivalency.BROADER, term.getTermEquivalency());
     }

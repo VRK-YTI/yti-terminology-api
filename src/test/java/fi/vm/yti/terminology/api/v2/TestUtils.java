@@ -169,7 +169,7 @@ public class TestUtils {
         term.setStatus(Status.VALID);
         term.setScope("scope");
         term.setTermInfo("info");
-        term.setTermFamily(TermFamily.NEUTRAL);
+        term.setTermFamily(TermFamily.NEUTER);
         term.setTermConjugation(TermConjugation.SINGULAR);
         term.setWordClass(WordClass.VERB);
         term.setTermStyle("style");
