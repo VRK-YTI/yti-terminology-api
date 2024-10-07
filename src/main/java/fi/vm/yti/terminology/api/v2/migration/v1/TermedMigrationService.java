@@ -181,14 +181,14 @@ public class TermedMigrationService {
         var modified = oldData.getString("lastModifiedDate");
         var modifier = oldData.getString("lastModifiedBy");
 
-        resource.removeAll(DCTerms.creator)
+        resource.removeAll(SuomiMeta.creator)
                 .removeAll(DCTerms.created)
                 .removeAll(DCTerms.modified)
                 .removeAll(SuomiMeta.modifier);
 
         resource.addProperty(DCTerms.created, ResourceFactory.createTypedLiteral(created));
         resource.addProperty(DCTerms.modified, ResourceFactory.createTypedLiteral(modified));
-        resource.addProperty(DCTerms.creator, creator);
+        resource.addProperty(SuomiMeta.creator, creator);
         resource.addProperty(SuomiMeta.modifier, modifier);
         resource.addProperty(Termed.id, node.get("id").asText());
     }
