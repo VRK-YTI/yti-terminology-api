@@ -14,6 +14,9 @@ import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.arq.querybuilder.ConstructBuilder;
+import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.vocabulary.SKOS;
@@ -53,7 +56,16 @@ public class TerminologyService {
     }
 
     public TerminologyInfoDTO get(String prefix) {
-        var model = terminologyRepository.fetchByPrefix(prefix);
+        var uri = TerminologyURI.createTerminologyURI(prefix);
+        var query = new ConstructBuilder()
+                .addConstruct(NodeFactory.createURI(uri.getModelResourceURI()), "?p", "?o")
+                .addGraph(NodeFactory.createURI(uri.getGraphURI()),
+                        new WhereBuilder()
+                                .addWhere(NodeFactory.createURI(uri.getModelResourceURI()), "?p", "?o"));
+
+        var result = terminologyRepository.queryConstruct(query.build());
+        var model = new ModelWrapper(result, uri.getGraphURI());
+
         Consumer<ResourceCommonInfoDTO> mapUser = null;
         if (authorizationManager.hasRightsToTerminology(prefix, model)) {
             mapUser = groupManagementService.mapUser();
