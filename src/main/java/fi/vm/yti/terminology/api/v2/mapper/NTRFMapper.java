@@ -322,7 +322,7 @@ public class NTRFMapper {
             dto.setTermConjugation(TermConjugation.PLURAL);
         } else if ("n pl".equalsIgnoreCase(gt.getValue())) {
             dto.setTermConjugation(TermConjugation.PLURAL);
-            dto.setTermFamily(TermFamily.NEUTRAL);
+            dto.setTermFamily(TermFamily.NEUTER);
         } else if ("f pl".equalsIgnoreCase(gt.getValue())) {
             dto.setTermConjugation(TermConjugation.PLURAL);
             dto.setTermFamily(TermFamily.FEMININE);
@@ -333,7 +333,7 @@ public class NTRFMapper {
         } else if ("m".equalsIgnoreCase(gt.getGend())) {
             dto.setTermFamily(TermFamily.MASCULINE);
         } else if ("n".equalsIgnoreCase(gt.getGend())) {
-            dto.setTermFamily(TermFamily.NEUTRAL);
+            dto.setTermFamily(TermFamily.NEUTER);
         }
         // wordClass
         if (gt.getPos() != null && !gt.getPos().isEmpty()) {

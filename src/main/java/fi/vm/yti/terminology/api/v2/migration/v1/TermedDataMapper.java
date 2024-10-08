@@ -37,7 +37,8 @@ public class TermedDataMapper {
     private static final Map<String, Enum<?>> enumValueMap = Map.ofEntries(
             Map.entry("maskuliini", TermFamily.MASCULINE),
             Map.entry("feminiini", TermFamily.FEMININE),
-            Map.entry("neutri", TermFamily.NEUTRAL),
+            Map.entry("neutri", TermFamily.NEUTER),
+            Map.entry("neutral", TermFamily.NEUTER),
             Map.entry("monikko", TermConjugation.PLURAL),
             Map.entry("yksikkö", TermConjugation.SINGULAR),
             Map.entry(">", TermEquivalency.BROADER),

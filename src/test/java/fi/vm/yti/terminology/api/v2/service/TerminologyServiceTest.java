@@ -11,6 +11,7 @@ import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
+import org.apache.jena.query.Query;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.vocabulary.DCTerms;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +78,7 @@ class TerminologyServiceTest {
 
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", GRAPH_URI);
         when(terminologyRepository.fetchByPrefix(PREFIX)).thenReturn(model);
+        when(terminologyRepository.queryConstruct(any(Query.class))).thenReturn(model);
     }
 
     @Test
