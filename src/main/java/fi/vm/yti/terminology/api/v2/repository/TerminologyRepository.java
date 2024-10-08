@@ -12,6 +12,8 @@ import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
+import java.util.concurrent.TimeUnit;
+
 @Repository
 public class TerminologyRepository extends BaseRepository {
 
@@ -23,7 +25,10 @@ public class TerminologyRepository extends BaseRepository {
                 RDFConnection.connect(endpoint + "/terminology/sparql"),
                 RDFConnection.connect(endpoint + "/terminology/update")
         );
-        this.modelCache = CacheBuilder.newBuilder().maximumSize(50).build();
+        this.modelCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .maximumSize(50)
+                .build();
     }
 
     @Override
