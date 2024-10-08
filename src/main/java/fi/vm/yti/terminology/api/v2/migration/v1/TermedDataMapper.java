@@ -50,6 +50,26 @@ public class TermedDataMapper {
             Map.entry("verb/verbi", WordClass.VERB)
     );
 
+    private static final Map<String, Integer> homographNumberMap = Map.of(
+            "I", 1,
+            "II", 2,
+            "II - SY#1", 2,
+            "III", 3,
+            "IV", 4,
+            "V", 5,
+            "VI", 6
+    );
+
+    private static final Map<String, Set<String>> missingLanguageMap = Map.of(
+            "yti", Set.of("sv", "en"),
+            "vtj", Set.of("sv", "en"),
+            "aviovero", Set.of("en"),
+            "jate", Set.of("sv", "en"),
+            "rytj-mkr", Set.of("en"),
+            "a2fc99c20", Set.of("sv"),
+            "nbvoc", Set.of("sv-SE", "nb-NO")
+    );
+
     private TermedDataMapper() {
     }
 
@@ -68,7 +88,13 @@ public class TermedDataMapper {
             prefix = "a" + prefix;
         }
         terminologyDTO.setPrefix(prefix);
-        terminologyDTO.setLanguages(new HashSet<>(data.getListProperty(DCTerms.language.getLocalName())));
+
+        var languages = new HashSet<>(data.getListProperty(DCTerms.language.getLocalName()));
+        var missingLanguages = missingLanguageMap.get(prefix);
+        if (missingLanguages != null) {
+            languages.addAll(missingLanguages);
+        }
+        terminologyDTO.setLanguages(languages);
         terminologyDTO.setLabel(data.getLocalizedProperty(SKOS.prefLabel.getLocalName()));
         terminologyDTO.setDescription(data.getLocalizedProperty(DCTerms.description.getLocalName()));
         var type = getEnumValue(data, Termed.terminologyType.getLocalName(), GraphType.class);
@@ -101,7 +127,6 @@ public class TermedDataMapper {
         concept.setSubjectArea(data.getProperty(Termed.subjectArea.getLocalName()));
         concept.setEditorialNotes(data.getListProperty(SKOS.editorialNote.getLocalName()));
         concept.setSources(data.getListProperty(DCTerms.source.getLocalName()));
-
         var links = data.getListProperty(Termed.link.getLocalName()).stream().map(l -> {
             try {
                 l = l.replace("\\\"", "\"");
@@ -212,7 +237,11 @@ public class TermedDataMapper {
         var homograph = data.getProperty(Termed.homographNumber.getLocalName());
         try {
             if (homograph != null) {
-                dto.setHomographNumber(Integer.valueOf(homograph));
+                if (homographNumberMap.containsKey(homograph)) {
+                    dto.setHomographNumber(homographNumberMap.get(homograph));
+                } else {
+                    dto.setHomographNumber(Integer.valueOf(homograph));
+                }
             }
         } catch (NumberFormatException e) {
             LOG.warn("Invalid term homograph number {}", homograph);
