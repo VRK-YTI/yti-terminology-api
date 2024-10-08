@@ -60,14 +60,18 @@ public class TermedDataMapper {
             "VI", 6
     );
 
-    private static final Map<String, Set<String>> missingLanguageMap = Map.of(
-            "yti", Set.of("sv", "en"),
-            "vtj", Set.of("sv", "en"),
-            "aviovero", Set.of("en"),
-            "jate", Set.of("sv", "en"),
-            "rytj-mkr", Set.of("en"),
-            "a2fc99c20", Set.of("sv"),
-            "nbvoc", Set.of("sv-SE", "nb-NO")
+    private static final Map<String, Set<String>> missingLanguageMap = Map.ofEntries(
+            Map.entry("yti", Set.of("sv", "en")),
+            Map.entry("vtj", Set.of("sv", "en")),
+            Map.entry("aviovero", Set.of("en")),
+            Map.entry("jate", Set.of("sv", "en")),
+            Map.entry("rytj-mkr", Set.of("en")),
+            Map.entry("a2fc99c20", Set.of("sv")),
+            Map.entry("nbvoc", Set.of("sv-SE", "nb-NO")),
+            Map.entry("for", Set.of("ru")), // test environment
+            Map.entry("a989329f0", Set.of("en")), // test environment
+            Map.entry("forestry", Set.of("ru")), // test environment
+            Map.entry("rtestsa", Set.of("sv", "en")) // test environment
     );
 
     private TermedDataMapper() {
