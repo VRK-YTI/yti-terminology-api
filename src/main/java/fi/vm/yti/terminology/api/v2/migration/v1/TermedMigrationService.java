@@ -87,13 +87,19 @@ public class TermedMigrationService {
             for (var graph : graphs) {
                 // skip graphs without code, e.g. organization and category graphs
                 if (graph.get("code") == null) {
+                    count++;
                     continue;
                 }
                 var id = graph.get("id").asText();
                 LOG.info("Migrate graph {}, ({}/{})", id, count, graphs.size());
-                migrate(id);
+                try {
+                    migrate(id);
+                } catch (Exception e) {
+                    LOG.error("MIGRATION ERROR terminology: " + id, e);
+                }
                 count++;
             }
+            LOG.info("All terminologies migrated");
         }
     }
 

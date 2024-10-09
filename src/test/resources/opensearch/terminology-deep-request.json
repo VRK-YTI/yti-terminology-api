@@ -72,6 +72,16 @@
               },
               {
                 "terms": {
+                  "status": [
+                    "DRAFT",
+                    "INCOMPLETE",
+                    "SUGGESTED",
+                    "VALID"
+                  ]
+                }
+              },
+              {
+                "terms": {
                   "groups": [
                     "P11",
                     "P1"
