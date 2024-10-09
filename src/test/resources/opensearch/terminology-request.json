@@ -40,6 +40,13 @@
         },
         {
           "terms": {
+            "status": [
+              "VALID"
+            ]
+          }
+        },
+        {
+          "terms": {
             "groups": [
               "P11",
               "P1"

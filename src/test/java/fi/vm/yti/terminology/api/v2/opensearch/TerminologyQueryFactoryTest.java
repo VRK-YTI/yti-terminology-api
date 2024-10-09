@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.opensearch;
 
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ public class TerminologyQueryFactoryTest {
         request.setQuery("test");
         request.setGroups(Set.of("P11", "P1"));
         request.setPageSize(100);
+        request.setStatus(Set.of(Status.VALID));
         var terminologyQuery = TerminologyQueryFactory.createTerminologyQuery(request, false, null);
         var expected = TestUtils.getJsonString("/opensearch/terminology-request.json");
         JSONAssert.assertEquals(expected, getPayload(terminologyQuery), JSONCompareMode.LENIENT);

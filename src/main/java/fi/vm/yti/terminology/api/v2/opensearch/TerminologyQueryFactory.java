@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.opensearch;
 
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.opensearch.QueryFactoryUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
@@ -130,19 +131,24 @@ public class TerminologyQueryFactory {
         }
 
         //
-        // Filter by status
+        // Filter by status. By default, show only VALID, DRAFT, SUGGESTED and INCOMPLETE
         //
-        if (request.getStatus() != null) {
-            mustQueries.add(TermsQuery.of(q -> q
-                            .field("status")
-                            .terms(t -> t.value(request
-                                    .getStatus()
-                                    .stream()
-                                    .map(Enum::name)
-                                    .map(FieldValue::of)
-                                    .toList())))
-                    .toQuery());
-        }
+        var statusList = request.getStatus() != null && !request.getStatus().isEmpty()
+                ? request.getStatus()
+                : List.of(
+                        Status.DRAFT,
+                        Status.INCOMPLETE,
+                        Status.SUGGESTED,
+                        Status.VALID
+                );
+        mustQueries.add(TermsQuery.of(q -> q
+                        .field("status")
+                        .terms(t -> t.value(statusList
+                                .stream()
+                                .map(Enum::name)
+                                .map(FieldValue::of)
+                                .toList())))
+                .toQuery());
 
         //
         // Filter by organizations
