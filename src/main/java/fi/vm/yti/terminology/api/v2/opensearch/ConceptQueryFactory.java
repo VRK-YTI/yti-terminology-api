@@ -29,15 +29,19 @@ public class ConceptQueryFactory {
 
         Highlight.Builder highlight = new Highlight.Builder();
         highlight.fields("definition.*", f -> f);
-        var sr = new SearchRequest.Builder()
+        var builder = new SearchRequest.Builder()
                 .index(IndexService.CONCEPT_INDEX)
                 .size(QueryFactoryUtils.pageSize(request.getPageSize()))
                 .from(QueryFactoryUtils.pageFrom(request.getPageFrom()))
-                .sort(QueryFactoryUtils.getLangSortOptions(request.getSortLang()))
                 .highlight(highlight.build())
-                .query(conceptQuery)
-                .build();
+                .query(conceptQuery);
 
+        // use score based sorting if query string specified
+        if (request.getQuery() == null || request.getQuery().isBlank()) {
+            builder.sort(QueryFactoryUtils.getLangSortOptions(request.getSortLang()));
+        }
+
+        var sr = builder.build();
         logPayload(sr, IndexService.CONCEPT_INDEX);
 
         return sr;
@@ -54,10 +58,9 @@ public class ConceptQueryFactory {
         if (queryString != null && !queryString.isBlank()) {
             var definitionQuery = QueryStringQuery.of(q -> q
                     .query("*" + queryString.trim() + "*")
-                    .fields("label.*").boost(5.0f)
-                    .fields("altLabel.*", "searchTerm.*", "hiddenTerm.*", "definition.*").boost(3.0f)
-                    .fields("notRecommendedSynonym.*").boost(1.5f)
-                    .fuzziness("2")
+                    .fields("label.*^5.0")
+                    .fields("altLabel.*^3.0", "searchTerm.*^3.0", "definition.*^3.0")
+                    .fields("notRecommendedSynonym.*^1.5")
             ).toQuery();
 
             allQueries.add(QueryBuilders.bool()

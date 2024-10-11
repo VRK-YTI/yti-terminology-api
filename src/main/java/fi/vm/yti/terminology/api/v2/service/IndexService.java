@@ -15,7 +15,7 @@ import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch._types.mapping.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import static fi.vm.yti.common.opensearch.OpenSearchUtil.*;
+import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
 
 @Service
 public class IndexService extends OpenSearchInitializer {
@@ -134,9 +134,9 @@ public class IndexService extends OpenSearchInitializer {
                         Map.entry("uri", getKeywordProperty()),
                         Map.entry("status", getKeywordProperty()),
                         Map.entry("namespace", getKeywordProperty()),
-                        Map.entry("prefix", getKeywordProperty()),
-                        Map.entry("created", getDateProperty()),
-                        Map.entry("modified", getDateProperty())
+                        Map.entry("prefix", getKeywordProperty())
+                        //Map.entry("created", getDateProperty()),
+                        //Map.entry("modified", getDateProperty())
                 ))
                 .build();
     }
@@ -150,5 +150,23 @@ public class IndexService extends OpenSearchInitializer {
         client.putToIndex(TERMINOLOGY_INDEX, index);
 
         initConceptIndex(model);
+    }
+
+    private Map<String, DynamicTemplate> getDynamicTemplate(String name, String pathMatch) {
+        return Map.of(name, new DynamicTemplate.Builder()
+                .pathMatch(pathMatch)
+                .mapping(getTextProperty()).build());
+    }
+
+    private Property getKeywordProperty() {
+        return new Property.Builder()
+                .keyword(new KeywordProperty.Builder().build())
+                .build();
+    }
+
+    private Property getTextProperty() {
+        return new Property.Builder()
+                .text(new TextProperty.Builder().build())
+                .build();
     }
 }
