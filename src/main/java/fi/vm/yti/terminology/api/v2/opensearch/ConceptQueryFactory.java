@@ -59,8 +59,8 @@ public class ConceptQueryFactory {
             var definitionQuery = QueryStringQuery.of(q -> q
                     .query("*" + queryString.trim() + "*")
                     .fields("label.*^5.0")
-                    .fields("altLabel.*^3.0", "searchTerm.*^3.0", "definition.*^3.0")
-                    .fields("notRecommendedSynonym.*")
+                    .fields("altLabel^3.0", "searchTerm^3.0", "definition.*^3.0")
+                    .fields("notRecommendedSynonym")
             ).toQuery();
 
             allQueries.add(definitionQuery);

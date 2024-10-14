@@ -12,10 +12,10 @@
           "query_string": {
             "fields": [
               "label.*^5.0",
-              "altLabel.*^3.0",
-              "searchTerm.*^3.0",
+              "altLabel^3.0",
+              "searchTerm^3.0",
               "definition.*^3.0",
-              "notRecommendedSynonym.*"
+              "notRecommendedSynonym"
             ],
             "query": "*test*"
           }

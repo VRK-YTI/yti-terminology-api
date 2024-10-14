@@ -123,18 +123,18 @@ public class IndexService extends OpenSearchInitializer {
     private TypeMapping getConceptMappings() {
         return new TypeMapping.Builder()
                 .dynamicTemplates(List.of(
-                        getDynamicTemplate("label", "label.*"),
-                        getDynamicTemplate("definition", "definition.*"),
-                        getDynamicTemplate("altLabel", "altLabel.*"),
-                        getDynamicTemplate("searchTerm", "searchTerm.*"),
-                        getDynamicTemplate("notRecommendedSynonym", "notRecommendedSynonym.*")))
+                        getDynamicTemplateWithSortKey("label", "label.*"),
+                        getDynamicTemplate("definition", "definition.*")))
                 .properties(Map.ofEntries(
                         Map.entry("id", getKeywordProperty()),
                         Map.entry("identifier", getKeywordProperty()),
                         Map.entry("uri", getKeywordProperty()),
                         Map.entry("status", getKeywordProperty()),
                         Map.entry("namespace", getKeywordProperty()),
-                        Map.entry("prefix", getKeywordProperty())
+                        Map.entry("prefix", getKeywordProperty()),
+                        Map.entry("altLabel", getTextProperty()),
+                        Map.entry("searchTerm", getTextProperty()),
+                        Map.entry("notRecommendedSynonym", getTextProperty())
                         //Map.entry("created", getDateProperty()),
                         //Map.entry("modified", getDateProperty())
                 ))

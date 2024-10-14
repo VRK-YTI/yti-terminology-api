@@ -184,12 +184,11 @@ public class ConceptMapper {
         model.removeAll(resource, null, null);
     }
 
-    private static Map<String, List<String>> getIndexedTerm(Resource resource, Property property) {
+    private static List<String> getIndexedTerm(Resource resource, Property property) {
         return MapperUtils.getResourceList(resource, property).stream()
                 .filter(r -> r.hasProperty(SKOSXL.literalForm))
-                .collect(Collectors.groupingBy(
-                        r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
-                        Collectors.mapping(r -> r.getProperty(SKOSXL.literalForm).getString(), Collectors.toList())));
+                .map(r -> r.getProperty(SKOSXL.literalForm).getString())
+                .toList();
     }
 
     private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(Model model, Resource resource, Property property) {
