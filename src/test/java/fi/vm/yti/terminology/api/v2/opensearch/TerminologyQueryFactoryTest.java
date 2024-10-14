@@ -14,7 +14,7 @@ import java.util.UUID;
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.getPayload;
 import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-public class TerminologyQueryFactoryTest {
+class TerminologyQueryFactoryTest {
 
     @Test
     void shouldCreateTerminologyQuery() throws Exception {
@@ -25,6 +25,7 @@ public class TerminologyQueryFactoryTest {
         request.setStatus(Set.of(Status.VALID));
         var terminologyQuery = TerminologyQueryFactory.createTerminologyQuery(request, false, null);
         var expected = TestUtils.getJsonString("/opensearch/terminology-request.json");
+        System.out.println(getPayload(terminologyQuery));
         JSONAssert.assertEquals(expected, getPayload(terminologyQuery), JSONCompareMode.LENIENT);
 
         assertEquals("Page from value not matching", 0, terminologyQuery.from());

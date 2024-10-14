@@ -1,0 +1,37 @@
+{
+  "from": 0,
+  "highlight": {
+    "fields": {
+      "definition.*": {}
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "terms": {
+            "status": [
+              "VALID"
+            ]
+          }
+        },
+        {
+          "term": {
+            "namespace": {
+              "value": "https://iri.suomi.fi/terminology/test/"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "size": 100,
+  "sort": [
+    {
+      "label.fi.keyword": {
+        "order": "asc",
+        "unmapped_type": "keyword"
+      }
+    }
+  ]
+}
