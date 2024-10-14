@@ -53,21 +53,24 @@ public class TerminologyQueryFactory {
                                 .lastIndexOf("/")) + "/")
                         .collect(Collectors.toSet());
 
-        logger.debug("Deep concept search resulted in " + additionalTerminologyUris.size() + " terminology matches");
+        logger.debug("Deep concept search resulted in {} terminology matches", additionalTerminologyUris.size());
 
         var terminologyQuery = getTerminologyBaseQuery(request, isSuperUser, additionalTerminologyUris, privilegedOrganizations);
 
         Highlight.Builder highlight = new Highlight.Builder();
         highlight.fields("label.*", f -> f);
-        var sr = new SearchRequest.Builder()
+        var builder = new SearchRequest.Builder()
                 .index(IndexService.TERMINOLOGY_INDEX)
                 .size(QueryFactoryUtils.pageSize(request.getPageSize()))
                 .from(QueryFactoryUtils.pageFrom(request.getPageFrom()))
-                .sort(QueryFactoryUtils.getLangSortOptions(request.getSortLang()))
                 .highlight(highlight.build())
-                .query(terminologyQuery)
-                .build();
+                .query(terminologyQuery);
 
+        if (request.getQuery() == null || request.getQuery().isBlank()) {
+            builder.sort(QueryFactoryUtils.getLangSortOptions(request.getSortLang()));
+        }
+
+        var sr = builder.build();
         logPayload(sr, IndexService.TERMINOLOGY_INDEX);
 
         return sr;

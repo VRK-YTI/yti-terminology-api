@@ -60,14 +60,10 @@ public class ConceptQueryFactory {
                     .query("*" + queryString.trim() + "*")
                     .fields("label.*^5.0")
                     .fields("altLabel.*^3.0", "searchTerm.*^3.0", "definition.*^3.0")
-                    .fields("notRecommendedSynonym.*^1.5")
+                    .fields("notRecommendedSynonym.*")
             ).toQuery();
 
-            allQueries.add(QueryBuilders.bool()
-                    .should(definitionQuery)
-                    .minimumShouldMatch("1")
-                    .build()
-                    .toQuery());
+            allQueries.add(definitionQuery);
         }
 
         if (request.getStatus() != null) {

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
+import static fi.vm.yti.common.opensearch.OpenSearchUtil.*;
 
 @Service
 public class IndexService extends OpenSearchInitializer {
@@ -150,23 +150,5 @@ public class IndexService extends OpenSearchInitializer {
         client.putToIndex(TERMINOLOGY_INDEX, index);
 
         initConceptIndex(model);
-    }
-
-    private Map<String, DynamicTemplate> getDynamicTemplate(String name, String pathMatch) {
-        return Map.of(name, new DynamicTemplate.Builder()
-                .pathMatch(pathMatch)
-                .mapping(getTextProperty()).build());
-    }
-
-    private Property getKeywordProperty() {
-        return new Property.Builder()
-                .keyword(new KeywordProperty.Builder().build())
-                .build();
-    }
-
-    private Property getTextProperty() {
-        return new Property.Builder()
-                .text(new TextProperty.Builder().build())
-                .build();
     }
 }
