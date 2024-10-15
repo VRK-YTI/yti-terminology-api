@@ -10,33 +10,23 @@
     "bool": {
       "must": [
         {
-          "bool": {
-            "minimum_should_match": "1",
-            "should": [
-              {
-                "query_string": {
-                  "boost": 1.5,
-                  "fields": [
-                    "label.*",
-                    "altLabel.*",
-                    "searchTerm.*",
-                    "hiddenTerm.*",
-                    "definition.*",
-                    "notRecommendedSynonym.*"
-                  ],
-                  "fuzziness": "2",
-                  "query": "*test*"
-                }
-              }
-            ]
+          "query_string": {
+            "fields": [
+              "label.*^5.0",
+              "altLabel^3.0",
+              "searchTerm^3.0",
+              "definition.*^3.0",
+              "notRecommendedSynonym"
+            ],
+            "query": "*test*"
           }
         },
         {
           "terms": {
             "status": [
-              "INCOMPLETE",
+              "DRAFT",
               "VALID",
-              "DRAFT"
+              "INCOMPLETE"
             ]
           }
         },
@@ -68,13 +58,5 @@
         }
       ]
     }
-  },
-  "sort": [
-    {
-      "label.fi.keyword": {
-        "order": "asc",
-        "unmapped_type": "keyword"
-      }
-    }
-  ]
+  }
 }

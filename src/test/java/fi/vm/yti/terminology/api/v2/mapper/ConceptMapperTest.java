@@ -293,9 +293,9 @@ class ConceptMapperTest {
         assertEquals(Status.DRAFT, dto.getStatus());
         assertEquals("Suositettava termi", dto.getLabel().get("fi"));
         assertEquals("def", dto.getDefinition().get("fi"));
-        assertEquals(List.of("synonyymi 1", "synonyymi 2"), dto.getAltLabel().get("fi"));
-        assertEquals(List.of("ei suositettava"), dto.getNotRecommendedSynonym().get("fi"));
-        assertEquals(List.of("hakutermi"), dto.getSearchTerm().get("fi"));
+        assertEquals(List.of("synonyymi 1", "synonyymi 2"), dto.getAltLabel());
+        assertEquals(List.of("ei suositettava"), dto.getNotRecommendedSynonym());
+        assertEquals(List.of("hakutermi"), dto.getSearchTerm());
         assertEquals("2024-05-06T05:00:00.000Z", dto.getCreated());
         assertEquals("2024-05-07T04:00:00.000Z", dto.getModified());
     }

@@ -55,13 +55,5 @@
         }
       ]
     }
-  },
-  "sort": [
-    {
-      "label.fi.keyword": {
-        "order": "asc",
-        "unmapped_type": "keyword"
-      }
-    }
-  ]
+  }
 }

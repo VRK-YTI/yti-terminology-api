@@ -9,9 +9,9 @@ public class IndexConcept extends IndexBase {
     private String namespace;
     private String identifier;
     private Map<String, String> definition;
-    private Map<String, List<String>> altLabel;
-    private Map<String, List<String>> searchTerm;
-    private Map<String, List<String>> notRecommendedSynonym;
+    private List<String> altLabel;
+    private List<String> searchTerm;
+    private List<String> notRecommendedSynonym;
 
     public String getNamespace() {
         return namespace;
@@ -37,27 +37,27 @@ public class IndexConcept extends IndexBase {
         this.definition = definition;
     }
 
-    public Map<String, List<String>> getAltLabel() {
+    public List<String> getAltLabel() {
         return altLabel;
     }
 
-    public void setAltLabel(Map<String, List<String>> altLabel) {
+    public void setAltLabel(List<String> altLabel) {
         this.altLabel = altLabel;
     }
 
-    public Map<String, List<String>> getSearchTerm() {
+    public List<String> getSearchTerm() {
         return searchTerm;
     }
 
-    public void setSearchTerm(Map<String, List<String>> searchTerm) {
+    public void setSearchTerm(List<String> searchTerm) {
         this.searchTerm = searchTerm;
     }
 
-    public Map<String, List<String>> getNotRecommendedSynonym() {
+    public List<String> getNotRecommendedSynonym() {
         return notRecommendedSynonym;
     }
 
-    public void setNotRecommendedSynonym(Map<String, List<String>> notRecommendedSynonym) {
+    public void setNotRecommendedSynonym(List<String> notRecommendedSynonym) {
         this.notRecommendedSynonym = notRecommendedSynonym;
     }
 }

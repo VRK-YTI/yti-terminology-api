@@ -14,7 +14,7 @@ import java.util.UUID;
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.getPayload;
 import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-public class TerminologyQueryFactoryTest {
+class TerminologyQueryFactoryTest {
 
     @Test
     void shouldCreateTerminologyQuery() throws Exception {

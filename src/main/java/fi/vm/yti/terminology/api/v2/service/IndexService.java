@@ -15,7 +15,7 @@ import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch._types.mapping.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -123,11 +123,8 @@ public class IndexService extends OpenSearchInitializer {
     private TypeMapping getConceptMappings() {
         return new TypeMapping.Builder()
                 .dynamicTemplates(List.of(
-                        getDynamicTemplate("label", "label.*"),
-                        getDynamicTemplate("definition", "definition.*"),
-                        getDynamicTemplate("altLabel", "altLabel.*"),
-                        getDynamicTemplate("searchTerm", "searchTerm.*"),
-                        getDynamicTemplate("notRecommendedSynonym", "notRecommendedSynonym.*")))
+                        getDynamicTemplateWithSortKey("label", "label.*"),
+                        getDynamicTemplate("definition", "definition.*")))
                 .properties(Map.ofEntries(
                         Map.entry("id", getKeywordProperty()),
                         Map.entry("identifier", getKeywordProperty()),
@@ -136,7 +133,10 @@ public class IndexService extends OpenSearchInitializer {
                         Map.entry("namespace", getKeywordProperty()),
                         Map.entry("prefix", getKeywordProperty()),
                         Map.entry("created", getDateProperty()),
-                        Map.entry("modified", getDateProperty())
+                        Map.entry("modified", getDateProperty()),
+                        Map.entry("altLabel", getTextProperty()),
+                        Map.entry("searchTerm", getTextProperty()),
+                        Map.entry("notRecommendedSynonym", getTextProperty())
                 ))
                 .build();
     }
