@@ -1,5 +1,6 @@
 {
   "from": 0,
+  "size": 100,
   "highlight": {
     "fields": {
       "definition.*": {}
@@ -23,14 +24,13 @@
         {
           "terms": {
             "status": [
-              "DRAFT",
+              "INCOMPLETE",
               "VALID",
-              "INCOMPLETE"
+              "DRAFT"
             ]
           }
         }
       ]
     }
-  },
-  "size": 100
+  }
 }

@@ -23,9 +23,9 @@
         {
           "terms": {
             "status": [
-              "VALID",
+              "DRAFT",
               "INCOMPLETE",
-              "DRAFT"
+              "VALID"
             ]
           }
         },

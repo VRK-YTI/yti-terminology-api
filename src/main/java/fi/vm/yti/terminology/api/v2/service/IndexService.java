@@ -132,11 +132,11 @@ public class IndexService extends OpenSearchInitializer {
                         Map.entry("status", getKeywordProperty()),
                         Map.entry("namespace", getKeywordProperty()),
                         Map.entry("prefix", getKeywordProperty()),
+                        Map.entry("created", getDateProperty()),
+                        Map.entry("modified", getDateProperty()),
                         Map.entry("altLabel", getTextProperty()),
                         Map.entry("searchTerm", getTextProperty()),
                         Map.entry("notRecommendedSynonym", getTextProperty())
-                        //Map.entry("created", getDateProperty()),
-                        //Map.entry("modified", getDateProperty())
                 ))
                 .build();
     }

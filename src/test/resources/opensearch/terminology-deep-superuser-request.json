@@ -1,5 +1,6 @@
 {
   "from": 0,
+  "size": 100,
   "highlight": {
     "fields": {
       "label.*": {}
@@ -65,6 +66,5 @@
         }
       ]
     }
-  },
-  "size": 100
+  }
 }
