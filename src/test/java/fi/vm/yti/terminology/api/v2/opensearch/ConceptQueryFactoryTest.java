@@ -11,7 +11,7 @@ import java.util.Set;
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.getPayload;
 import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-public class ConceptQueryFactoryTest {
+class ConceptQueryFactoryTest {
     @Test
     void shouldCreateConceptQuery() throws Exception {
         var request = new ConceptSearchRequest();
@@ -70,5 +70,19 @@ public class ConceptQueryFactoryTest {
 
         assertEquals("Page from value not matching", 0, conceptQuery.from());
         assertEquals("Page size value not matching", 100, conceptQuery.size());
+    }
+
+    @Test
+    void shouldCreateConceptQueryWithSorting() throws Exception {
+        var request = new ConceptSearchRequest();
+        request.setPageSize(100);
+        request.setNamespace("https://iri.suomi.fi/terminology/test/");
+        request.setStatus(Set.of(Status.VALID));
+        var conceptQuery = ConceptQueryFactory.createConceptQuery(
+                request,
+                true,
+                null);
+        var expected = TestUtils.getJsonString("/opensearch/concept-query-with-sort.json");
+        JSONAssert.assertEquals(expected, getPayload(conceptQuery), JSONCompareMode.LENIENT);
     }
 }
