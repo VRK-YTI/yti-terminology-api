@@ -7,6 +7,7 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
+import fi.vm.yti.terminology.api.v2.property.Term;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
 
@@ -100,7 +101,7 @@ public class ConceptCollectionMapper {
         dto.setLabel(MapperUtils.localizedPropertyToMap(resource, SKOS.prefLabel));
         dto.setDescription(MapperUtils.localizedPropertyToMap(resource, RDFS.comment));
 
-        MapperUtils.getResourceList(resource, SKOS.member)
+        MapperUtils.getResourceList(resource, Term.orderedMember)
                 .forEach(concept -> {
                     var labelMap = new HashMap<String, String>();
                     MapperUtils.getResourceList(concept, SKOS.prefLabel).forEach(term -> {
@@ -120,17 +121,22 @@ public class ConceptCollectionMapper {
     public static void mapDeleteConceptCollection(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
+        MapperUtils.removeAllLists(resource);
         model.removeAll(null, null, resource);
         model.removeAll(resource, null, null);
     }
 
     private static void addMembers(ModelWrapper model, Resource resource, Set<String> values) {
+        resource.removeAll(SKOS.member);
         var resources = values.stream()
                 .map(value -> value.contains("://")
                         ? model.getResource(value)
                         : model.getResourceById(value))
                 .toList();
 
-        MapperUtils.addListProperty(resource, SKOS.member, resources);
+        resources.forEach(m -> resource.addProperty(SKOS.member, m));
+
+        // store members' order in separate property
+        MapperUtils.addListProperty(resource, Term.orderedMember, resources);
     }
 }

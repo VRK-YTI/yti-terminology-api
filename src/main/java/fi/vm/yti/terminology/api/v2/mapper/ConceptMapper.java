@@ -35,6 +35,22 @@ public class ConceptMapper {
     public static final List<Property> externalRefProperties = List.of(SKOS.broadMatch, SKOS.narrowMatch,
             SKOS.closeMatch, SKOS.relatedMatch, SKOS.exactMatch);
 
+    public static final Map<String, Property> orderProperties = Map.ofEntries(
+            Map.entry(SKOS.broader.getLocalName(), Term.orderedBroader),
+            Map.entry(SKOS.narrower.getLocalName(), Term.orderedNarrower),
+            Map.entry(SKOS.related.getLocalName(), Term.orderedRelated),
+            Map.entry(DCTerms.isPartOf.getLocalName(), Term.orderedIsPartOf),
+            Map.entry(DCTerms.hasPart.getLocalName(), Term.orderedHasPart),
+            Map.entry(SKOS.broadMatch.getLocalName(), Term.orderedBroadMatch),
+            Map.entry(SKOS.narrowMatch.getLocalName(), Term.orderedNarrowMatch),
+            Map.entry(SKOS.relatedMatch.getLocalName(), Term.orderedRelatedMatch),
+            Map.entry(SKOS.exactMatch.getLocalName(), Term.orderedExactMatch),
+            Map.entry(SKOS.closeMatch.getLocalName(), Term.orderedCloseMatch),
+            Map.entry(SKOS.altLabel.getLocalName(), Term.orderedSynonym),
+            Map.entry(Term.notRecommendedSynonym.getLocalName(), Term.orderedNotRecommendedSynonym),
+            Map.entry(SKOS.member.getLocalName(), Term.orderedMember)
+    );
+
     public static final List<Property> termProperties = List.of(SKOS.prefLabel, SKOS.altLabel,
             Term.notRecommendedSynonym, SKOS.hiddenLabel);
 
@@ -150,7 +166,7 @@ public class ConceptMapper {
     public static IndexConcept toIndexDocument(ModelWrapper model, String identifier) {
         var resource = model.getResourceById(identifier);
 
-        var prefLabels = MapperUtils.getResourceList(resource, SKOS.prefLabel)
+        var prefLabels = resource.listProperties(SKOS.prefLabel).toList()
                 .stream().collect(Collectors.toMap(
                         r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
                         r -> r.getProperty(SKOSXL.literalForm).getString()));
@@ -179,28 +195,46 @@ public class ConceptMapper {
             throw new ResourceNotFoundException(identifier);
         }
 
+        // remove all term resources
+        termProperties.forEach(term ->
+                resource.listProperties(term)
+                        .mapWith(Statement::getResource)
+                        .forEach(termResource -> {
+                            MapperUtils.removeAllLists(termResource);
+                            model.removeAll(termResource, null, null);
+                        }));
+
         MapperUtils.removeAllLists(resource);
         model.removeAll(null, null, resource);
         model.removeAll(resource, null, null);
     }
 
     private static List<String> getIndexedTerm(Resource resource, Property property) {
-        return MapperUtils.getResourceList(resource, property).stream()
-                .filter(r -> r.hasProperty(SKOSXL.literalForm))
-                .map(r -> r.getProperty(SKOSXL.literalForm).getString())
-                .toList();
+        return resource.listProperties(property)
+                .mapWith(Statement::getResource)
+                .toList().stream()
+                    .filter(r -> r.hasProperty(SKOSXL.literalForm))
+                    .map(r -> r.getProperty(SKOSXL.literalForm).getString())
+                    .toList();
     }
 
     private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(Model model, Resource resource, Property property) {
         var result = new LinkedHashSet<ConceptReferenceInfoDTO>();
-        MapperUtils.getResourceList(resource, property).forEach(ref -> {
+
+        var orderProperty = orderProperties.get(property.getLocalName());
+
+        var referenceList = orderProperty != null
+                ? MapperUtils.getResourceList(resource, orderProperty)
+                : resource.listProperties(property).mapWith(Statement::getResource).toList();
+
+        referenceList.forEach(ref -> {
             var refDTO = new ConceptReferenceInfoDTO();
             var terminologyURI = TerminologyURI.fromUri(ref.getURI());
             refDTO.setReferenceURI(terminologyURI.getResourceURI());
             refDTO.setIdentifier(terminologyURI.getResourceId());
             refDTO.setPrefix(terminologyURI.getPrefix());
             var label = new HashMap<String, String>();
-            MapperUtils.getResourceList(model.getResource(ref.getURI()), SKOS.prefLabel).forEach(r -> {
+            model.getResource(ref.getURI()).listProperties(SKOS.prefLabel).forEach(r -> {
                 var value = r.getProperty(SKOSXL.literalForm);
                 label.put(value.getLanguage(), value.getString());
             });
@@ -226,10 +260,18 @@ public class ConceptMapper {
     }
 
     private static void addResourceListProperty(Model model, Resource resource, Property property, Collection<String> values) {
+        resource.removeAll(property);
+
         var resourceValues = values.stream()
                 .map(model::getResource)
                 .toList();
-        MapperUtils.addListProperty(resource, property, resourceValues);
+
+        resourceValues.forEach(r -> resource.addProperty(property, r));
+
+        var orderProperty = orderProperties.get(property.getLocalName());
+        if (orderProperty != null) {
+            MapperUtils.addListProperty(resource, orderProperty, resourceValues);
+        }
     }
 
     private static void mapReferencesToResource(Model model, ConceptDTO dto, Resource resource) {
@@ -258,29 +300,38 @@ public class ConceptMapper {
     }
 
     private static void handleTerms(ModelWrapper model, ConceptDTO dto, Resource conceptResource) {
-        MapperUtils.addListProperty(conceptResource, SKOS.prefLabel,
-                dto.getRecommendedTerms().stream()
-                        .map(term -> mapTerm(model, term))
-                        .toList());
+        conceptResource.removeAll(SKOS.prefLabel);
+        conceptResource.removeAll(SKOS.altLabel);
+        conceptResource.removeAll(Term.notRecommendedSynonym);
+        conceptResource.removeAll(SKOS.hiddenLabel);
 
-        MapperUtils.addListProperty(conceptResource, SKOS.altLabel,
-                dto.getSynonyms().stream()
-                        .map(term -> mapTerm(model, term))
-                        .toList());
+        // Preferred terms don't need to be ordered, since there's only one preferred term / language
+        dto.getRecommendedTerms().stream()
+                .map(term -> mapTerm(model, term))
+                .forEach(term -> conceptResource.addProperty(SKOS.prefLabel, term));
 
-        MapperUtils.addListProperty(conceptResource, Term.notRecommendedSynonym,
-                dto.getNotRecommendedTerms().stream()
-                        .map(term -> mapTerm(model, term))
-                        .toList());
+        // Add synonyms in ordered list
+        var synonyms = dto.getSynonyms().stream()
+                .map(term -> mapTerm(model, term))
+                .toList();
+        synonyms.forEach(s -> conceptResource.addProperty(SKOS.altLabel, s));
+        MapperUtils.addListProperty(conceptResource, Term.orderedSynonym, synonyms);
 
-        MapperUtils.addListProperty(conceptResource, SKOS.hiddenLabel,
-                dto.getSearchTerms().stream()
-                        .map(term -> mapTerm(model, term))
-                        .toList());
+        // Add not recommended synonyms in ordered list
+        var notRecommendedSynonyms = dto.getNotRecommendedTerms().stream()
+                .map(term -> mapTerm(model, term))
+                .toList();
+        notRecommendedSynonyms.forEach(s -> conceptResource.addProperty(Term.notRecommendedSynonym,s));
+        MapperUtils.addListProperty(conceptResource, Term.orderedNotRecommendedSynonym, notRecommendedSynonyms);
+
+        // hidden terms don't need to be ordered, because they are not visible in the UI
+        dto.getSearchTerms().stream()
+                .map(term -> mapTerm(model, term))
+                .forEach(t -> conceptResource.addProperty(SKOS.hiddenLabel, t));
     }
 
     private static Resource mapTerm(ModelWrapper model, TermDTO term) {
-        var termResource = model.createResource();
+        var termResource = model.createResource(UUID.randomUUID().toString());
         termResource.addProperty(RDF.type, SKOSXL.Label);
         termResource.addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral(term.getLabel(), term.getLanguage()));
         MapperUtils.addLiteral(termResource, Term.homographNumber, term.getHomographNumber());
@@ -304,7 +355,9 @@ public class ConceptMapper {
 
         var terms = new ArrayList<TermDTO>();
 
-        var termResources = MapperUtils.getResourceList(resource, property);
+        var termResources = termProperties.contains(property)
+            ? resource.listProperties(property).mapWith(Statement::getResource).toList()
+            : MapperUtils.getResourceList(resource, property);
 
         termResources.forEach(termResource -> {
             var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();

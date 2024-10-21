@@ -7,6 +7,7 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
@@ -26,6 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,7 +39,7 @@ import static org.mockito.Mockito.*;
 @Import({
         ConceptCollectionService.class,
 })
-public class ConceptCollectionServiceTest {
+class ConceptCollectionServiceTest {
     @MockBean
     TerminologyRepository repository;
 
@@ -110,6 +112,11 @@ public class ConceptCollectionServiceTest {
 
         assertFalse(dto.getLabel().isEmpty());
         assertFalse(dto.getDescription().isEmpty());
+
+        var members = dto.getMembers().stream()
+                .map(ConceptReferenceInfoDTO::getIdentifier)
+                .toList();
+        assertEquals(List.of("concept-1", "concept-2"), members);
 
         // only authenticated user should see this information
         assertNull(dto.getCreator().getName());
