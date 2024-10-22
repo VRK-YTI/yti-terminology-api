@@ -334,7 +334,10 @@ public class ConceptMapper {
         var termResource = model.createResource(UUID.randomUUID().toString());
         termResource.addProperty(RDF.type, SKOSXL.Label);
         termResource.addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral(term.getLabel(), term.getLanguage()));
-        MapperUtils.addLiteral(termResource, Term.homographNumber, term.getHomographNumber());
+
+        if (term.getHomographNumber() != null && term.getHomographNumber() > 0) {
+            MapperUtils.addLiteral(termResource, Term.homographNumber, term.getHomographNumber());
+        }
         MapperUtils.addStatus(termResource, term.getStatus());
         MapperUtils.addOptionalStringProperty(termResource, Term.termInfo, term.getTermInfo());
         MapperUtils.addOptionalStringProperty(termResource, Term.scope, term.getScope());
