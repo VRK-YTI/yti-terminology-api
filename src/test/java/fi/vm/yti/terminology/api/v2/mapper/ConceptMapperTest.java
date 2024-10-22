@@ -309,8 +309,8 @@ class ConceptMapperTest {
         assertEquals("Suositettava termi", dto.getLabel().get("fi"));
         assertEquals("def", dto.getDefinition().get("fi"));
         assertTrue(dto.getAltLabel().containsAll(List.of("synonyymi 1", "synonyymi 2")));
-        assertTrue(dto.getNotRecommendedSynonym().containsAll(List.of("ei suositettava")));
-        assertTrue(dto.getSearchTerm().containsAll(List.of("hakutermi")));
+        assertTrue(dto.getNotRecommendedSynonym().contains("ei suositettava"));
+        assertTrue(dto.getSearchTerm().contains("hakutermi"));
         assertEquals("2024-05-06T05:00:00.000Z", dto.getCreated());
         assertEquals("2024-05-07T04:00:00.000Z", dto.getModified());
     }
@@ -331,7 +331,6 @@ class ConceptMapperTest {
         ConceptMapper.dtoToModel(model, dto, mockUser);
         ConceptMapper.mapDeleteConcept(model, dto.getIdentifier());
 
-        RDFDataMgr.write(System.out, model, Lang.TURTLE);
         // all triples related to removed concept should be removed
         assertEquals(initialSize, model.size());
     }

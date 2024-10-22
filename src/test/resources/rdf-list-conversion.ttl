@@ -41,6 +41,11 @@ order-test:collection-2000
         skos:member          ( order-test:c340 order-test:concept-3 order-test:order-1 );
         skos:prefLabel       "test"@sv , "test"@fi , "test"@en .
 
+order-test:collection-0
+        rdf:type             skos:Collection;
+        skos:inScheme        order-test:;
+        skos:prefLabel       "test empty"@sv , "test empty"@fi , "test empty"@en .
+
 order-test:  rdf:type                   skos:ConceptScheme;
         rdfs:comment                  "test en"@en , "test"@fi;
         dcterms:contributor           <urn:uuid:7d3a3c00-5a6b-489b-a3ed-63bb58c26a63>;
@@ -134,3 +139,81 @@ order-test:order-1  rdf:type            skos:Concept;
                                       );
         suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
 
+_:b0 rdf:first _:b1; rdf:rest () .
+
+_:b2 rdf:first _:b3; rdf:rest () .
+
+_:b4 rdf:first _:b5; rdf:rest () .
+
+_:b6 rdf:first _:b7; rdf:rest () .
+
+_:b8 rdf:first _:b9; rdf:rest () .
+
+_:b10 rdf:first _:b11; rdf:rest () .
+
+_:b12 rdf:first _:b13; rdf:rest () .
+
+_:b14 rdf:first _:b15; rdf:rest () .
+
+_:b16 rdf:first _:b17; rdf:rest () .
+
+_:b18 rdf:first _:b19; rdf:rest () .
+
+_:b20 rdf:first _:b21; rdf:rest () .
+
+_:b22 rdf:first _:b23; rdf:rest () .
+
+_:b24 rdf:first _:b25; rdf:rest () .
+
+_:b26 rdf:first order-test:concept-3; rdf:rest () .
+
+_:b27 rdf:first _:b28; rdf:rest () .
+
+_:b29 rdf:first "editorial"; rdf:rest () .
+
+_:b30 rdf:first _:b31; rdf:rest () .
+
+_:b12   rdf:first  _:b13;
+        rdf:rest   () .
+
+_:b6    rdf:first  _:b7;
+        rdf:rest   () .
+
+_:b8    rdf:first  _:b9;
+        rdf:rest   () .
+
+_:b10   rdf:first  _:b11;
+        rdf:rest   () .
+
+_:b30   rdf:first  _:b31;
+        rdf:rest   () .
+
+_:b0    rdf:first  _:b1;
+        rdf:rest   () .
+
+_:b20   rdf:first  _:b21;
+        rdf:rest   () .
+
+_:b24   rdf:first  _:b25;
+        rdf:rest   () .
+
+_:b18   rdf:first  _:b19;
+        rdf:rest   () .
+
+_:b16   rdf:first  _:b17;
+        rdf:rest   () .
+
+_:b22   rdf:first  _:b23;
+        rdf:rest   () .
+
+_:b2    rdf:first  _:b3;
+        rdf:rest   () .
+
+_:b27   rdf:first  _:b28;
+        rdf:rest   () .
+
+_:b14   rdf:first  _:b15;
+        rdf:rest   () .
+
+_:b4    rdf:first  _:b5;
+        rdf:rest   () .

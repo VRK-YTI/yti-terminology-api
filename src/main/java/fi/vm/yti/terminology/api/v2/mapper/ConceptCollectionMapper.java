@@ -104,12 +104,9 @@ public class ConceptCollectionMapper {
         MapperUtils.getResourceList(resource, Term.orderedMember)
                 .forEach(concept -> {
                     var labelMap = new HashMap<String, String>();
-                    MapperUtils.getResourceList(concept, SKOS.prefLabel).forEach(term -> {
-                        if (term.hasProperty(SKOSXL.literalForm)) {
-                            var labelProperty = term.getProperty(SKOSXL.literalForm);
-                            labelMap.put(labelProperty.getLanguage(), labelProperty.getString());
-                        }
-                    });
+                    concept.listProperties(SKOS.prefLabel)
+                            .forEach(s -> labelMap.putAll(
+                                    MapperUtils.localizedPropertyToMap(s.getResource(), SKOSXL.literalForm)));
                     dto.addMember(concept.getLocalName(), concept.getURI(), labelMap, model.getPrefix());
                 });
 

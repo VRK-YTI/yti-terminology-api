@@ -73,8 +73,6 @@ class NTRFMapperTest {
 
         // synonym EN
         assertEquals(2, synonymEN.size());
-        // TODO: not working -> add terms to RDF list per type
-        // assertEquals(TermEquivalency.NARROWER.name(), MapperUtils.propertyToString(synonymEN.get(0), Term.termEquivalency));
 
         assertEquals(1, getTerm(concept, SKOS.hiddenLabel, "en").size());
         assertEquals(2, getTerm(concept, Term.notRecommendedSynonym, "en").size());
@@ -209,7 +207,7 @@ class NTRFMapperTest {
         var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
 
         var list = orderProperty != null
-            ? MapperUtils.getResourceList(concept, property)
+            ? MapperUtils.getResourceList(concept, orderProperty)
             : concept.listProperties(property).toList().stream()
                 .map(Statement::getResource)
                 .toList();
