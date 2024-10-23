@@ -221,10 +221,11 @@ class NTRFMapperTest {
     }
 
     private static List<String> getLocalizedList(Resource concept, Property property, String language) {
-        if (!concept.hasProperty(property)) {
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        if (!concept.hasProperty(orderProperty)) {
             return new ArrayList<>();
         }
-        return concept.getProperty(property).getList().asJavaList().stream()
+        return concept.getProperty(orderProperty).getList().asJavaList().stream()
                 .map(RDFNode::asLiteral)
                 .filter(n -> n.getLanguage().equals(language))
                 .map(Literal::getString)
@@ -232,10 +233,11 @@ class NTRFMapperTest {
     }
 
     private static List<String> getListValues(Resource resource, Property property) {
-        if (!resource.hasProperty(property)) {
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        if (!resource.hasProperty(orderProperty)) {
             return new ArrayList<>();
         }
-        return resource.getProperty(property)
+        return resource.getProperty(orderProperty)
                 .getList().asJavaList().stream()
                 .map(s -> s.asLiteral().getString())
                 .toList();

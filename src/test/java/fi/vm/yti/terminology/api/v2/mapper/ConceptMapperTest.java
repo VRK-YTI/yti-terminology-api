@@ -16,8 +16,6 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
 import org.junit.jupiter.api.Test;
@@ -43,7 +41,6 @@ class ConceptMapperTest {
 
         var conceptResource = model.getResourceById(concept.getIdentifier());
 
-        RDFDataMgr.write(System.out, model, Lang.TURTLE);
         assertEquals(graphURI + concept.getIdentifier(), conceptResource.getURI());
         assertEquals(concept.getConceptClass(), conceptResource.getProperty(Term.conceptClass).getString());
         assertEquals(concept.getDefinition(), Map.of("en", "definition"));
@@ -336,14 +333,16 @@ class ConceptMapperTest {
     }
 
     private static List<String> getList(Resource conceptResource, Property property) {
-        return conceptResource.getProperty(property).getList()
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        return conceptResource.getProperty(orderProperty).getList()
                 .asJavaList().stream()
                 .map(r -> r.asLiteral().getString())
                 .toList();
     }
 
     private static List<LocalizedValueDTO> getLocalizedList(Resource conceptResource, Property property) {
-        return conceptResource.getProperty(property).getList()
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        return conceptResource.getProperty(orderProperty).getList()
                 .asJavaList().stream()
                 .map(r -> new LocalizedValueDTO(r.asLiteral().getLanguage(), r.asLiteral().getString()))
                 .toList();

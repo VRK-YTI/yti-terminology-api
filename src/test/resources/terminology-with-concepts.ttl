@@ -34,33 +34,37 @@ test:concept-1  rdfs:seeAlso          ( [
                                       ] );
         dcterms:created               "2024-05-06T05:00:00.000Z"^^xsd:dateTime;
         dcterms:modified              "2024-05-07T04:00:00.000Z"^^xsd:dateTime;
-        skos:altLabel                 <40b1e74c-766f-4fe2-9679-a1388e5c96ab> , <c0a7af17-4857-4446-965f-e9f304145170>;
-        term:orderedSynonym           ( <40b1e74c-766f-4fe2-9679-a1388e5c96ab> <c0a7af17-4857-4446-965f-e9f304145170> );
+        skos:altLabel                 <urn:uuid:40b1e74c-766f-4fe2-9679-a1388e5c96ab> , <urn:uuid:c0a7af17-4857-4446-965f-e9f304145170>;
+        term:orderedSynonym           ( <urn:uuid:40b1e74c-766f-4fe2-9679-a1388e5c96ab> <urn:uuid:c0a7af17-4857-4446-965f-e9f304145170> );
         term:orderedBroader           ( test:concept-2 test:concept-20 );
         skos:broader                  test:concept-2;
         skos:broader                  test:concept-20;
         skos:changeNote               "change";
         skos:definition               "def"@fi;
-        skos:editorialNote            ( "editorial" );
-        skos:example                  ( "example"@fi );
-        skos:hiddenLabel              <bf40a18b-fcce-4176-a6b0-b2209c1fca8f>;
+        term:orderedEditorialNote     ( "editorial" );
+        skos:editorialNote            "editorial";
+        skos:example                  "example"@fi;
+        term:orderedExample           ( "example"@fi );
+        skos:hiddenLabel              <urn:uuid:bf40a18b-fcce-4176-a6b0-b2209c1fca8f>;
         skos:historyNote              "history";
         skos:inScheme                 test:;
-        skos:note                     ( "note"@fi );
-        skos:prefLabel                <0a0c1bca-4a20-4c33-ab8b-d8f2abaa03ab>;
+        skos:note                     "note"@fi;
+        term:orderedNote              ( "note"@fi );
+        skos:prefLabel                <urn:uuid:0a0c1bca-4a20-4c33-ab8b-d8f2abaa03ab>;
         suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
         suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812";
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT>;
         term:conceptClass             "concept class";
-        term:notRecommendedSynonym    <fa59a67e-e1ce-48c2-ac8c-effcbfa934a5> ;
+        term:notRecommendedSynonym    <urn:uuid:fa59a67e-e1ce-48c2-ac8c-effcbfa934a5> ;
         term:orderedNotRecommendedSynonym
-            ( <fa59a67e-e1ce-48c2-ac8c-effcbfa934a5> );
-        term:source                   ( "source" );
+            ( <urn:uuid:fa59a67e-e1ce-48c2-ac8c-effcbfa934a5> );
+        term:orderedSource            ( "source" );
+        dcterms:source                 "source";
         skos:narrowMatch              <https://iri.suomi.fi/terminology/ext/concept-1> ;
         term:orderedNarrowMatch       ( <https://iri.suomi.fi/terminology/ext/concept-1> ) ;
         term:subjectArea              "subject area" .
 
-<0a0c1bca-4a20-4c33-ab8b-d8f2abaa03ab>
+<urn:uuid:0a0c1bca-4a20-4c33-ab8b-d8f2abaa03ab>
         rdf:type                      skos-xl:Label;
         skos:changeNote               "term change";
         skos:historyNote              "term history";
@@ -75,22 +79,22 @@ test:concept-1  rdfs:seeAlso          ( [
         term:termStyle                "term style";
         term:wordClass                "ADJECTIVE" .
 
-<40b1e74c-766f-4fe2-9679-a1388e5c96ab>
+<urn:uuid:40b1e74c-766f-4fe2-9679-a1388e5c96ab>
         rdf:type            skos-xl:Label;
         skos-xl:literalForm           "synonyymi 1"@fi;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .
 
-<c0a7af17-4857-4446-965f-e9f304145170>
+<urn:uuid:c0a7af17-4857-4446-965f-e9f304145170>
         rdf:type                      skos-xl:Label;
         skos-xl:literalForm           "synonyymi 2"@fi;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .
 
-<fa59a67e-e1ce-48c2-ac8c-effcbfa934a5>
+<urn:uuid:fa59a67e-e1ce-48c2-ac8c-effcbfa934a5>
         rdf:type                      skos-xl:Label;
         skos-xl:literalForm           "ei suositettava"@fi;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .
 
-<bf40a18b-fcce-4176-a6b0-b2209c1fca8f>
+<urn:uuid:bf40a18b-fcce-4176-a6b0-b2209c1fca8f>
         rdf:type                      skos-xl:Label;
         skos-xl:literalForm           "hakutermi"@fi;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .
@@ -99,10 +103,10 @@ test:concept-1  rdfs:seeAlso          ( [
 
 test:concept-2
         skos:inScheme                 test:;
-        skos:prefLabel                <c1a77136-dc9e-4858-bb38-fab195c1bd0f>;
+        skos:prefLabel                <urn:uuid:c1a77136-dc9e-4858-bb38-fab195c1bd0f>;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .
 
-<c1a77136-dc9e-4858-bb38-fab195c1bd0f>
+<urn:uuid:c1a77136-dc9e-4858-bb38-fab195c1bd0f>
         rdf:type                      skos-xl:Label;
         skos-xl:literalForm           "Suositettava termi"@fi;
         suomi-meta:publicationStatus  <http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT> .

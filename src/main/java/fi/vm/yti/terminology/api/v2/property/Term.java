@@ -38,6 +38,10 @@ public class Term {
     public static final Property orderedNarrowMatch = ResourceFactory.createProperty(URI, "orderedNarrowMatch");
     public static final Property orderedExactMatch = ResourceFactory.createProperty(URI, "orderedExactMatch");
     public static final Property orderedCloseMatch = ResourceFactory.createProperty(URI, "orderedCloseMatch");
+    public static final Property orderedNote =  ResourceFactory.createProperty(URI, "orderedNote");
+    public static final Property orderedExample =  ResourceFactory.createProperty(URI, "orderedExample");
+    public static final Property orderedEditorialNote =  ResourceFactory.createProperty(URI, "orderedEditorialNote");
+    public static final Property orderedSource =  ResourceFactory.createProperty(URI, "orderedSource");
 
     public static String getNamespace() {
         return URI;

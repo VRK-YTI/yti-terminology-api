@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.mapper;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.dto.LinkDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
@@ -48,7 +49,11 @@ public class ConceptMapper {
             Map.entry(SKOS.closeMatch.getLocalName(), Term.orderedCloseMatch),
             Map.entry(SKOS.altLabel.getLocalName(), Term.orderedSynonym),
             Map.entry(Term.notRecommendedSynonym.getLocalName(), Term.orderedNotRecommendedSynonym),
-            Map.entry(SKOS.member.getLocalName(), Term.orderedMember)
+            Map.entry(SKOS.member.getLocalName(), Term.orderedMember),
+            Map.entry(SKOS.note.getLocalName(), Term.orderedNote),
+            Map.entry(SKOS.example.getLocalName(), Term.orderedExample),
+            Map.entry(DCTerms.source.getLocalName(), Term.orderedSource),
+            Map.entry(SKOS.editorialNote.getLocalName(), Term.orderedEditorialNote)
     );
 
     public static final List<Property> termProperties = List.of(SKOS.prefLabel, SKOS.altLabel,
@@ -248,15 +253,27 @@ public class ConceptMapper {
         var literalValues = values.stream()
                 .map(ResourceFactory::createStringLiteral)
                 .toList();
-
-        MapperUtils.addListProperty(resource, property, literalValues);
+        handleOrderedListProperty(resource, property, literalValues);
     }
 
     private static void addLocalizedListProperty(Resource resource, Property property, Collection<LocalizedValueDTO> values) {
         var literalValues = values.stream()
                 .map(e -> ResourceFactory.createLangLiteral(e.getValue(), e.getLanguage()))
                 .toList();
-        MapperUtils.addListProperty(resource, property, literalValues);
+        handleOrderedListProperty(resource, property, literalValues);
+    }
+
+    private static void handleOrderedListProperty(Resource resource, Property property, List<Literal> literalValues) {
+        var orderProperty = orderProperties.get(property.getLocalName());
+        if (orderProperty != null) {
+            // store both RDF list and single properties
+            MapperUtils.addListProperty(resource, orderProperty, literalValues);
+            resource.removeAll(property);
+            literalValues.forEach(value -> resource.addProperty(property, value));
+        } else {
+            // store only RDF list
+            MapperUtils.addListProperty(resource, property, literalValues);
+        }
     }
 
     private static void addResourceListProperty(Model model, Resource resource, Property property, Collection<String> values) {
@@ -331,7 +348,7 @@ public class ConceptMapper {
     }
 
     private static Resource mapTerm(ModelWrapper model, TermDTO term) {
-        var termResource = model.createResource(UUID.randomUUID().toString());
+        var termResource = model.createResource(Constants.URN_UUID + UUID.randomUUID());
         termResource.addProperty(RDF.type, SKOSXL.Label);
         termResource.addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral(term.getLabel(), term.getLanguage()));
 
@@ -402,21 +419,38 @@ public class ConceptMapper {
         if (!resource.hasProperty(property)) {
             return List.of();
         }
-        return resource.getProperty(property)
-                .getList().asJavaList().stream()
-                .map(RDFNode::asLiteral)
-                .map(o -> new LocalizedValueDTO(o.getLanguage(), o.getString()))
-                .toList();
+        var orderProperty = orderProperties.get(property.getLocalName());
+
+        if (orderProperty != null && resource.hasProperty(orderProperty)) {
+            return resource.getProperty(orderProperty)
+                    .getList().asJavaList().stream()
+                    .map(RDFNode::asLiteral)
+                    .map(o -> new LocalizedValueDTO(o.getLanguage(), o.getString()))
+                    .toList();
+        } else {
+            return resource.listProperties(property)
+                    .mapWith(s -> s.getObject().asLiteral())
+                    .mapWith(o -> new LocalizedValueDTO(o.getLanguage(), o.getString()))
+                    .toList();
+        }
     }
 
     private static List<String> listToValues(Resource resource, Property property) {
         if (!resource.hasProperty(property)) {
             return List.of();
         }
-        return resource.getProperty(property)
-                .getList().asJavaList().stream()
-                .map(s -> s.asLiteral().getString())
-                .toList();
+        var orderProperty = orderProperties.get(property.getLocalName());
+
+        if (orderProperty != null && resource.hasProperty(orderProperty)) {
+            return resource.getProperty(orderProperty)
+                    .getList().asJavaList().stream()
+                    .map(s -> s.asLiteral().getString())
+                    .toList();
+        } else {
+            return resource.listProperties(property)
+                    .mapWith(s -> s.getObject().asLiteral().getString())
+                    .toList();
+        }
     }
 
     private static <E extends Enum<E>> E getEnumValue(Resource resource, Property property, Class<E> e) {
