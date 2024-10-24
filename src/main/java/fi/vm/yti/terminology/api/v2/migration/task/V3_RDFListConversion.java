@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.migration.task;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.migration.MigrationTask;
@@ -85,6 +86,10 @@ public class V3_RDFListConversion implements MigrationTask {
         var orderProperty = ConceptMapper.orderProperties.get(stmt.getPredicate().getLocalName());
 
         try {
+            // status is stored as a literal. change that to resource
+            var status = MapperUtils.getStatus(concept);
+            MapperUtils.addStatus(concept, status);
+
             if (ConceptMapper.termProperties.contains(stmt.getPredicate())) {
 
                 var orderedTerms = new ArrayList<Resource>();
@@ -94,10 +99,13 @@ public class V3_RDFListConversion implements MigrationTask {
                 concept.removeAll(stmt.getPredicate());
 
                 terms.asJavaList().forEach(term -> {
-                    var termResource = model.createResource(UUID.randomUUID().toString());
+                    var termResource = model.createResource(Constants.URN_UUID + UUID.randomUUID());
                     term.asResource().listProperties().forEach(s -> termResource.addProperty(s.getPredicate(), s.getObject()));
                     concept.addProperty(stmt.getPredicate(), termResource);
                     orderedTerms.add(termResource);
+
+                    var termStatus = MapperUtils.getStatus(termResource);
+                    MapperUtils.addStatus(termResource, termStatus);
 
                     // remove old term resources from the model
                     model.removeAll(term.asResource(), null, null);

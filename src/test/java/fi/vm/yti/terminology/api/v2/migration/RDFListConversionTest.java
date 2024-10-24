@@ -2,18 +2,14 @@ package fi.vm.yti.terminology.api.v2.migration;
 
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.TestUtils;
-import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
 import fi.vm.yti.terminology.api.v2.migration.task.V3_RDFListConversion;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
-import fi.vm.yti.terminology.api.v2.service.UriResolveService;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
-import org.apache.jena.graph.NodeFactory;
-import org.apache.jena.query.Query;
 import org.apache.jena.query.QuerySolution;
-import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
@@ -26,12 +22,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @Import({
