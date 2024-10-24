@@ -11,10 +11,7 @@ import fi.vm.yti.terminology.api.v2.ntrf.VOCABULARY;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
-import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
@@ -76,8 +73,6 @@ class NTRFMapperTest {
 
         // synonym EN
         assertEquals(2, synonymEN.size());
-        // TODO: not working -> add terms to RDF list per type
-        // assertEquals(TermEquivalency.NARROWER.name(), MapperUtils.propertyToString(synonymEN.get(0), Term.termEquivalency));
 
         assertEquals(1, getTerm(concept, SKOS.hiddenLabel, "en").size());
         assertEquals(2, getTerm(concept, Term.notRecommendedSynonym, "en").size());
@@ -111,35 +106,35 @@ class NTRFMapperTest {
 
         var concept = model.getResourceById("c100");
 
-        assertEquals(List.of("bcon-1", "bcon-2", "bcon-3"), MapperUtils.getResourceList(concept, SKOS.broader)
+        assertEquals(List.of("bcon-1", "bcon-2", "bcon-3"), MapperUtils.getResourceList(concept, Term.orderedBroader)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("ncon-1", "ncon-2", "ncon-3"), MapperUtils.getResourceList(concept, SKOS.narrower)
+        assertEquals(List.of("ncon-1", "ncon-2", "ncon-3"), MapperUtils.getResourceList(concept, Term.orderedNarrower)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("rcon-1", "rcon-2", "rcon-3"), MapperUtils.getResourceList(concept, SKOS.related)
+        assertEquals(List.of("rcon-1", "rcon-2", "rcon-3"), MapperUtils.getResourceList(concept, Term.orderedRelated)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("hasPart-1"), MapperUtils.getResourceList(concept, DCTerms.hasPart)
+        assertEquals(List.of("hasPart-1"), MapperUtils.getResourceList(concept, Term.orderedHasPart)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("isPartOf-1"), MapperUtils.getResourceList(concept, DCTerms.isPartOf)
+        assertEquals(List.of("isPartOf-1"), MapperUtils.getResourceList(concept, Term.orderedIsPartOf)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("rconext-1", "rconext-2"), MapperUtils.getResourceList(concept, SKOS.relatedMatch)
+        assertEquals(List.of("rconext-1", "rconext-2"), MapperUtils.getResourceList(concept, Term.orderedRelatedMatch)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("nconext"), MapperUtils.getResourceList(concept, SKOS.narrowMatch)
+        assertEquals(List.of("nconext"), MapperUtils.getResourceList(concept, Term.orderedNarrowMatch)
                 .stream().map(Resource::getLocalName)
                 .toList());
 
-        assertEquals(List.of("bconext"), MapperUtils.getResourceList(concept, SKOS.broadMatch)
+        assertEquals(List.of("bconext"), MapperUtils.getResourceList(concept, Term.orderedBroadMatch)
                 .stream().map(Resource::getLocalName)
                 .toList());
     }
@@ -170,7 +165,7 @@ class NTRFMapperTest {
 
         assertEquals("Test collection", MapperUtils.localizedPropertyToMap(collection, SKOS.prefLabel).get("fi"));
 
-        var members = collection.getProperty(SKOS.member).getList().asJavaList();
+        var members = collection.getProperty(Term.orderedMember).getList().asJavaList();
         assertEquals(2, members.size());
         assertEquals(List.of("c1", "c2"), members.stream().map(m -> m.asResource().getLocalName()).toList());
     }
@@ -194,19 +189,30 @@ class NTRFMapperTest {
 
         assertEquals("Test collection", MapperUtils.localizedPropertyToMap(collection, SKOS.prefLabel).get("fi"));
 
-        var members = collection.getProperty(SKOS.member).getList().asJavaList();
+        var members = collection.listProperties(SKOS.member).toList();
+        var orderedMembers = collection.getProperty(Term.orderedMember).getList().asJavaList();
         assertEquals(2, members.size());
-        assertEquals(List.of("c1", "c2"), members.stream().map(m -> m.asResource().getLocalName()).toList());
+        assertEquals(2, orderedMembers.size());
+
+        var expectedMembers = List.of("c1", "c2");
+        assertEquals(expectedMembers, orderedMembers.stream().map(m -> m.asResource().getLocalName()).toList());
+        assertTrue(members.stream().map(m -> m.getResource().getLocalName()).toList().containsAll(expectedMembers));
     }
 
     private static List<Resource> getTerm(Resource concept, Property property, String language) {
         if (!concept.hasProperty(property)) {
             return new ArrayList<>();
         }
-        return concept.getProperty(property).getList()
-                .asJavaList().stream()
-                .map(RDFNode::asResource)
-                .filter(r -> r.getProperty(SKOSXL.literalForm)
+
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+
+        var list = orderProperty != null
+            ? MapperUtils.getResourceList(concept, orderProperty)
+            : concept.listProperties(property).toList().stream()
+                .map(Statement::getResource)
+                .toList();
+        return
+                list.stream().filter(r -> r.getProperty(SKOSXL.literalForm)
                         .getObject()
                         .asLiteral()
                         .getLanguage()
@@ -215,10 +221,11 @@ class NTRFMapperTest {
     }
 
     private static List<String> getLocalizedList(Resource concept, Property property, String language) {
-        if (!concept.hasProperty(property)) {
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        if (!concept.hasProperty(orderProperty)) {
             return new ArrayList<>();
         }
-        return concept.getProperty(property).getList().asJavaList().stream()
+        return concept.getProperty(orderProperty).getList().asJavaList().stream()
                 .map(RDFNode::asLiteral)
                 .filter(n -> n.getLanguage().equals(language))
                 .map(Literal::getString)
@@ -226,10 +233,11 @@ class NTRFMapperTest {
     }
 
     private static List<String> getListValues(Resource resource, Property property) {
-        if (!resource.hasProperty(property)) {
+        var orderProperty = ConceptMapper.orderProperties.get(property.getLocalName());
+        if (!resource.hasProperty(orderProperty)) {
             return new ArrayList<>();
         }
-        return resource.getProperty(property)
+        return resource.getProperty(orderProperty)
                 .getList().asJavaList().stream()
                 .map(s -> s.asLiteral().getString())
                 .toList();

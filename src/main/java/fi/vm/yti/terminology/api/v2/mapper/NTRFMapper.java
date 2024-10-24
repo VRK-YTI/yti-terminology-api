@@ -29,10 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class NTRFMapper {
 
@@ -123,10 +120,17 @@ public class NTRFMapper {
                     langValue,
                     value -> getContentWithTags(def.getContent(), dto, model)
             ));
-            lang.getNOTE().forEach(note -> dto.getNotes().add(
+
+            // Notes and examples are reversed to preserve the order in xml file.
+            // In the UI notes and examples are represented in latest first
+            var notes = lang.getNOTE();
+            Collections.reverse(notes);
+            notes.forEach(note -> dto.getNotes().add(
                     new LocalizedValueDTO(langValue, getContentWithTags(note.getContent(), dto, model)))
             );
-            lang.getEXAMP().forEach(example -> dto.getExamples().add(
+            var examples = lang.getEXAMP();
+            Collections.reverse(examples);
+            examples.forEach(example -> dto.getExamples().add(
                     new LocalizedValueDTO(langValue, getContentWithTags(example.getContent(), dto, model)))
             );
 

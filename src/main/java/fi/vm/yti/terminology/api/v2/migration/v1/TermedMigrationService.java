@@ -14,6 +14,7 @@ import fi.vm.yti.terminology.api.v2.service.TerminologyService;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.util.ResourceUtils;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
@@ -30,6 +31,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
+
+import java.util.ArrayList;
 
 @Service
 public class TermedMigrationService {
@@ -148,12 +151,16 @@ public class TermedMigrationService {
     private void handleConceptTermedData(ModelWrapper model, String terminologyId, String defaultLanguage) {
         var result = getTermedDataByType(terminologyId, "Concept");
         var user = userProvider.getUser();
+        var renamed = new ArrayList<String>();
         if (result != null && !result.isEmpty()) {
             result.iterator().forEachRemaining(concept -> {
                 try {
                     var dto = TermedDataMapper.mapConcept(concept, defaultLanguage);
                     ConceptMapper.dtoToModel(model, dto, user);
 
+                    if (Character.isDigit(dto.getIdentifier().charAt(0))) {
+                        renamed.add(dto.getIdentifier());
+                    }
                     var resource = model.getResourceById(dto.getIdentifier());
                     fixMetadata(concept, resource);
                 } catch (Exception e) {
@@ -161,6 +168,13 @@ public class TermedMigrationService {
                 }
             });
         }
+        renamed.forEach(r -> {
+            var resourceURI = TerminologyURI.createConceptURI(model.getPrefix(), r).getResourceURI();
+            var newURI = TerminologyURI.createConceptURI(model.getPrefix(), "a" + r).getResourceURI();
+
+            LOG.info("Rename resource starting with digit {}", resourceURI);
+            ResourceUtils.renameResource(model.getResource(resourceURI), newURI);
+        });
     }
 
     private void handleCollectionTermedData(ModelWrapper model, String terminologyId) {

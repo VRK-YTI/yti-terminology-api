@@ -21,8 +21,6 @@ import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.sparql.path.PathFactory;
-import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
 import org.springframework.stereotype.Service;
@@ -31,7 +29,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static fi.vm.yti.security.AuthorizationException.check;
 
@@ -76,15 +73,9 @@ public class ConceptService {
     }
 
     private void mapCollections(ConceptInfoDTO dto, ModelWrapper model) {
-        var path = Stream.of(
-                PathFactory.pathLink(SKOS.member.asNode()),
-                PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
-                PathFactory.pathLink(RDF.first.asNode())
-        ).reduce(PathFactory::pathSeq).orElseThrow();
-
         SelectBuilder select = new SelectBuilder();
         select.addGraph(NodeFactory.createURI(model.getGraphURI()), new WhereBuilder().addWhere(
-                "?collection", path, NodeFactory.createURI(dto.getUri())));
+                "?collection", SKOS.member, NodeFactory.createURI(dto.getUri())));
 
         var collections = new ArrayList<String>();
         repository.querySelect(select.build(), (var row) -> collections.add(row.get("collection").toString()));
@@ -119,19 +110,13 @@ public class ConceptService {
                 .addConstruct(conceptVar, SKOSXL.literalForm, "?label")
                 .addConstruct(schemeVar, SKOS.prefLabel, "?terminologyLabel");
 
-        var listPath = Stream.of(
-                PathFactory.pathLink(SKOS.prefLabel.asNode()),
-                PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
-                PathFactory.pathLink(RDF.first.asNode())
-        ).reduce(PathFactory::pathSeq).orElseThrow();
-
         var where = new WhereBuilder()
-                .addWhere(conceptVar, listPath, "?prefLabel")
+                .addWhere(conceptVar, SKOS.prefLabel, "?prefLabel")
                 .addWhere("?prefLabel", SKOSXL.literalForm, "?label")
                 .addWhere(conceptVar, SKOS.inScheme, schemeVar)
                 .addWhere(schemeVar, SKOS.prefLabel, "?terminologyLabel");
 
-        externalRefs.forEach(r -> where.addWhereValueVar(conceptVar,
+        externalRefs.forEach(r -> builder.addWhereValueVar(conceptVar,
                 ResourceFactory.createResource(r.getReferenceURI())));
         builder.addGraph("?g", where);
 
@@ -220,23 +205,10 @@ public class ConceptService {
 
         var w = new WhereBuilder();
         for (Property ref : properties) {
-
-            var path = Stream.of(
-                    PathFactory.pathLink(ref.asNode()),
-                    PathFactory.pathZeroOrMoreN(PathFactory.pathLink(RDF.rest.asNode())),
-                    PathFactory.pathLink(RDF.first.asNode())
-            ).reduce(PathFactory::pathSeq).orElseThrow();
-
             var varName = "?" + ref.getLocalName();
-            var bindVar = "?bind_" + ref.getLocalName();
-            var objectVar = "?o_" + ref.getLocalName();
-
-            builder.addConstruct(bindVar, ref, objectVar);
-
+            builder.addConstruct(varName, ref, NodeFactory.createURI(resourceURI));
             w.addOptional(new WhereBuilder()
-                    .addWhere(varName, path, NodeFactory.createURI(resourceURI))
-                    .addBind(varName, bindVar)
-                    .addWhere(bindVar, ref, objectVar));
+                    .addWhere(varName, ref, NodeFactory.createURI(resourceURI)));
         }
 
         builder.addGraph(NodeFactory.createURI(model.getGraphURI()), w);

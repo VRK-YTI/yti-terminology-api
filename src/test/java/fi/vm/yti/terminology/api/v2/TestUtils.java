@@ -141,6 +141,16 @@ public class TestUtils {
         recommendedTerms.add(getTermDTO());
         dto.setRecommendedTerms(recommendedTerms);
 
+        var synonym1 = new TermDTO();
+        var synonym2 = new TermDTO();
+        synonym1.setLanguage("en");
+        synonym1.setLabel("Synonym 1");
+        synonym1.setStatus(Status.DRAFT);
+        synonym2.setLanguage("en");
+        synonym2.setLabel("Synonym 2");
+        synonym2.setStatus(Status.DRAFT);
+        dto.setSynonyms(List.of(synonym1, synonym2));
+
         return dto;
     }
 
