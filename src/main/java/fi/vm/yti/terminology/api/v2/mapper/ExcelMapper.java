@@ -72,6 +72,7 @@ public class ExcelMapper {
                 continue;
             }
 
+            // find available identifier
             var conceptId = "concept-" + identifierSuffix;
             while (model.containsId(conceptId)) {
                 conceptId = "concept-" + ++identifierSuffix;
@@ -181,12 +182,11 @@ public class ExcelMapper {
     }
 
     /**
-     * Map column names and check if languages exist in terminology
-     * The map also ensures that we cannot have duplicate cell headers
+     * Construct and validate header row
      *
-     * @param row       Header row
-     * @param languages List of languages
-     * @return List of column names and their indexes
+     * @param row header row
+     * @param languages available languages defined in terminology's metadata
+     * @return header list
      */
     private static List<Header> mapColumnNames(Row row, List<String> languages) {
         if (row == null) {
