@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterStyle;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +41,7 @@ public class ImportController {
     ResponseEntity<Void> importSimpleExcel(@Parameter(description = "The ID of the terminology to import concepts to")
                                                              @PathVariable("prefix") String prefix,
                                                              @RequestPart(value = "file") MultipartFile file) {
-        // TODO: implement simple excel import
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        ntrfImportService.importExcel(prefix, file);
+        return ResponseEntity.ok().build();
     }
 }

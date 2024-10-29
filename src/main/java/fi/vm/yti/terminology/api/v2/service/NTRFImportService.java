@@ -1,5 +1,8 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.terminology.api.v2.exception.ExcelParseException;
+import fi.vm.yti.terminology.api.v2.exception.ImportException;
+import fi.vm.yti.terminology.api.v2.mapper.ExcelMapper;
 import fi.vm.yti.terminology.api.v2.mapper.NTRFMapper;
 import fi.vm.yti.terminology.api.v2.ntrf.VOCABULARY;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
@@ -54,7 +57,22 @@ public class NTRFImportService {
             indexService.reindexTerminology(model);
 
         } catch (JAXBException | IOException | XMLStreamException e) {
-            throw new RuntimeException(e);
+            throw new ImportException(e.getMessage());
+        }
+    }
+
+    public void importExcel(String prefix, MultipartFile file) {
+        var model = terminologyRepository.fetchByPrefix(prefix);
+        check(authorizationManager.hasRightsToTerminology(prefix, model));
+
+        try {
+            ExcelMapper.mapSimpleExcel(model, file.getInputStream(), authorizationManager.getUser());
+            terminologyRepository.put(model.getGraphURI(), model);
+            indexService.reindexTerminology(model);
+        } catch (ExcelParseException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ImportException(e.getMessage());
         }
     }
 }

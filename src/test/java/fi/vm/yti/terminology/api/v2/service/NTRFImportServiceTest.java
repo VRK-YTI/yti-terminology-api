@@ -7,6 +7,7 @@ import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.vocabulary.SKOS;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,27 +44,52 @@ class NTRFImportServiceTest {
     @Autowired
     NTRFImportService service;
 
-    @Test
-    void testNTRFImport() throws IOException {
-        var prefix = "test";
-        var model = TestUtils.getDefaultModel(prefix);
+    ModelWrapper model;
 
+    @BeforeEach
+    void setUp() {
+        var prefix = "test";
+        model = TestUtils.getDefaultModel(prefix);
         when(terminologyRepository.fetchByPrefix(prefix)).thenReturn(model);
         when(authorizationManager.hasRightsToTerminology(eq(prefix), any(Model.class))).thenReturn(true);
         when(authorizationManager.getUser()).thenReturn(TestUtils.mockUser);
-        var file = mock(MultipartFile.class);
-        when(file.getInputStream()).thenReturn(getClass().getResourceAsStream("/ntrf/ntrf-simple.xml"));
+    }
 
-        service.importNTRF(prefix, file);
+    @Test
+    void testNTRFImport() throws IOException {
+        var file = getMockFile("/ntrf/ntrf-simple.xml");
+
+        service.importNTRF(model.getPrefix(), file);
 
         verify(terminologyRepository).put(eq(model.getGraphURI()), modelCaptor.capture());
         verify(indexService).reindexTerminology(any(ModelWrapper.class));
 
         var savedModel = modelCaptor.getValue();
-        var concept = savedModel.getResource(TerminologyURI.createConceptURI(prefix, "c1").getResourceURI());
-        var collection = savedModel.getResource(TerminologyURI.createConceptCollectionURI(prefix, "collection-1").getResourceURI());
+        var concept = savedModel.getResource(TerminologyURI.createConceptURI(model.getPrefix(), "c1").getResourceURI());
+        var collection = savedModel.getResource(TerminologyURI.createConceptCollectionURI(model.getPrefix(), "collection-1").getResourceURI());
 
         assertTrue(concept.hasProperty(SKOS.prefLabel));
         assertTrue(collection.hasProperty(SKOS.member));
+    }
+
+    @Test
+    void testExcelImport() throws IOException {
+        var file = getMockFile("/excel/excel_import_simple.xlsx");
+
+        service.importExcel(model.getPrefix(), file);
+
+        verify(terminologyRepository).put(eq(model.getGraphURI()), modelCaptor.capture());
+        verify(indexService).reindexTerminology(any(ModelWrapper.class));
+
+        var savedModel = modelCaptor.getValue();
+        var concept = savedModel.getResource(TerminologyURI.createConceptURI(model.getPrefix(), "concept-0").getResourceURI());
+
+        assertTrue(concept.listProperties().hasNext());
+    }
+
+    private MultipartFile getMockFile(String name) throws IOException {
+        var file = mock(MultipartFile.class);
+        when(file.getInputStream()).thenReturn(getClass().getResourceAsStream(name));
+        return file;
     }
 }

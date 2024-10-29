@@ -26,4 +26,16 @@ public class TerminologyExceptionHandlerAdvice extends ExceptionHandlerAdvice {
                 .collect(Collectors.joining(", ")));
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
+
+    @ExceptionHandler(ExcelParseException.class)
+    protected ResponseEntity<Object> handleExcelImportException(ExcelParseException ex) {
+        return new ResponseEntity<>(ex, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ImportException.class)
+    protected ResponseEntity<Object> handleGenericImportException(ImportException ex) {
+        var apiError = new ApiGenericError(HttpStatus.INTERNAL_SERVER_ERROR);
+        apiError.setMessage(ex.getMessage());
+        return new ResponseEntity<>(apiError, apiError.getStatus());
+    }
 }
