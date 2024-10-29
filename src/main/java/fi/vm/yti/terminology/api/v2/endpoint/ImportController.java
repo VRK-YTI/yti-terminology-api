@@ -1,6 +1,6 @@
 package fi.vm.yti.terminology.api.v2.endpoint;
 
-import fi.vm.yti.terminology.api.v2.service.NTRFImportService;
+import fi.vm.yti.terminology.api.v2.service.ImportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterStyle;
@@ -17,10 +17,10 @@ import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 @Tag(name = "Import")
 public class ImportController {
 
-    private final NTRFImportService ntrfImportService;
+    private final ImportService importService;
 
-    public ImportController(NTRFImportService ntrfImportService) {
-        this.ntrfImportService = ntrfImportService;
+    public ImportController(ImportService importService) {
+        this.importService = importService;
     }
 
     @Operation(summary = "NTRF import", description = "Import concepts from a NTRF (XML) document")
@@ -29,19 +29,17 @@ public class ImportController {
     ResponseEntity<Void> importTerms(@Parameter(description = "Terminology prefix") @PathVariable("prefix") String prefix,
                                      @Parameter(required = true, description = "The NTRF (XML) document containing the concepts to be imported", style = ParameterStyle.FORM)
                                      @RequestPart(value = "file") MultipartFile file) {
-        ntrfImportService.importNTRF(prefix, file);
+        importService.importNTRF(prefix, file);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Initiate simple Excel import job", description = "Start the procedure to import concepts from Excel file")
-    @ApiResponse(
-            responseCode = "200",
-            description = "If import process started successfully then job token is returned as JSON")
+    @ApiResponse(responseCode = "200")
     @PostMapping(path = "simpleExcel/{prefix}", consumes = MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<Void> importSimpleExcel(@Parameter(description = "The ID of the terminology to import concepts to")
                                                              @PathVariable("prefix") String prefix,
                                                              @RequestPart(value = "file") MultipartFile file) {
-        ntrfImportService.importExcel(prefix, file);
+        importService.importExcel(prefix, file);
         return ResponseEntity.ok().build();
     }
 }

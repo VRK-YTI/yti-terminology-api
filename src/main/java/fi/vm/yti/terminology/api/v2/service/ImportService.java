@@ -21,7 +21,7 @@ import java.io.IOException;
 import static fi.vm.yti.security.AuthorizationException.check;
 
 @Service
-public class NTRFImportService {
+public class ImportService {
 
     private final TerminologyRepository terminologyRepository;
 
@@ -29,9 +29,9 @@ public class NTRFImportService {
 
     private final IndexService indexService;
 
-    public NTRFImportService(TerminologyRepository terminologyRepository,
-                             TerminologyAuthorizationManager authorizationManager,
-                             IndexService indexService) {
+    public ImportService(TerminologyRepository terminologyRepository,
+                         TerminologyAuthorizationManager authorizationManager,
+                         IndexService indexService) {
         this.terminologyRepository = terminologyRepository;
         this.authorizationManager = authorizationManager;
         this.indexService = indexService;

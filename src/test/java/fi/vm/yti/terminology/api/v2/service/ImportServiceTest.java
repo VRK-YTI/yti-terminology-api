@@ -25,9 +25,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @Import({
-        NTRFImportService.class,
+        ImportService.class,
 })
-class NTRFImportServiceTest {
+class ImportServiceTest {
 
     @MockBean
     TerminologyRepository terminologyRepository;
@@ -42,7 +42,7 @@ class NTRFImportServiceTest {
     ArgumentCaptor<Model> modelCaptor;
 
     @Autowired
-    NTRFImportService service;
+    ImportService service;
 
     ModelWrapper model;
 
