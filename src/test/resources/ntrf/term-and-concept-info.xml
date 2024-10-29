@@ -30,10 +30,10 @@
                 <TERM>Not recommended term 2</TERM>
             </DTEA>
             <DEF>Concept definition</DEF>
-            <NOTE>Note 1</NOTE>
             <NOTE>Note 2</NOTE>
-            <EXAMP>Example 1</EXAMP>
+            <NOTE>Note 1</NOTE>
             <EXAMP>Example 2</EXAMP>
+            <EXAMP>Example 1</EXAMP>
             <STE>
                 <TERM>Search term</TERM>
             </STE>
@@ -43,10 +43,10 @@
                 <TERM>Test term recommended FI</TERM>
             </TE>
             <DEF>Definition FI</DEF>
-            <NOTE>Note 1 FI</NOTE>
             <NOTE>Note 2 FI</NOTE>
-            <EXAMP>Example 1 FI</EXAMP>
+            <NOTE>Note 1 FI</NOTE>
             <EXAMP>Example 2 FI</EXAMP>
+            <EXAMP>Example 1 FI</EXAMP>
         </LANG>
         <REMK>Editorial note 1</REMK>
         <REMK>Editorial note 2</REMK>

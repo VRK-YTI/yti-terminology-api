@@ -28,7 +28,9 @@ test:   rdf:type                      skos:ConceptScheme;
 # Concept collection containing concept-1 and concept-2
 
 test:collection-1   rdf:type    skos:Collection;
-                    skos:member test:concept-1, test:concept-2;
+        term:orderedMember            ( test:concept-1 test:concept-2 );
+        skos:member                   test:concept-1;
+        skos:member                   test:concept-2;
         skos:prefLabel                "Testikokoelma 1"@fi , "Test collection 1"@en;
         rdfs:comment                  "Test collection description 1"@en , "Testikokoelman kuvaus 1"@fi;
         dcterms:created               "2024-05-15T05:00:00.000Z"^^xsd:dateTime;

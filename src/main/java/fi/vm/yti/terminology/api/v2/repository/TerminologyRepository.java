@@ -39,6 +39,7 @@ public class TerminologyRepository extends BaseRepository {
             return model;
         }
         model = new ModelWrapper(super.fetch(graphURI), graphURI);
+        model.getGraph().getPrefixMapping().clearNsPrefixMap();
         model.setNsPrefixes(Constants.PREFIXES);
         model.setNsPrefix("term", Term.getNamespace());
         model.setNsPrefix(model.getPrefix(), model.getModelResource().getNameSpace());

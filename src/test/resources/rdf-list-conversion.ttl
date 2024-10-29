@@ -1,0 +1,219 @@
+@prefix a59457c39:  <https://iri.suomi.fi/terminology/a59457c39/> .
+@prefix dcap:       <http://purl.org/ws-mmi-dc/terms/> .
+@prefix dcterms:    <http://purl.org/dc/terms/> .
+@prefix foaf:       <http://xmlns.com/foaf/0.1/> .
+@prefix order-test:   <https://iri.suomi.fi/terminology/order-test/> .
+@prefix owl:        <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:         <http://www.w3.org/ns/shacl#> .
+@prefix skos:       <http://www.w3.org/2004/02/skos/core#> .
+@prefix skos-xl:    <http://www.w3.org/2008/05/skos-xl#> .
+@prefix suomi-meta: <https://iri.suomi.fi/model/suomi-meta/> .
+@prefix term:       <https://iri.suomi.fi/model/term/> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+
+order-test:c340  rdf:type               skos:Concept;
+        skos:inScheme                 order-test:;
+        skos:prefLabel                ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "test 1"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID"
+                                        ]
+                                      );
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+        term:notRecommendedSynonym    ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "lapsen hoitotuki"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+                                          term:termInfo                 "vanhentunut/föråldrad"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "hoitotuki"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+                                          term:homographNumber          "2"^^xsd:int;
+                                          term:termInfo                 "vanhentunut/föråldrad"
+                                        ]
+                                      ) .
+
+order-test:collection-2000
+        rdf:type             skos:Collection;
+        rdfs:comment         "kuvaus käsitekokoelma"@fi;
+        skos:inScheme        order-test:;
+        skos:member          ( order-test:c340 order-test:concept-3 order-test:order-1 );
+        skos:prefLabel       "test"@sv , "test"@fi , "test"@en .
+
+order-test:collection-0
+        rdf:type             skos:Collection;
+        skos:inScheme        order-test:;
+        skos:prefLabel       "test empty"@sv , "test empty"@fi , "test empty"@en .
+
+order-test:  rdf:type                   skos:ConceptScheme;
+        rdfs:comment                  "test en"@en , "test"@fi;
+        dcterms:contributor           <urn:uuid:7d3a3c00-5a6b-489b-a3ed-63bb58c26a63>;
+        dcterms:isPartOf              <http://urn.fi/URN:NBN:fi:au:ptvl:v1090>;
+        dcterms:language              "fi" , "sv" , "en";
+        dcap:preferredXMLNamespace    "https://iri.suomi.fi/terminology/order-test/";
+        dcap:preferredXMLNamespacePrefix
+                "order-test";
+        skos:prefLabel                "kallek test 20221014"@fi , "test sv"@sv , "test en"@en;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+        term:terminologyType          "OTHER_VOCABULARY" .
+
+order-test:concept-3  rdf:type          skos:Concept;
+        skos:altLabel                 ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "hakusynonyymi"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "svenskasynonyymi"@sv;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "enkkusynonyymi"@en;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                      );
+        skos:definition               "test"@fi;
+        skos:inScheme                 order-test:;
+        skos:prefLabel                ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "hakutesti"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "sök test"@sv;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "search test"@en;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                      );
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+order-test:concept-5000
+        rdf:type                      skos:Concept;
+        skos:inScheme                 order-test:;
+        skos:prefLabel                ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "test ref"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "test ref sv"@sv;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "test ref en"@en;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                      );
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+order-test:order-1  rdf:type            skos:Concept;
+        skos:altLabel                 ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "synonyymi1"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "synonyymi2"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "synonyymi3"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                      );
+        skos:broader                  ( order-test:c340 order-test:concept-3 );
+        skos:inScheme                 order-test:;
+        skos:note                     ( "Ensimmäinen huomautus"@fi "Uusi huomautus"@fi );
+        skos:prefLabel                ( [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "Järjestystesti"@fi;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "Järjestystesti"@sv;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                        [ rdf:type                      skos-xl:Label;
+                                          skos-xl:literalForm           "Järjestystesti"@en;
+                                          suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT"
+                                        ]
+                                      );
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/DRAFT" .
+
+_:b0 rdf:first _:b1; rdf:rest () .
+
+_:b2 rdf:first _:b3; rdf:rest () .
+
+_:b4 rdf:first _:b5; rdf:rest () .
+
+_:b6 rdf:first _:b7; rdf:rest () .
+
+_:b8 rdf:first _:b9; rdf:rest () .
+
+_:b10 rdf:first _:b11; rdf:rest () .
+
+_:b12 rdf:first _:b13; rdf:rest () .
+
+_:b14 rdf:first _:b15; rdf:rest () .
+
+_:b16 rdf:first _:b17; rdf:rest () .
+
+_:b18 rdf:first _:b19; rdf:rest () .
+
+_:b20 rdf:first _:b21; rdf:rest () .
+
+_:b22 rdf:first _:b23; rdf:rest () .
+
+_:b24 rdf:first _:b25; rdf:rest () .
+
+_:b26 rdf:first order-test:concept-3; rdf:rest () .
+
+_:b27 rdf:first _:b28; rdf:rest () .
+
+_:b29 rdf:first "editorial"; rdf:rest () .
+
+_:b30 rdf:first _:b31; rdf:rest () .
+
+_:b12   rdf:first  _:b13;
+        rdf:rest   () .
+
+_:b6    rdf:first  _:b7;
+        rdf:rest   () .
+
+_:b8    rdf:first  _:b9;
+        rdf:rest   () .
+
+_:b10   rdf:first  _:b11;
+        rdf:rest   () .
+
+_:b30   rdf:first  _:b31;
+        rdf:rest   () .
+
+_:b0    rdf:first  _:b1;
+        rdf:rest   () .
+
+_:b20   rdf:first  _:b21;
+        rdf:rest   () .
+
+_:b24   rdf:first  _:b25;
+        rdf:rest   () .
+
+_:b18   rdf:first  _:b19;
+        rdf:rest   () .
+
+_:b16   rdf:first  _:b17;
+        rdf:rest   () .
+
+_:b22   rdf:first  _:b23;
+        rdf:rest   () .
+
+_:b2    rdf:first  _:b3;
+        rdf:rest   () .
+
+_:b27   rdf:first  _:b28;
+        rdf:rest   () .
+
+_:b14   rdf:first  _:b15;
+        rdf:rest   () .
+
+_:b4    rdf:first  _:b5;
+        rdf:rest   () .
