@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.opensearch;
 
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.opensearch.QueryFactoryUtils;
 import fi.vm.yti.terminology.api.v2.service.IndexService;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -56,8 +57,16 @@ public class ConceptQueryFactory {
 
         var queryString = request.getQuery();
         if (queryString != null && !queryString.isBlank()) {
+            var qs = queryString.trim();
+
+            // If there are spaces in the query, add quotations to search with an exact phrase.
+            // In case of a single word, search exact match (with fuzzy) or with wild cards. Exact match will be ranked higher.
+            final var query = qs.contains(" ")
+                    ? String.format("\"%s\"", qs)
+                    : String.format("%s~1 *%s*", qs, qs);
+
             var definitionQuery = QueryStringQuery.of(q -> q
-                    .query("*" + queryString.trim() + "*")
+                    .query(query)
                     .fields("label.*^5.0")
                     .fields("altLabel^3.0", "searchTerm^3.0", "definition.*^3.0")
                     .fields("notRecommendedSynonym")
@@ -66,17 +75,20 @@ public class ConceptQueryFactory {
             allQueries.add(definitionQuery);
         }
 
-        if (request.getStatus() != null) {
-            allQueries.add(TermsQuery.of(q -> q
-                            .field("status")
-                            .terms(t -> t.value(request
-                                    .getStatus()
-                                    .stream()
-                                    .map(Enum::name)
-                                    .map(FieldValue::of)
-                                    .toList())))
-                    .toQuery());
-        }
+        // By default, search only for VALID, DRAFT and INCOMPLETE concepts
+        var statusList = request.getStatus() != null && !request.getStatus().isEmpty()
+                ? request.getStatus()
+                : Set.of(Status.DRAFT, Status.INCOMPLETE, Status.VALID);
+
+        allQueries.add(TermsQuery.of(q -> q
+                        .field("status")
+                        .terms(t -> t.value(statusList
+                                .stream()
+                                .map(Enum::name)
+                                .map(FieldValue::of)
+                                .toList())))
+                .toQuery());
+
 
         if (request.getNamespace() != null) {
             allQueries.add(TermQuery.of(q -> q
