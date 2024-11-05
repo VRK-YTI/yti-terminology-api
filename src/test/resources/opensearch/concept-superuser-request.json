@@ -18,7 +18,7 @@
               "definition.*^3.0",
               "notRecommendedSynonym"
             ],
-            "query": "*test*"
+            "query": "test~1 *test*"
           }
         },
         {
