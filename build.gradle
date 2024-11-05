@@ -82,6 +82,9 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.2'
     implementation 'com.sun.xml.bind:jaxb-impl:4.0.5'
 
+    implementation 'org.apache.poi:poi-ooxml:5.3.0'
+    implementation 'org.apache.poi:poi:5.3.0'
+
     compileOnly "org.springframework.boot:spring-boot-configuration-processor"
     compileOnly "org.jetbrains:annotations:23.0.0"
 

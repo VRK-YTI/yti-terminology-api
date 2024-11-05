@@ -16,12 +16,12 @@
         dcterms:contributor           <urn:uuid:7d3a3c00-5a6b-489b-a3ed-63bb58c26a63>;
         dcterms:created               "2024-04-26T11:45:00.000Z"^^xsd:dateTime;
         dcterms:isPartOf              <http://urn.fi/URN:NBN:fi:au:ptvl:v1096>;
-        dcterms:language              "en" , "fi";
+        dcterms:language              "en" , "fi", "sv";
         dcterms:modified              "2024-04-26T11:46:00.000Z"^^xsd:dateTime;
         dcap:preferredXMLNamespace    "https://iri.suomi.fi/terminology/test/";
         dcap:preferredXMLNamespacePrefix
                 "test";
-        skos:prefLabel                "Label fi"@fi , "Label en"@en;
+        skos:prefLabel                "Label fi"@fi , "Label en"@en , "Label sv"@sv;
         suomi-meta:contact            "yhteentoimivuus@dvv.fi";
         suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
         suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812";
