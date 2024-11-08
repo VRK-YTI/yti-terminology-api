@@ -1,0 +1,38 @@
+{
+  "aggregations": {
+    "statuses": {
+      "terms": {
+        "field": "status",
+        "size": 100
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "terms": {
+            "status": [
+              "DRAFT",
+              "VALID",
+              "INCOMPLETE"
+            ]
+          }
+        },
+        {
+          "bool": {
+            "must_not": [
+              {
+                "terms": {
+                  "status": [
+                    "INCOMPLETE"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

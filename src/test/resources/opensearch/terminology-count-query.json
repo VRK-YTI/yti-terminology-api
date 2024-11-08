@@ -1,0 +1,52 @@
+{
+  "aggregations": {
+    "languages": {
+      "terms": {
+        "field": "languages",
+        "size": 100
+      }
+    },
+    "statuses": {
+      "terms": {
+        "field": "status",
+        "size": 100
+      }
+    },
+    "groups": {
+      "terms": {
+        "field": "groups",
+        "size": 100
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "must_not": [
+              {
+                "term": {
+                  "status": {
+                    "value": "INCOMPLETE"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "terms": {
+            "status": [
+              "DRAFT",
+              "INCOMPLETE",
+              "SUGGESTED",
+              "VALID"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "size": 0
+}

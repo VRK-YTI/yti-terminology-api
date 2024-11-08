@@ -13,6 +13,8 @@ import fi.vm.yti.terminology.api.v2.dto.TerminologySearchResultDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.ConceptSearchRequest;
 import fi.vm.yti.terminology.api.v2.opensearch.TerminologySearchRequest;
 import fi.vm.yti.terminology.api.v2.service.SearchIndexService;
+import fi.vm.yti.terminology.api.v2.service.TerminologyService;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,13 +40,17 @@ public class FrontendController {
 
     private final AuthenticatedUserProvider userProvider;
 
+    private final TerminologyService terminologyService;
+
     public FrontendController(
             SearchIndexService searchIndexService,
             FrontendService frontendService,
-            AuthenticatedUserProvider userProvider) {
+            AuthenticatedUserProvider userProvider,
+            TerminologyService terminologyService) {
         this.frontendService = frontendService;
         this.searchIndexService = searchIndexService;
         this.userProvider = userProvider;
+        this.terminologyService = terminologyService;
     }
 
     @Operation(summary = "Get organizations", description = "List of organizations sorted by name")
@@ -88,24 +94,26 @@ public class FrontendController {
     @Operation(summary = "Get frontpage counts")
     @ApiResponse(responseCode = "200", description = "")
     @GetMapping(value = "/counts", produces = APPLICATION_JSON_VALUE)
-    public CountSearchResponse getCounts() {
-        // TODO: placeholder
-        return new CountSearchResponse();
+    public CountSearchResponse getCounts(
+            @Parameter(description = "Terminology search parameters") TerminologySearchRequest request) {
+        return searchIndexService.getTerminologyCounts(request, userProvider.getUser());
     }
 
     @Operation(summary = "Get concept counts")
     @ApiResponse(responseCode = "200", description = "")
     @GetMapping(value = "/concept-counts", produces = APPLICATION_JSON_VALUE)
     public CountSearchResponse getConceptCounts(@RequestParam String prefix) {
-        // TODO: placeholder
-        return new CountSearchResponse();
+        var request = new ConceptSearchRequest();
+        request.setNamespace(TerminologyURI.createTerminologyURI(prefix).getGraphURI());
+        request.setQuery("");
+        return searchIndexService.getConceptCounts(request, userProvider.getUser());
     }
 
     @Operation(summary = "Get status counts")
     @ApiResponse(responseCode = "200", description = "")
     @GetMapping(value = "/status-counts", produces = APPLICATION_JSON_VALUE)
     public StatusCountResponse getStatusCounts(@RequestParam String prefix) {
-        // TODO: placeholder
-        return new StatusCountResponse();
+        return terminologyService.getCountsByStatus(
+                TerminologyURI.createTerminologyURI(prefix).getGraphURI());
     }
 }
