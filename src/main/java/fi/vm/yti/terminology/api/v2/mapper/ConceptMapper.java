@@ -317,10 +317,16 @@ public class ConceptMapper {
     }
 
     private static void handleTerms(ModelWrapper model, ConceptDTO dto, Resource conceptResource) {
-        conceptResource.removeAll(SKOS.prefLabel);
-        conceptResource.removeAll(SKOS.altLabel);
-        conceptResource.removeAll(Term.notRecommendedSynonym);
-        conceptResource.removeAll(SKOS.hiddenLabel);
+        // remove old terms from model and concept's properties
+        termProperties.forEach(term -> {
+                conceptResource.listProperties(term)
+                        .mapWith(Statement::getResource)
+                        .forEach(termResource -> {
+                            MapperUtils.removeAllLists(termResource);
+                            model.removeAll(termResource, null, null);
+                        });
+                conceptResource.removeAll(term);
+        });
 
         // Preferred terms don't need to be ordered, since there's only one preferred term / language
         dto.getRecommendedTerms().stream()

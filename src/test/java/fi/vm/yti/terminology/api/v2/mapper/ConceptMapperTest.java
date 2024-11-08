@@ -13,17 +13,12 @@ import fi.vm.yti.terminology.api.v2.enums.TermFamily;
 import fi.vm.yti.terminology.api.v2.enums.WordClass;
 import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static fi.vm.yti.terminology.api.v2.TestUtils.getConceptData;
 import static fi.vm.yti.terminology.api.v2.TestUtils.mockUser;
@@ -143,6 +138,12 @@ class ConceptMapperTest {
         var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", graphURI);
 
+        var originalConcept = model.getResourceById("concept-1");
+        var originalTerms = ConceptMapper.termProperties.stream()
+                .map(property -> MapperUtils.arrayPropertyToList(originalConcept, property))
+                .flatMap(Collection::stream)
+                .toList();
+
         var dto = new ConceptDTO();
         dto.setStatus(Status.VALID);
         dto.setDefinition(Map.of("fi", "New definition"));
@@ -231,6 +232,10 @@ class ConceptMapperTest {
         assertEquals(0, updatedResource.listProperties(SKOS.broader).toList().size());
         assertEquals("https://iri.suomi.fi/terminology/test/concept-1000", orderedRelated.get(0).asResource().getURI());
         assertEquals("https://iri.suomi.fi/terminology/external/concept-300", orderedBroadMatch.get(0).asResource().getURI());
+
+        // original terms should be removed from the model
+        assertTrue(originalTerms.stream()
+                .noneMatch(t -> model.contains(ResourceFactory.createResource(t), null, (RDFNode) null)));
     }
 
     @Test
