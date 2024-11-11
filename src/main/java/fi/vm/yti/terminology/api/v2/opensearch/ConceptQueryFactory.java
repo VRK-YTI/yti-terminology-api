@@ -95,6 +95,14 @@ public class ConceptQueryFactory {
                             .field("namespace")
                             .value(FieldValue.of(request.getNamespace())))
                     .toQuery());
+        } else if (!request.getNamespaces().isEmpty()) {
+            allQueries.add(TermsQuery.of(q -> q
+                            .field("namespace")
+                            .terms(t -> t.value(request.getNamespaces()
+                                    .stream()
+                                    .map(FieldValue::of)
+                                    .toList())))
+                    .toQuery());
         }
 
         if (request.getExcludeNamespace() != null) {
