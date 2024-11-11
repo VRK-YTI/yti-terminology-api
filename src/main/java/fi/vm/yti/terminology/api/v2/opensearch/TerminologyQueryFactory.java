@@ -1,8 +1,8 @@
 package fi.vm.yti.terminology.api.v2.opensearch;
 
 import fi.vm.yti.common.enums.Status;
-import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.common.opensearch.QueryFactoryUtils;
+import fi.vm.yti.common.opensearch.SearchResponseDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptSearchResultDTO;
 import fi.vm.yti.terminology.api.v2.service.IndexService;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -76,7 +76,7 @@ public class TerminologyQueryFactory {
         return sr;
     }
 
-    private static Query getTerminologyBaseQuery(
+    public static Query getTerminologyBaseQuery(
             TerminologySearchRequest request,
             boolean isSuperUser,
             Set<String> additionalTerminologyUris,

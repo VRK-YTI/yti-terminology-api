@@ -30,7 +30,15 @@ public class CountDTO {
         this.groups = groups;
     }
 
-
+    public CountDTO(
+            final Map<String, Long> statuses,
+            final Map<String, Long> types
+    ) {
+        this.statuses = statuses;
+        this.types = types;
+        this.languages = Map.of();
+        this.groups = Map.of();
+    }
 
     public Map<String, Long> getStatuses() {
         return statuses;

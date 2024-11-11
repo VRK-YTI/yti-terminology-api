@@ -3,11 +3,13 @@ package fi.vm.yti.terminology.api.v2.service;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
+import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
+import fi.vm.yti.terminology.api.v2.dto.StatusCountResponse;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
@@ -15,11 +17,14 @@ import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.arq.querybuilder.ConstructBuilder;
+import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
+import org.apache.jena.vocabulary.SKOSXL;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,9 @@ import org.springframework.stereotype.Service;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -163,5 +171,61 @@ public class TerminologyService {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
                 .body(stringWriter.toString());
+    }
+
+    public Long getConceptCollectionCount(String terminologyURI) {
+        var query = new SelectBuilder().addVar("count(?s)", "count")
+                .addGraph(NodeFactory.createURI(terminologyURI),
+                        new WhereBuilder().addWhere("?s", RDF.type, SKOS.Collection))
+                .build();
+
+        var result = new ArrayList<Long>();
+        terminologyRepository.querySelect(query, row -> result.add(row.get("count").asLiteral().getLong()));
+
+        return result.isEmpty() ? 0L : result.get(0);
+    }
+
+    /**
+     * Finds concepts' and terms' counts by type
+     *
+     * @param terminologyURI Terminology URI
+     * @return counts
+     */
+    public StatusCountResponse getCountsByStatus(String terminologyURI) {
+        var selectBuilder = new SelectBuilder();
+
+        selectBuilder
+                .addVar("?type")
+                .addVar("?status")
+                .addVar("count(?status)", "?count")
+                .addGraph(NodeFactory.createURI(terminologyURI),
+                        new WhereBuilder()
+                                .addWhere("?s", RDF.type, "?type")
+                                .addWhere("?s", SuomiMeta.publicationStatus, "?status"))
+                .addValueVar("?type", SKOS.Concept, SKOSXL.Label)
+                .addGroupBy("?type")
+                .addGroupBy("?status");
+
+        var conceptResult = new HashMap<String, Long>();
+        var termResult = new HashMap<String, Long>();
+        Arrays.stream(Status.values()).forEach(s -> {
+            conceptResult.put(s.name(), 0L);
+            termResult.put(s.name(), 0L);
+        });
+        terminologyRepository.querySelect(selectBuilder.build(), row -> {
+            var type = row.get("type").asResource().getURI();
+            var status = MapperUtils.getStatusFromUri(row.get("status").toString());
+            var count = row.get("count").asLiteral().getLong();
+            if (SKOS.Concept.getURI().equals(type)) {
+                conceptResult.put(status.name(), count);
+            } else if (SKOSXL.Label.getURI().equals(type)) {
+                termResult.put(status.name(), count);
+            }
+        });
+
+        var countResponse = new StatusCountResponse();
+        countResponse.setConcepts(conceptResult);
+        countResponse.setTerms(termResult);
+        return countResponse;
     }
 }

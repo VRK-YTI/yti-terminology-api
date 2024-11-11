@@ -48,7 +48,7 @@ public class ConceptQueryFactory {
         return sr;
     }
 
-    private static Query getConceptBaseQuery(
+    public static Query getConceptBaseQuery(
             ConceptSearchRequest request,
             boolean isSuperUser,
             Set<String> incompleteFromTerminologies) {
