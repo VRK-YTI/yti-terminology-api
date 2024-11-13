@@ -26,7 +26,12 @@ public class TermedMigrationController {
         migrationService.migrate(terminologyId);
     }
 
-    @PostMapping("/all")
+    @PostMapping("/termed-id-update")
+    void updateTermedId() {
+        migrationService.updateTermedIds();
+    }
+
+    // @PostMapping("/all")
     void migrateAll() throws URISyntaxException {
         migrationService.migrateAll();
     }

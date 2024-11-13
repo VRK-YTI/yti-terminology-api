@@ -12,6 +12,9 @@ import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.service.TerminologyService;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.arq.querybuilder.UpdateBuilder;
+import org.apache.jena.arq.querybuilder.WhereBuilder;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.util.ResourceUtils;
@@ -148,6 +151,47 @@ public class TermedMigrationService {
         LOG.info("Terminology {} migrated", terminologyId);
     }
 
+    @Async
+    public void updateTermedIds() {
+        if (!userProvider.getUser().isSuperuser()) {
+            throw new AuthorizationException("Not allowed");
+        }
+
+        var graphs = getTermedGraphs();
+        if (graphs == null || graphs.isEmpty()) {
+            LOG.warn("Empty graph response");
+            return;
+        }
+        graphs.iterator().forEachRemaining(g -> {
+            var code = g.get("code");
+            if (code == null) {
+                return;
+            }
+
+            var termedGraphId = g.get("id").asText();
+            var prefix = code.asText();
+            if (Character.isDigit(prefix.charAt(0))) {
+                prefix = "a" + prefix;
+            }
+
+            var uri = TerminologyURI.createTerminologyURI(prefix);
+            LOG.info("Fix termed id for graph {}", uri.getGraphURI());
+
+            var graphURI = NodeFactory.createURI(uri.getGraphURI());
+            var modelResourceURI = NodeFactory.createURI(uri.getModelResourceURI());
+
+            var update = new UpdateBuilder()
+                    .addDelete(graphURI,
+                            new WhereBuilder().addWhere(modelResourceURI, Termed.id, "?termedId"))
+                    .addInsert(graphURI,
+                            new WhereBuilder().addWhere(modelResourceURI, Termed.id, termedGraphId))
+                    .addGraph(graphURI, new WhereBuilder().addWhere(modelResourceURI, Termed.id, "?termedId"))
+                    .buildRequest();
+            terminologyRepository.queryUpdate(update);
+        });
+        LOG.info("Termed id update done");
+    }
+
     private void handleConceptTermedData(ModelWrapper model, String terminologyId, String defaultLanguage) {
         var result = getTermedDataByType(terminologyId, "Concept");
         var user = userProvider.getUser();
@@ -220,6 +264,14 @@ public class TermedMigrationService {
                 .queryParam("where", "type.id:" + type)
                 .queryParam("max", "-1")
                 .build())
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+    }
+
+    private JsonNode getTermedGraphs() {
+        return webClient.get().uri(builder -> builder
+                .queryParam("max", "-1").build())
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .block();
