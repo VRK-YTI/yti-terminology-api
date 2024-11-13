@@ -49,14 +49,19 @@ public class UriResolveService {
 
         var terminologyURI = TerminologyURI.fromUri(iri);
 
+        var prefix = getIdentifier(terminologyURI.getPrefix());
+        var resourceId = getIdentifier(terminologyURI.getResourceId());
+
         if (accept != null && accept.contains(MimeTypeUtils.TEXT_HTML_VALUE)) {
-            redirectURL.pathSegment("terminology", terminologyURI.getPrefix());
-            if (terminologyURI.getResourceId() != null) {
-                var resourceType = getResourceType(terminologyURI.getResourceURI());
-                redirectURL.pathSegment(resourceType, terminologyURI.getResourceId());
+            redirectURL.pathSegment("terminology", prefix);
+            if (resourceId != null) {
+                var resourceType = getResourceType(TerminologyURI
+                        .createConceptURI(prefix, resourceId)
+                        .getResourceURI());
+                redirectURL.pathSegment(resourceType, resourceId);
             }
         } else {
-            redirectURL.pathSegment("terminology-api", "v2", "export", terminologyURI.getPrefix());
+            redirectURL.pathSegment("terminology-api", "v2", "export", prefix);
         }
         return ResponseEntity
                 .status(HttpStatus.SEE_OTHER)
@@ -91,7 +96,7 @@ public class UriResolveService {
     private String getResourceType(String resourceURI) {
         var select = new SelectBuilder()
                 .addVar("?type")
-                .addWhere(new WhereBuilder()
+                .addGraph("?g", new WhereBuilder()
                         .addWhere(NodeFactory.createURI(resourceURI), RDF.type, "?type")
                 );
         var result = new ArrayList<String>();
@@ -108,5 +113,17 @@ public class UriResolveService {
             throw new ResourceNotFoundException(resourceURI);
         }
         return resourceType;
+    }
+
+    /**
+     * add prefix a to identifier if starting with digit
+     * @param identifier resource identifier or terminology prefix
+     * @return prefixed id
+     */
+    private String getIdentifier(String identifier) {
+        if (identifier != null && Character.isDigit(identifier.charAt(0))) {
+            return "a" + identifier;
+        }
+        return identifier;
     }
 }
