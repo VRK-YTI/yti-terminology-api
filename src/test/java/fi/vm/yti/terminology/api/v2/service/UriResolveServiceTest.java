@@ -55,15 +55,7 @@ class UriResolveServiceTest {
     @Test
     void redirectResourceToSite() {
         var uri = TerminologyURI.createConceptURI("test", "concept-1").getResourceURI();
-
-        var qs = mock(QuerySolution.class);
-        when(qs.get("type")).thenReturn(ResourceFactory.createStringLiteral(SKOS.Concept.getURI()));
-
-        doAnswer(ans -> {
-            Consumer<QuerySolution> cons = ans.getArgument(1, Consumer.class);
-            cons.accept(qs);
-            return null;
-        }).when(repository).querySelect(any(Query.class), any(Consumer.class));
+        mockGetResourceType();
 
         var response = service.resolve(uri, "text/html");
 
@@ -80,5 +72,28 @@ class UriResolveServiceTest {
         assertTrue(response.getStatusCode().is3xxRedirection());
         assertNotNull(response.getHeaders().getLocation());
         assertTrue(response.getHeaders().getLocation().toString().endsWith("/terminology-api/v2/export/test"));
+    }
+
+    @Test
+    void redirectResourceIdStartingWithDigit() {
+        var uri = TerminologyURI.createConceptURI("1234abc", "1234").getResourceURI();
+        mockGetResourceType();
+
+        var response = service.resolve(uri, "text/html");
+
+        assertTrue(response.getStatusCode().is3xxRedirection());
+        assertNotNull(response.getHeaders().getLocation());
+        assertTrue(response.getHeaders().getLocation().toString().endsWith("/terminology/a1234abc/concept/a1234"));
+    }
+
+    private void mockGetResourceType() {
+        var qs = mock(QuerySolution.class);
+        when(qs.get("type")).thenReturn(ResourceFactory.createStringLiteral(SKOS.Concept.getURI()));
+
+        doAnswer(ans -> {
+            Consumer<QuerySolution> cons = ans.getArgument(1, Consumer.class);
+            cons.accept(qs);
+            return null;
+        }).when(repository).querySelect(any(Query.class), any(Consumer.class));
     }
 }
