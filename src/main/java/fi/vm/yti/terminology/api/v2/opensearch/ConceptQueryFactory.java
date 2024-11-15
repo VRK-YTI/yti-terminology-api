@@ -9,8 +9,10 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Highlight;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
 
@@ -62,7 +64,9 @@ public class ConceptQueryFactory {
             // If there are spaces in the query, add quotations to search with an exact phrase.
             // In case of a single word, search exact match (with fuzzy) or with wild cards. Exact match will be ranked higher.
             final var query = qs.contains(" ")
-                    ? String.format("\"%s\"", qs)
+                    ? Arrays.stream(qs.split("\\s+"))
+                        .map(q -> String.format("*%s*", q))
+                        .collect(Collectors.joining(" "))
                     : String.format("%s~1 *%s*", qs, qs);
 
             var definitionQuery = QueryStringQuery.of(q -> q
@@ -70,6 +74,9 @@ public class ConceptQueryFactory {
                     .fields("label.*^5.0")
                     .fields("altLabel^3.0", "searchTerm^3.0", "definition.*^3.0")
                     .fields("notRecommendedSynonym")
+                    .defaultOperator(qs.contains(" ")
+                            ? Operator.And
+                            : Operator.Or)
             ).toQuery();
 
             allQueries.add(definitionQuery);
@@ -96,9 +103,13 @@ public class ConceptQueryFactory {
                             .value(FieldValue.of(request.getNamespace())))
                     .toQuery());
         } else if (!request.getNamespaces().isEmpty()) {
+            // support also namespaces not ending with /
+            var namespaces = request.getNamespaces().stream()
+                    .map(ns -> !ns.endsWith("/") ? ns + "/" : ns)
+                    .toList();
             allQueries.add(TermsQuery.of(q -> q
                             .field("namespace")
-                            .terms(t -> t.value(request.getNamespaces()
+                            .terms(t -> t.value(namespaces
                                     .stream()
                                     .map(FieldValue::of)
                                     .toList())))

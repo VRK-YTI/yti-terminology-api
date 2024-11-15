@@ -12,12 +12,38 @@
       "should": [
         {
           "bool": {
-            "minimum_should_match": "1",
-            "should": [
+            "must": [
               {
                 "terms": {
                   "uri": [
                     "https://iri.test/terminology/terminology1/"
+                  ]
+                }
+              },
+              {
+                "bool": {
+                  "minimum_should_match": "1",
+                  "should": [
+                    {
+                      "terms": {
+                        "organizations": [
+                          "d1f9f5fc-3aca-11ef-8006-7ef97ea86967"
+                        ]
+                      }
+                    },
+                    {
+                      "bool": {
+                        "must_not": [
+                          {
+                            "term": {
+                              "status": {
+                                "value": "INCOMPLETE"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
                   ]
                 }
               }

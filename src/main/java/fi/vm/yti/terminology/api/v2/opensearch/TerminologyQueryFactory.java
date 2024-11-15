@@ -198,17 +198,33 @@ public class TerminologyQueryFactory {
         // Results from deep concept search
         //
         if (additionalTerminologyUris != null && !additionalTerminologyUris.isEmpty()) {
-            shouldQueries.add(QueryBuilders.bool()
-                    .should(TermsQuery.of(q -> q
-                                    .field("uri")
-                                    .terms(t -> t.value(additionalTerminologyUris
-                                            .stream()
-                                            .map(FieldValue::of)
-                                            .toList())))
-                            .toQuery())
-                    .minimumShouldMatch("1")
-                    .build()
-                    .toQuery());
+            var additionalTerminologyQuery = TermsQuery.of(q -> q
+                            .field("uri")
+                            .terms(t -> t.value(additionalTerminologyUris
+                                    .stream()
+                                    .map(FieldValue::of)
+                                    .toList())))
+                    .toQuery();
+
+
+            // exclude incomplete terminologies also from additional terminology list
+            if (!isSuperUser) {
+                var additionalTerminologyQueries = new ArrayList<Query>();
+                additionalTerminologyQueries.add(additionalTerminologyQuery);
+
+                additionalTerminologyQueries.add(
+                        QueryBuilders.bool()
+                                .should(excludeIncomplete)
+                                .minimumShouldMatch("1")
+                                .build().toQuery());
+
+                shouldQueries.add(QueryBuilders.bool()
+                        .must(additionalTerminologyQueries)
+                        .build()
+                        .toQuery());
+            } else {
+                shouldQueries.add(additionalTerminologyQuery);
+            }
         }
 
         //
