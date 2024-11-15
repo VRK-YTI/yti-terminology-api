@@ -35,6 +35,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -48,23 +49,36 @@ public class TerminologyService {
     private final AuditService auditService;
     private final FrontendService frontendService;
     private final GroupManagementService groupManagementService;
+    private final UriResolveService uriResolveService;
 
     public TerminologyService(TerminologyRepository terminologyRepository,
                               TerminologyAuthorizationManager authorizationManager,
                               IndexService indexService,
                               FrontendService frontendService,
-                              GroupManagementService groupManagementService) {
+                              GroupManagementService groupManagementService,
+                              UriResolveService uriResolveService) {
         this.terminologyRepository = terminologyRepository;
         this.authorizationManager = authorizationManager;
         this.indexService = indexService;
         this.frontendService = frontendService;
         this.groupManagementService = groupManagementService;
+        this.uriResolveService = uriResolveService;
 
         this.auditService = new AuditService("TERMINOLOGY");
     }
 
     public TerminologyInfoDTO get(String prefix) {
-        var uri = TerminologyURI.createTerminologyURI(prefix);
+        TerminologyURI uri;
+        try {
+            // check if UUIDs is termed graph id
+            var termedId = UUID.fromString(prefix);
+            var graphUri = uriResolveService.resolveLegacyURL(termedId.toString());
+            uri = TerminologyURI.fromUri(graphUri);
+        } catch (Exception e) {
+            // ignore exception and use prefix as is
+            uri = TerminologyURI.createTerminologyURI(prefix);
+        }
+
         var query = new ConstructBuilder()
                 .addConstruct(NodeFactory.createURI(uri.getModelResourceURI()), "?p", "?o")
                 .addGraph(NodeFactory.createURI(uri.getGraphURI()),
