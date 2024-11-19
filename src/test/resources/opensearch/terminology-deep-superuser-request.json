@@ -1,6 +1,5 @@
 {
   "from": 0,
-  "size": 100,
   "highlight": {
     "fields": {
       "label.*": {}
@@ -11,16 +10,9 @@
       "minimum_should_match": "1",
       "should": [
         {
-          "bool": {
-            "minimum_should_match": "1",
-            "should": [
-              {
-                "terms": {
-                  "uri": [
-                    "https://iri.test/terminology/terminology1/"
-                  ]
-                }
-              }
+          "terms": {
+            "uri": [
+              "https://iri.test/terminology/terminology1/"
             ]
           }
         },
@@ -66,5 +58,6 @@
         }
       ]
     }
-  }
+  },
+  "size": 100
 }

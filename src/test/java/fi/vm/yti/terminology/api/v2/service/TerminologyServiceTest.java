@@ -52,6 +52,9 @@ class TerminologyServiceTest {
 
     @MockBean
     private GroupManagementService groupManagementService;
+
+    @MockBean
+    private UriResolveService uriResolveService;
     
     @Autowired
     TerminologyService terminologyService;
