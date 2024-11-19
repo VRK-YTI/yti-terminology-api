@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.endpoint;
 
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptInfoDTO;
 import fi.vm.yti.terminology.api.v2.service.ConceptService;
@@ -15,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URISyntaxException;
+import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -97,5 +99,18 @@ public class ConceptController {
     public Boolean exists(@PathVariable @Parameter(description = "Terminology prefix") String prefix,
                                        @PathVariable @Parameter(description = "Concept identifier") String conceptIdentifier) {
         return conceptService.exists(prefix, conceptIdentifier);
+    }
+
+    @Operation(summary = "Bulk change resources' status")
+    @ApiResponse(responseCode = "200", description = "Change resources' status from status A to status B")
+    @PostMapping(value = "/{prefix}/modify-statuses")
+    public ResponseEntity<Void> modifyStatuses(
+            @PathVariable String prefix,
+            @RequestParam Status oldStatus,
+            @RequestParam Status newStatus,
+            @RequestParam List<String> types
+    ) {
+        conceptService.changeStatuses(prefix, oldStatus, newStatus, types);
+        return ResponseEntity.noContent().build();
     }
 }
