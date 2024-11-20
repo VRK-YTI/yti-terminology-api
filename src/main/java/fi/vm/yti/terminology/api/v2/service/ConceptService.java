@@ -1,8 +1,10 @@
 package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
+import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
+import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.util.MapperUtils;
@@ -21,6 +23,7 @@ import org.apache.jena.arq.querybuilder.WhereBuilder;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -190,6 +194,40 @@ public class ConceptService {
     public boolean exists(String prefix, String conceptIdentifier) {
         var u = TerminologyURI.createConceptURI(prefix, conceptIdentifier);
         return repository.resourceExistsInGraph(u.getGraphURI(), u.getResourceURI());
+    }
+
+    public void changeStatuses(String prefix, Status oldStatus, Status newStatus, List<String> types) {
+        var model = repository.fetchByPrefix(prefix);
+        check(authorizationManager.hasRightsToTerminology(prefix, model));
+
+        var user = authorizationManager.getUser();
+        var newStatusURI = ResourceFactory.createResource(MapperUtils.getStatusUri(newStatus));
+
+        for (var type : types) {
+            if ("Concept".equals(type)) {
+                model.listSubjectsWithProperty(RDF.type, SKOS.Concept)
+                        .filterKeep(concept -> MapperUtils.getStatus(concept).equals(oldStatus))
+                        .forEach(concept -> {
+                            concept.removeAll(SuomiMeta.publicationStatus);
+                            concept.addProperty(SuomiMeta.publicationStatus, newStatusURI);
+                            MapperUtils.addUpdateMetadata(concept, user);
+                        });
+            } else if ("Term".equals(type)) {
+                model.listSubjectsWithProperty(RDF.type, SKOSXL.Label)
+                        .filterKeep(term -> MapperUtils.getStatus(term).equals(oldStatus))
+                        .forEach(term -> {
+                            term.removeAll(SuomiMeta.publicationStatus);
+                            term.addProperty(SuomiMeta.publicationStatus, newStatusURI);
+                            var concept = model.listSubjectsWithProperty(null, term);
+                            if (concept.hasNext()) {
+                                MapperUtils.addUpdateMetadata(concept.next(), user);
+                            }
+                        });
+            }
+        }
+
+        repository.put(model.getGraphURI(), model);
+        indexService.reindexTerminology(model);
     }
 
     /**

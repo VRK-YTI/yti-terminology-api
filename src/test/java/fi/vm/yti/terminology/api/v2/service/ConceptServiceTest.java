@@ -19,6 +19,8 @@ import org.apache.jena.query.Query;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.SKOS;
 import org.apache.jena.vocabulary.SKOSXL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -278,5 +280,48 @@ class ConceptServiceTest {
         assertThrows(AuthorizationException.class, () -> conceptService.delete("test", "concept-1"));
 
         verify(repository, times(0)).put(eq("test"), any(Model.class));
+    }
+
+    @Test
+    void testChangeResourceStatus() {
+        var uri = TerminologyURI.createTerminologyURI("test");
+        var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", uri.getGraphURI());
+        when(repository.fetchByPrefix(uri.getPrefix())).thenReturn(model);
+
+        var term1 = model.createResourceWithId("term-1")
+                .addProperty(RDF.type, SKOSXL.Label)
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.DRAFT));
+
+        var term2 = model.createResourceWithId("term-2")
+                .addProperty(RDF.type, SKOSXL.Label)
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.RETIRED));
+
+        model.createResourceWithId("concept-1")
+                .addProperty(RDF.type, SKOS.Concept)
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.DRAFT));
+
+        model.createResourceWithId("concept-2")
+                .addProperty(RDF.type, SKOS.Concept)
+                .addProperty(SKOS.prefLabel, term1)
+                .addProperty(SKOS.altLabel, term2)
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.SUGGESTED));
+
+        // change status DRAFT -> VALID for both concepts and terms
+        conceptService.changeStatuses(uri.getPrefix(), Status.DRAFT, Status.VALID, List.of("Concept", "Term"));
+
+        verify(repository).put(eq(uri.getGraphURI()), any(Model.class));
+        verify(indexService).reindexTerminology(any(ModelWrapper.class));
+
+        assertEquals(Status.VALID, MapperUtils.getStatus(model.getResourceById("concept-1")));
+        assertEquals(Status.SUGGESTED, MapperUtils.getStatus(model.getResourceById("concept-2")));
+        assertEquals(Status.VALID, MapperUtils.getStatus(model.getResourceById("term-1")));
+        assertEquals(Status.RETIRED, MapperUtils.getStatus(model.getResourceById("term-2")));
+        assertEquals(Status.DRAFT, MapperUtils.getStatus(model.getModelResource()));
+
+        var userId = TestUtils.mockUser.getId().toString();
+        assertEquals(userId, MapperUtils.propertyToString(model.getResourceById("concept-1"), SuomiMeta.modifier));
+
+        // modifier should change, because concept's term (term-1) was updated
+        assertEquals(userId, MapperUtils.propertyToString(model.getResourceById("concept-2"), SuomiMeta.modifier));
     }
 }
