@@ -10,6 +10,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("v2/export")
 @Tag(name = "Export")
@@ -29,7 +32,15 @@ public class ExportController {
     @GetMapping(value = {"{prefix}"},
             produces = {"application/ld+json;charset=utf-8", "text/turtle;charset=utf-8", "application/rdf+xml;charset=utf-8"})
     public ResponseEntity<String> export(@PathVariable @Parameter(description = "Terminology prefix") String prefix,
+                                         @RequestParam(required = false) @Parameter(description = "Type of the file") String fileType,
                                          @RequestHeader(value = HttpHeaders.ACCEPT) String accept) {
-        return terminologyService.export(prefix, accept);
+        var showAsFile = false;
+        var type = accept;
+
+        if (fileType != null) {
+            type = URLDecoder.decode(fileType, StandardCharsets.UTF_8);
+            showAsFile = true;
+        }
+        return terminologyService.export(prefix, type, showAsFile);
     }
 }
