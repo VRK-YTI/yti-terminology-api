@@ -19,11 +19,11 @@
         },
         {
           "query_string": {
+            "default_operator": "or",
             "fields": [
               "label.*"
             ],
-            "fuzziness": "2",
-            "query": "*Search*"
+            "query": "Search~1 *Search*"
           }
         },
         {
