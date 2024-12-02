@@ -28,11 +28,11 @@
             "should": [
               {
                 "query_string": {
+                  "default_operator": "or",
                   "fields": [
                     "label.*"
                   ],
-                  "fuzziness": "2",
-                  "query": "*test*"
+                  "query": "test~1 *test*"
                 }
               }
             ]

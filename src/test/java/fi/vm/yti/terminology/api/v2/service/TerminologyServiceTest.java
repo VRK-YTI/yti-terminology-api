@@ -2,18 +2,25 @@ package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.common.util.MapperUtils;
+import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
+import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.query.Query;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.DCTerms;
+import org.apache.jena.vocabulary.SKOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +32,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -180,6 +188,55 @@ class TerminologyServiceTest {
 
         verify(terminologyRepository, times(0)).put(eq(GRAPH_URI), any(Model.class));
         verifyNoMoreInteractions(indexService);
+    }
+
+    @Test
+    void testExportIncomplete() {
+        TerminologyURI uri = TerminologyURI.createTerminologyURI(PREFIX);
+
+        var model = ModelFactory.createDefaultModel();
+        model.createResource(uri.getModelResourceURI())
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.INCOMPLETE));
+
+        var modelWrapper = new ModelWrapper(model, uri.getGraphURI());
+
+        when(authorizationManager.hasRightsToTerminology(eq(PREFIX), any(Model.class)))
+                .thenReturn(false);
+        when(terminologyRepository.fetchByPrefix(PREFIX)).thenReturn(modelWrapper);
+
+        var responseEntity = terminologyService.export(PREFIX, "text/turtle", false);
+
+        assertEquals(403, responseEntity.getStatusCode().value());
+    }
+
+    @Test
+    void testFilterEditorialNotes() {
+        TerminologyURI uri = TerminologyURI.createConceptURI(PREFIX, "concept-0");
+
+        var model = ModelFactory.createDefaultModel();
+        model.createResource(uri.getModelResourceURI())
+                .addProperty(SuomiMeta.publicationStatus, MapperUtils.getStatusUri(Status.VALID));
+        var concept = model.createResource(uri.getResourceURI())
+                .addProperty(SKOS.definition, "Test definition")
+                .addProperty(SKOS.editorialNote, "Test note");
+
+        MapperUtils.addListProperty(concept,
+                Term.orderedEditorialNote,
+                List.of(ResourceFactory.createStringLiteral("Test note")));
+
+        var modelWrapper = new ModelWrapper(model, uri.getGraphURI());
+
+        when(authorizationManager.hasRightsToTerminology(eq(PREFIX), any(Model.class)))
+                .thenReturn(false);
+        when(terminologyRepository.fetchByPrefix(PREFIX)).thenReturn(modelWrapper);
+
+        var responseEntity = terminologyService.export(PREFIX, "text/turtle", false);
+
+        assertNotNull(responseEntity.getBody());
+        assertTrue(responseEntity.getBody().contains("Test definition"),
+                "Concept definition is missing from export");
+        assertFalse(responseEntity.getBody().contains("Test note"),
+                "Editorial notes should not be exported");
     }
 
     private static TerminologyDTO getValidTerminologyMetadata() {

@@ -13,6 +13,7 @@ import fi.vm.yti.terminology.api.v2.dto.StatusCountResponse;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.TerminologyMapper;
+import fi.vm.yti.terminology.api.v2.property.Term;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
@@ -145,7 +146,7 @@ public class TerminologyService {
         return terminologyRepository.graphExists(graphURI);
     }
 
-    public ResponseEntity<String> export(String prefix, String accept) {
+    public ResponseEntity<String> export(String prefix, String accept, boolean showAsFile) {
 
         ModelWrapper model;
 
@@ -164,26 +165,35 @@ public class TerminologyService {
                 return ResponseEntity.status(403).build();
             }
 
-            var hiddenValues = model.listStatements(null, SKOS.editorialNote, (String) null);
-            model.remove(hiddenValues);
+            var editorialNotes = model.listStatements(null, SKOS.editorialNote, (String) null);
+            model.remove(editorialNotes);
+
+            model.listSubjectsWithProperty(Term.orderedEditorialNote)
+                    .forEach(subj -> MapperUtils.removeList(subj, Term.orderedEditorialNote));
         }
 
         var stringWriter = new StringWriter();
-
+        var fileExtension = ".json";
         switch (accept) {
             case "text/turtle":
                 RDFDataMgr.write(stringWriter, model, Lang.TURTLE);
+                fileExtension = ".ttl";
                 break;
             case "application/rdf+xml":
                 RDFDataMgr.write(stringWriter, model, Lang.RDFXML);
+                fileExtension = ".xml";
                 break;
             case "application/ld+json":
             default:
                 RDFDataMgr.write(stringWriter, model, Lang.JSONLD);
         }
 
+        var contentDisposition = showAsFile
+                ? "attachment; filename=" + prefix + fileExtension
+                : "inline";
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                 .body(stringWriter.toString());
     }
 
