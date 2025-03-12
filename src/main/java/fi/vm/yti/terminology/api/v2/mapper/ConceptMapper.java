@@ -19,12 +19,16 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ConceptMapper {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ConceptMapper.class);
 
     private ConceptMapper() {
         // only static methods
@@ -173,8 +177,19 @@ public class ConceptMapper {
 
         var prefLabels = resource.listProperties(SKOS.prefLabel).toList()
                 .stream().collect(Collectors.toMap(
-                        r -> r.getProperty(SKOSXL.literalForm).getLanguage(),
-                        r -> r.getProperty(SKOSXL.literalForm).getString()));
+                        r -> {
+                            if (r.getObject().isLiteral()) {
+                                LOG.warn("prefLabel is literal instead of resource: {}", r);
+                                return r.getLiteral().getLanguage();
+                            }
+                            return r.getProperty(SKOSXL.literalForm).getLanguage();
+                        },
+                        r -> {
+                            if (r.getObject().isLiteral()) {
+                                return r.getLiteral().getString();
+                            }
+                            return r.getProperty(SKOSXL.literalForm).getString();
+                        }));
 
         var indexConcept = new IndexConcept();
         indexConcept.setId(resource.getURI());
