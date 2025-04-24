@@ -56,7 +56,7 @@ public class ImportService {
             terminologyRepository.put(model.getGraphURI(), model);
             indexService.reindexTerminology(model);
 
-        } catch (JAXBException | IOException | XMLStreamException e) {
+        } catch (JAXBException | IOException | XMLStreamException | IllegalArgumentException e) {
             throw new ImportException(e.getMessage());
         }
     }
