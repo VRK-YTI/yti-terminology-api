@@ -199,6 +199,16 @@ class NTRFMapperTest {
         assertTrue(members.stream().map(m -> m.getResource().getLocalName()).toList().containsAll(expectedMembers));
     }
 
+    @Test
+    void testInvalidConcept() {
+        var model = TestUtils.getDefaultModel("test");
+        var vocabulary = unmarshall("/ntrf/invalid-concept.xml");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> NTRFMapper.mapTerminology(vocabulary, model, TestUtils.mockUser));
+    }
+
     private static List<Resource> getTerm(Resource concept, Property property, String language) {
         if (!concept.hasProperty(property)) {
             return new ArrayList<>();
