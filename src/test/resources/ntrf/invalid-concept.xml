@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="file://localhost/X:/NTRF.css" type="text/css"?>
+<VOCABULARY>
+    <RECORD numb="1234" stat="VALID">
+        <LANG value="en">
+            <TE stat="VALID">
+                <TERM>Test recommended term for invalid concept</TERM>
+            </TE>
+            <SY stat="VALID">
+                <TERM>Test synonym for invalid concept</TERM>
+            </SY>
+            <DEF>Definition</DEF>
+        </LANG>
+    </RECORD>
+</VOCABULARY>
