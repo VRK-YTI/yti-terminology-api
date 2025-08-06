@@ -234,7 +234,7 @@ public class ConceptMapper {
 
         referenceList.forEach(ref -> {
             var refDTO = new ConceptReferenceInfoDTO();
-            var terminologyURI = TerminologyURI.fromUri(ref.getURI());
+            var terminologyURI = TerminologyURI.Factory.fromUri(ref.getURI());
             refDTO.setReferenceURI(terminologyURI.getResourceURI());
             refDTO.setIdentifier(terminologyURI.getResourceId());
             refDTO.setPrefix(terminologyURI.getPrefix());

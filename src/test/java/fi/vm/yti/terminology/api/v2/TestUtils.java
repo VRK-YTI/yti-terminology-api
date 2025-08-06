@@ -43,7 +43,7 @@ public class TestUtils {
     }
 
     public static ModelWrapper getDefaultModel(String prefix) {
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
 
         var m = ModelFactory.createDefaultModel();
         m.createResource(graphURI)
@@ -120,7 +120,7 @@ public class TestUtils {
         dto.setLinks(List.of(link));
 
         Function<String, String> refURI =
-                localName -> TerminologyURI.createConceptURI("test", localName).getResourceURI();
+                localName -> TerminologyURI.Factory.createConceptURI("test", localName).getResourceURI();
 
         var broader = new LinkedHashSet<String>();
         broader.add(refURI.apply("broader-1"));
@@ -159,10 +159,10 @@ public class TestUtils {
         dto.setIdentifier("collection-1");
         dto.setLabel(Map.of("en", "collection label"));
         dto.setDescription(Map.of("en", "collection description"));
-        dto.addMember(TerminologyURI
+        dto.addMember(TerminologyURI.Factory
                 .createConceptURI(prefix, "concept-1")
                 .getResourceURI());
-        dto.addMember(TerminologyURI
+        dto.addMember(TerminologyURI.Factory
                 .createConceptURI(prefix, "concept-2")
                 .getResourceURI());
 

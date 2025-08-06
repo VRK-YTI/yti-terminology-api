@@ -8,7 +8,6 @@ import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
-import fi.vm.yti.terminology.api.v2.opensearch.IndexConcept;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
 import org.apache.jena.rdf.model.Model;
@@ -67,7 +66,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testGetConceptCollection() {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = TestUtils.getModelFromFile(
@@ -92,7 +91,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testGetConceptCollectionNotAuthenticated() {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = TestUtils.getModelFromFile(
@@ -125,7 +124,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testGetConceptCollectionNotFound() {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = TestUtils.getModelFromFile(
@@ -143,7 +142,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testCreateConceptCollection() throws URISyntaxException {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = new ModelWrapper(
@@ -176,7 +175,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testCreateConceptCollectionExists() {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = new ModelWrapper(
@@ -206,7 +205,7 @@ class ConceptCollectionServiceTest {
     @Test
     void testCreateConceptCollectionGraphNotExists() {
         var prefix = "test456";
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 prefix,
                 "collection-1");
         when(repository.fetchByPrefix(prefix)).thenThrow(ResourceNotFoundException.class);
@@ -248,7 +247,7 @@ class ConceptCollectionServiceTest {
 
     @Test
     void testUpdateConceptCollection() {
-        var conceptCollectionURI = TerminologyURI.createConceptCollectionURI(
+        var conceptCollectionURI = TerminologyURI.Factory.createConceptCollectionURI(
                 "test",
                 "collection-1");
         var model = new ModelWrapper(

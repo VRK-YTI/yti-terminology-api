@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -92,10 +91,10 @@ public class ConceptCollectionControllerTest {
                         return false;
                     }
                     var expectedConceptUris = Set.of(
-                            TerminologyURI
+                            TerminologyURI.Factory
                                     .createConceptURI(modelPrefix, "concept-1")
                                     .getResourceURI(),
-                            TerminologyURI
+                            TerminologyURI.Factory
                                     .createConceptURI(modelPrefix, "concept-2")
                                     .getResourceURI()
                     );

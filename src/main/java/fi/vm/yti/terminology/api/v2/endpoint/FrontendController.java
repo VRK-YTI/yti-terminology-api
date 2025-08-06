@@ -104,7 +104,7 @@ public class FrontendController {
     @GetMapping(value = "/concept-counts", produces = APPLICATION_JSON_VALUE)
     public CountSearchResponse getConceptCounts(@RequestParam String prefix) {
         var request = new ConceptSearchRequest();
-        request.setNamespace(TerminologyURI.createTerminologyURI(prefix).getGraphURI());
+        request.setNamespace(TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI());
         request.setQuery("");
         return searchIndexService.getConceptCounts(request, userProvider.getUser());
     }
@@ -114,6 +114,6 @@ public class FrontendController {
     @GetMapping(value = "/status-counts", produces = APPLICATION_JSON_VALUE)
     public StatusCountResponse getStatusCounts(@RequestParam String prefix) {
         return terminologyService.getCountsByStatus(
-                TerminologyURI.createTerminologyURI(prefix).getGraphURI());
+                TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI());
     }
 }

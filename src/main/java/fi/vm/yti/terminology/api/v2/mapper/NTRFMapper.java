@@ -261,7 +261,7 @@ public class NTRFMapper {
     private static String fixURI(String uri, String prefix) {
         if (uri.startsWith("#")) {
             var identifier = uri.substring(1);
-            return TerminologyURI.createConceptURI(prefix, identifier).getResourceURI();
+            return TerminologyURI.Factory.createConceptURI(prefix, identifier).getResourceURI();
         } else if (uri.contains("uri.suomi.fi/terminology")) {
             return uri.replaceAll("^https?://uri.suomi.fi/terminology/", Constants.TERMINOLOGY_NAMESPACE);
         } else {
@@ -451,9 +451,9 @@ public class NTRFMapper {
             var resourceId = href.substring(1);
             var res = model.getResourceById(resourceId);
             if (MapperUtils.hasType(res, SKOS.Collection)) {
-                href = TerminologyURI.createConceptCollectionURI(model.getPrefix(), resourceId).getResourceURI();
+                href = TerminologyURI.Factory.createConceptCollectionURI(model.getPrefix(), resourceId).getResourceURI();
             } else {
-                href = TerminologyURI.createConceptURI(model.getPrefix(), resourceId).getResourceURI();
+                href = TerminologyURI.Factory.createConceptURI(model.getPrefix(), resourceId).getResourceURI();
             }
         }
 

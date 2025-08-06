@@ -133,7 +133,7 @@ public class TermedMigrationService {
         }
 
         var categories = frontendService.getServiceCategories("fi");
-        var graphURI = TerminologyURI.createTerminologyURI(terminologyDTO.getPrefix()).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(terminologyDTO.getPrefix()).getGraphURI();
 
         var model = TerminologyMapper.dtoToModel(terminologyDTO, graphURI, categories, userProvider.getUser());
         fixMetadata(terminologyNode, model.getModelResource());
@@ -174,7 +174,7 @@ public class TermedMigrationService {
                 prefix = "a" + prefix;
             }
 
-            var uri = TerminologyURI.createTerminologyURI(prefix);
+            var uri = TerminologyURI.Factory.createTerminologyURI(prefix);
             LOG.info("Fix termed id for graph {}", uri.getGraphURI());
 
             var graphURI = NodeFactory.createURI(uri.getGraphURI());
@@ -213,8 +213,8 @@ public class TermedMigrationService {
             });
         }
         renamed.forEach(r -> {
-            var resourceURI = TerminologyURI.createConceptURI(model.getPrefix(), r).getResourceURI();
-            var newURI = TerminologyURI.createConceptURI(model.getPrefix(), "a" + r).getResourceURI();
+            var resourceURI = TerminologyURI.Factory.createConceptURI(model.getPrefix(), r).getResourceURI();
+            var newURI = TerminologyURI.Factory.createConceptURI(model.getPrefix(), "a" + r).getResourceURI();
 
             LOG.info("Rename resource starting with digit {}", resourceURI);
             ResourceUtils.renameResource(model.getResource(resourceURI), newURI);

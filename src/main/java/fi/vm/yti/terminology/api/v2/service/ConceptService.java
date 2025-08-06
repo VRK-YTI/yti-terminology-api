@@ -60,7 +60,7 @@ public class ConceptService {
     public ConceptInfoDTO get(String prefix, String conceptIdentifier) {
         var model = repository.fetchByPrefix(prefix);
 
-        var resourceURI = TerminologyURI.createConceptURI(prefix, conceptIdentifier).getResourceURI();
+        var resourceURI = TerminologyURI.Factory.createConceptURI(prefix, conceptIdentifier).getResourceURI();
         if (!model.containsId(conceptIdentifier)) {
             throw new ResourceNotFoundException(resourceURI);
         }
@@ -139,7 +139,7 @@ public class ConceptService {
         var user = authorizationManager.getUser();
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptURI(prefix, dto.getIdentifier()).getResourceURI();
+        var resourceURI = TerminologyURI.Factory.createConceptURI(prefix, dto.getIdentifier()).getResourceURI();
 
         if (repository.resourceExistsInGraph(model.getGraphURI(), resourceURI)) {
             throw new ResourceExistsException(dto.getIdentifier(), model.getGraphURI());
@@ -159,7 +159,7 @@ public class ConceptService {
         var user = authorizationManager.getUser();
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptURI(prefix, conceptIdentifier).getResourceURI();
+        var resourceURI = TerminologyURI.Factory.createConceptURI(prefix, conceptIdentifier).getResourceURI();
 
         if (!repository.resourceExistsInGraph(model.getGraphURI(), resourceURI)) {
             throw new ResourceNotFoundException(resourceURI);
@@ -176,7 +176,7 @@ public class ConceptService {
         var model = repository.fetchByPrefix(prefix);
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptURI(prefix, conceptIdentifier).getResourceURI();
+        var resourceURI = TerminologyURI.Factory.createConceptURI(prefix, conceptIdentifier).getResourceURI();
 
         if (!repository.resourceExistsInGraph(model.getGraphURI(), resourceURI)) {
             throw new ResourceNotFoundException(resourceURI);
@@ -192,7 +192,7 @@ public class ConceptService {
     }
 
     public boolean exists(String prefix, String conceptIdentifier) {
-        var u = TerminologyURI.createConceptURI(prefix, conceptIdentifier);
+        var u = TerminologyURI.Factory.createConceptURI(prefix, conceptIdentifier);
         return repository.resourceExistsInGraph(u.getGraphURI(), u.getResourceURI());
     }
 
