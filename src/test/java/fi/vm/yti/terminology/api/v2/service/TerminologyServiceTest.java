@@ -192,7 +192,7 @@ class TerminologyServiceTest {
 
     @Test
     void testExportIncomplete() {
-        TerminologyURI uri = TerminologyURI.createTerminologyURI(PREFIX);
+        TerminologyURI uri = TerminologyURI.Factory.createTerminologyURI(PREFIX);
 
         var model = ModelFactory.createDefaultModel();
         model.createResource(uri.getModelResourceURI())
@@ -211,7 +211,7 @@ class TerminologyServiceTest {
 
     @Test
     void testFilterEditorialNotes() {
-        TerminologyURI uri = TerminologyURI.createConceptURI(PREFIX, "concept-0");
+        TerminologyURI uri = TerminologyURI.Factory.createConceptURI(PREFIX, "concept-0");
 
         var model = ModelFactory.createDefaultModel();
         model.createResource(uri.getModelResourceURI())

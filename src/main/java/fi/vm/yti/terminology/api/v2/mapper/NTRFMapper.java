@@ -6,6 +6,7 @@ import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.common.util.ModelWrapper;
+import fi.vm.yti.common.validator.ValidationConstants;
 import fi.vm.yti.security.YtiUser;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptDTO;
@@ -53,6 +54,20 @@ public class NTRFMapper {
             }
         }
     }
+
+    // This is a very specific bit of validation for the NTRF import, which does not include any of
+    // the other checks from ConceptValidator. The identifier is checked for correctness to avoid issues with indexing.
+    private static void validateConceptIdentifier(ConceptDTO concept) {
+        var id = concept.getIdentifier();
+
+        if (id != null &&
+                (id.length() < ValidationConstants.PREFIX_MIN_LENGTH ||
+                        id.length() > ValidationConstants.PREFIX_MAX_LENGTH ||
+                        !id.matches(ValidationConstants.RESOURCE_IDENTIFIER_REGEX))) {
+            throw new IllegalArgumentException("Invalid identifier: " + id);
+        }
+    }
+
     private static void mapConcept(ModelWrapper model, RECORD concept, YtiUser user) {
         var resource = model.getResourceById(concept.getNumb());
         var conceptDTO = xmlToDTO(concept, model);
@@ -60,6 +75,8 @@ public class NTRFMapper {
         if (conceptDTO == null) {
             return;
         }
+
+        validateConceptIdentifier(conceptDTO);
 
         if (resource.listProperties().hasNext()) {
             ConceptMapper.dtoToUpdateModel(model, concept.getNumb(), conceptDTO, user);
@@ -244,7 +261,7 @@ public class NTRFMapper {
     private static String fixURI(String uri, String prefix) {
         if (uri.startsWith("#")) {
             var identifier = uri.substring(1);
-            return TerminologyURI.createConceptURI(prefix, identifier).getResourceURI();
+            return TerminologyURI.Factory.createConceptURI(prefix, identifier).getResourceURI();
         } else if (uri.contains("uri.suomi.fi/terminology")) {
             return uri.replaceAll("^https?://uri.suomi.fi/terminology/", Constants.TERMINOLOGY_NAMESPACE);
         } else {
@@ -434,9 +451,9 @@ public class NTRFMapper {
             var resourceId = href.substring(1);
             var res = model.getResourceById(resourceId);
             if (MapperUtils.hasType(res, SKOS.Collection)) {
-                href = TerminologyURI.createConceptCollectionURI(model.getPrefix(), resourceId).getResourceURI();
+                href = TerminologyURI.Factory.createConceptCollectionURI(model.getPrefix(), resourceId).getResourceURI();
             } else {
-                href = TerminologyURI.createConceptURI(model.getPrefix(), resourceId).getResourceURI();
+                href = TerminologyURI.Factory.createConceptURI(model.getPrefix(), resourceId).getResourceURI();
             }
         }
 

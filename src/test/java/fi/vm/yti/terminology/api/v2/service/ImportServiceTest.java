@@ -65,8 +65,8 @@ class ImportServiceTest {
         verify(indexService).reindexTerminology(any(ModelWrapper.class));
 
         var savedModel = modelCaptor.getValue();
-        var concept = savedModel.getResource(TerminologyURI.createConceptURI(model.getPrefix(), "c1").getResourceURI());
-        var collection = savedModel.getResource(TerminologyURI.createConceptCollectionURI(model.getPrefix(), "collection-1").getResourceURI());
+        var concept = savedModel.getResource(TerminologyURI.Factory.createConceptURI(model.getPrefix(), "c1").getResourceURI());
+        var collection = savedModel.getResource(TerminologyURI.Factory.createConceptCollectionURI(model.getPrefix(), "collection-1").getResourceURI());
 
         assertTrue(concept.hasProperty(SKOS.prefLabel));
         assertTrue(collection.hasProperty(SKOS.member));
@@ -82,7 +82,7 @@ class ImportServiceTest {
         verify(indexService).reindexTerminology(any(ModelWrapper.class));
 
         var savedModel = modelCaptor.getValue();
-        var concept = savedModel.getResource(TerminologyURI.createConceptURI(model.getPrefix(), "concept-0").getResourceURI());
+        var concept = savedModel.getResource(TerminologyURI.Factory.createConceptURI(model.getPrefix(), "concept-0").getResourceURI());
 
         assertTrue(concept.listProperties().hasNext());
     }

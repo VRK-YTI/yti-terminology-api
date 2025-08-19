@@ -44,7 +44,7 @@ class UriResolveServiceTest {
 
     @Test
     void redirectTerminologyToSite() {
-        var uri = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var uri = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var response = service.resolve(uri, "text/html");
 
         assertTrue(response.getStatusCode().is3xxRedirection());
@@ -54,7 +54,7 @@ class UriResolveServiceTest {
 
     @Test
     void redirectResourceToSite() {
-        var uri = TerminologyURI.createConceptURI("test", "concept-1").getResourceURI();
+        var uri = TerminologyURI.Factory.createConceptURI("test", "concept-1").getResourceURI();
         mockGetResourceType();
 
         var response = service.resolve(uri, "text/html");
@@ -66,7 +66,7 @@ class UriResolveServiceTest {
 
     @Test
     void redirectTerminologyToExport() {
-        var uri = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var uri = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var response = service.resolve(uri, "text/turtle");
 
         assertTrue(response.getStatusCode().is3xxRedirection());
@@ -76,7 +76,7 @@ class UriResolveServiceTest {
 
     @Test
     void redirectResourceIdStartingWithDigit() {
-        var uri = TerminologyURI.createConceptURI("1234abc", "1234").getResourceURI();
+        var uri = TerminologyURI.Factory.createConceptURI("1234abc", "1234").getResourceURI();
         mockGetResourceType();
 
         var response = service.resolve(uri, "text/html");

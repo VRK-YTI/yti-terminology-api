@@ -19,12 +19,13 @@ public class TerminologyRepository extends BaseRepository {
 
     private final Cache<String, ModelWrapper> modelCache;
 
-    public TerminologyRepository(@Value(("${fuseki.url}")) String endpoint){
+    public TerminologyRepository(@Value(("${fuseki.url}")) String endpoint) {
         super(RDFConnection.connect(endpoint + "/terminology/get"),
                 RDFConnection.connect(endpoint + "/terminology/data"),
                 RDFConnection.connect(endpoint + "/terminology/sparql"),
                 RDFConnection.connect(endpoint + "/terminology/update")
         );
+
         this.modelCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .maximumSize(50)
@@ -55,7 +56,7 @@ public class TerminologyRepository extends BaseRepository {
     }
 
     public ModelWrapper fetchByPrefix(String prefix) {
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
         return fetch(graphURI);
     }
 }

@@ -47,7 +47,7 @@ public class UriResolveService {
             redirectURL.port(3000);
         }
 
-        var terminologyURI = TerminologyURI.fromUri(iri);
+        var terminologyURI = TerminologyURI.Factory.fromUri(iri);
 
         var prefix = getIdentifier(terminologyURI.getPrefix());
         var resourceId = getIdentifier(terminologyURI.getResourceId());
@@ -55,7 +55,7 @@ public class UriResolveService {
         if (accept != null && accept.contains(MimeTypeUtils.TEXT_HTML_VALUE)) {
             redirectURL.pathSegment("terminology", prefix);
             if (resourceId != null) {
-                var resourceType = getResourceType(TerminologyURI
+                var resourceType = getResourceType(TerminologyURI.Factory
                         .createConceptURI(prefix, resourceId)
                         .getResourceURI());
                 redirectURL.pathSegment(resourceType, resourceId);
