@@ -209,7 +209,7 @@ public class TermedDataMapper {
         uri = uri.replace(URI_SUOMI_FI, "https://iri.suomi.fi");
 
         // add 'a' to prefix if the old prefix starts with number
-        var terminologyURI = TerminologyURI.fromUri(uri);
+        var terminologyURI = TerminologyURI.Factory.fromUri(uri);
         if (terminologyURI.getPrefix() != null && Character.isDigit(terminologyURI.getPrefix().charAt(0))) {
             uri = uri.replace("/terminology/", "/terminology/a");
         }

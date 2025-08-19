@@ -73,9 +73,9 @@ class TerminologyControllerTest {
 
     private static final UUID ORGANIZATION_ID = UUID.randomUUID();
 
-    private static final String VALID_GRAPH_URI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+    private static final String VALID_GRAPH_URI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
 
-    private static final String EXISTING_GRAPH = TerminologyURI.createTerminologyURI("existing-graph").getGraphURI();
+    private static final String EXISTING_GRAPH = TerminologyURI.Factory.createTerminologyURI("existing-graph").getGraphURI();
 
     @BeforeEach
     public void setup() {

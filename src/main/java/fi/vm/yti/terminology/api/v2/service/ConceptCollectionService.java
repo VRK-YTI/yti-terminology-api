@@ -49,7 +49,7 @@ public class ConceptCollectionService {
     public ConceptCollectionInfoDTO get(String prefix, String conceptCollectionIdentifier) {
         var model = repository.fetchByPrefix(prefix);
 
-        var resourceURI = TerminologyURI.createConceptCollectionURI(prefix, conceptCollectionIdentifier).getResourceURI();
+        var resourceURI = TerminologyURI.Factory.createConceptCollectionURI(prefix, conceptCollectionIdentifier).getResourceURI();
         if (!model.containsId(conceptCollectionIdentifier)) {
             throw new ResourceNotFoundException(resourceURI);
         }
@@ -70,7 +70,7 @@ public class ConceptCollectionService {
         var user = authorizationManager.getUser();
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptCollectionURI(
+        var resourceURI = TerminologyURI.Factory.createConceptCollectionURI(
                 prefix,
                 dto.getIdentifier()).getResourceURI();
 
@@ -95,7 +95,7 @@ public class ConceptCollectionService {
         var user = authorizationManager.getUser();
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptCollectionURI(
+        var resourceURI = TerminologyURI.Factory.createConceptCollectionURI(
                         prefix,
                         conceptCollectionIdentifier)
                 .getResourceURI();
@@ -118,7 +118,7 @@ public class ConceptCollectionService {
         var model = repository.fetchByPrefix(prefix);
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var resourceURI = TerminologyURI.createConceptCollectionURI(
+        var resourceURI = TerminologyURI.Factory.createConceptCollectionURI(
                         prefix,
                         conceptCollectionIdentifier)
                 .getResourceURI();
@@ -138,7 +138,7 @@ public class ConceptCollectionService {
     }
 
     public boolean exists(String prefix, String conceptCollectionIdentifier) {
-        var u = TerminologyURI.createConceptCollectionURI(
+        var u = TerminologyURI.Factory.createConceptCollectionURI(
                 prefix,
                 conceptCollectionIdentifier);
         return repository.resourceExistsInGraph(

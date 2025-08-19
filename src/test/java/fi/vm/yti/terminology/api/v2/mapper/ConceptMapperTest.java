@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConceptMapperTest {
     @Test
     void testMapConceptToModel() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
         var concept = getConceptData();
@@ -65,7 +65,7 @@ class ConceptMapperTest {
 
     @Test
     void testMapConceptReferences() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
         var concept = getConceptData();
@@ -98,7 +98,7 @@ class ConceptMapperTest {
 
     @Test
     void testMapTermToModel() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
         var concept = getConceptData();
@@ -135,7 +135,7 @@ class ConceptMapperTest {
 
     @Test
     void testMapUpdateConcept() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", graphURI);
 
         var originalConcept = model.getResourceById("concept-1");
@@ -187,10 +187,10 @@ class ConceptMapperTest {
         dto.setSearchTerms(searchTerms);
 
         dto.setRelated(Set.of(
-                TerminologyURI.createConceptURI("test", "concept-1000").getResourceURI())
+                TerminologyURI.Factory.createConceptURI("test", "concept-1000").getResourceURI())
         );
         dto.setBroadMatch(Set.of(
-                TerminologyURI.createConceptURI("external", "concept-300").getResourceURI())
+                TerminologyURI.Factory.createConceptURI("external", "concept-300").getResourceURI())
         );
 
         ConceptMapper.dtoToUpdateModel(model, "concept-1", dto, mockUser);
@@ -240,7 +240,7 @@ class ConceptMapperTest {
 
     @Test
     void testMapConceptToDTO() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", graphURI);
 
         var dto = ConceptMapper.modelToDTO(model, "concept-1", TestUtils.mapUser);
@@ -266,12 +266,12 @@ class ConceptMapperTest {
         assertEquals("Suositettava termi", internalRef.getLabel().get("fi"));
 
         var externalRef = dto.getNarrowMatch().iterator().next();
-        assertEquals(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.getReferenceURI());
+        assertEquals(TerminologyURI.Factory.createConceptURI("ext", "concept-1").getResourceURI(), externalRef.getReferenceURI());
     }
 
     @Test
     void testMapTermToDTO() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", graphURI);
 
         var dto = ConceptMapper.modelToDTO(model, "concept-1", TestUtils.mapUser);
@@ -300,7 +300,7 @@ class ConceptMapperTest {
 
     @Test
     void mapToIndexDocument() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
 
         var dto = ConceptMapper.toIndexDocument(model, "concept-1");
@@ -319,7 +319,7 @@ class ConceptMapperTest {
 
     @Test
     void testMapRemoveConcept() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
         model.createResourceWithId("concept-test-123").addProperty(SKOS.note, "Test note");
 
@@ -327,7 +327,7 @@ class ConceptMapperTest {
 
         var dto = getConceptData();
         dto.setRelated(
-                Set.of(TerminologyURI.createConceptURI("test", "concept-test-123").getResourceURI())
+                Set.of(TerminologyURI.Factory.createConceptURI("test", "concept-test-123").getResourceURI())
         );
 
         ConceptMapper.dtoToModel(model, dto, mockUser);

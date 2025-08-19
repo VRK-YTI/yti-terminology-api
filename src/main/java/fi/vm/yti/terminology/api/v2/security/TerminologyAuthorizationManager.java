@@ -25,7 +25,7 @@ public class TerminologyAuthorizationManager extends BaseAuthorizationManagerImp
     }
 
     public boolean hasRightsToTerminology(String prefix, Model model) {
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
         return hasRightToModel(graphURI, model, Role.TERMINOLOGY_EDITOR);
     }
 }

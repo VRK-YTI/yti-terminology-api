@@ -42,7 +42,7 @@ class RDFListConversionTest {
 
     @Test
     void testConvertRDFLists() {
-        var uri = TerminologyURI.createTerminologyURI("order-test");
+        var uri = TerminologyURI.Factory.createTerminologyURI("order-test");
         var model = TestUtils.getModelFromFile("/rdf-list-conversion.ttl", uri.getGraphURI());
 
         var qs = mock(QuerySolution.class);

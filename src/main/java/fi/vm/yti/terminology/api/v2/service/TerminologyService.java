@@ -74,10 +74,10 @@ public class TerminologyService {
             // check if UUIDs is termed graph id
             var termedId = UUID.fromString(prefix);
             var graphUri = uriResolveService.resolveLegacyURL(termedId.toString());
-            uri = TerminologyURI.fromUri(graphUri);
+            uri = TerminologyURI.Factory.fromUri(graphUri);
         } catch (Exception e) {
             // ignore exception and use prefix as is
-            uri = TerminologyURI.createTerminologyURI(prefix);
+            uri = TerminologyURI.Factory.createTerminologyURI(prefix);
         }
 
         var query = new ConstructBuilder()
@@ -104,7 +104,7 @@ public class TerminologyService {
         var user = authorizationManager.getUser();
 
         var categories = frontendService.getServiceCategories();
-        var graphURI = TerminologyURI.createTerminologyURI(dto.getPrefix()).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(dto.getPrefix()).getGraphURI();
         var model = TerminologyMapper.dtoToModel(dto, graphURI, categories, user);
         terminologyRepository.put(graphURI, model);
 
@@ -119,7 +119,7 @@ public class TerminologyService {
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
         var user = authorizationManager.getUser();
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
         var categories = frontendService.getServiceCategories();
 
         TerminologyMapper.toUpdateModel(model, dto, categories, user);
@@ -133,7 +133,7 @@ public class TerminologyService {
         var model = terminologyRepository.fetchByPrefix(prefix);
         check(authorizationManager.hasRightsToTerminology(prefix, model));
 
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
 
         terminologyRepository.delete(graphURI);
 
@@ -142,7 +142,7 @@ public class TerminologyService {
     }
 
     public boolean exists(String prefix) {
-        var graphURI = TerminologyURI.createTerminologyURI(prefix).getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI(prefix).getGraphURI();
         return terminologyRepository.graphExists(graphURI);
     }
 

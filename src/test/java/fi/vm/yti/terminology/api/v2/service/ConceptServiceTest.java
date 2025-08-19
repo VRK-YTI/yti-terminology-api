@@ -74,11 +74,11 @@ class ConceptServiceTest {
 
     @Test
     void testGetConcept() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
 
         var extRefResult = ModelFactory.createDefaultModel();
-        extRefResult.createResource(TerminologyURI.createConceptURI("ext", "concept-1").getResourceURI())
+        extRefResult.createResource(TerminologyURI.Factory.createConceptURI("ext", "concept-1").getResourceURI())
                 .addProperty(SKOSXL.literalForm, ResourceFactory.createLangLiteral("Ext concept label", "fi"));
 
         when(authorizationManager.hasRightsToTerminology(eq(conceptURI.getPrefix()), any(Model.class))).thenReturn(true);
@@ -99,7 +99,7 @@ class ConceptServiceTest {
 
     @Test
     void testGetConceptNotAuthenticated() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
 
         when(authorizationManager.hasRightsToTerminology(eq(conceptURI.getPrefix()), any(Model.class))).thenReturn(false);
@@ -117,7 +117,7 @@ class ConceptServiceTest {
 
     @Test
     void testGetConceptNotFound() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
 
@@ -126,7 +126,7 @@ class ConceptServiceTest {
 
     @Test
     void testCreateConcept() throws URISyntaxException {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = new ModelWrapper(ModelFactory.createDefaultModel(), conceptURI.getGraphURI());
 
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
@@ -154,7 +154,7 @@ class ConceptServiceTest {
 
     @Test
     void testCreateConceptExists() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = new ModelWrapper(ModelFactory.createDefaultModel(), conceptURI.getGraphURI());
 
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
@@ -172,7 +172,7 @@ class ConceptServiceTest {
     @Test
     void testCreateConceptGraphNotExists() {
         var prefix = "test123";
-        var conceptURI = TerminologyURI.createConceptURI(prefix, "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI(prefix, "concept-1");
 
         when(repository.fetchByPrefix(prefix)).thenThrow(ResourceNotFoundException.class);
         when(repository.resourceExistsInGraph(conceptURI.getGraphURI(), conceptURI.getResourceURI())).thenReturn(false);
@@ -200,7 +200,7 @@ class ConceptServiceTest {
 
     @Test
     void testUpdateConcept() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-1");
         var model = new ModelWrapper(ModelFactory.createDefaultModel(), conceptURI.getGraphURI());
 
         model.createResourceWithId(conceptURI.getResourceId())
@@ -232,7 +232,7 @@ class ConceptServiceTest {
     @Test
     void testUpdateConceptNotExists() {
         var prefix = "test";
-        var conceptURI = TerminologyURI.createConceptURI(prefix, "concept-1");
+        var conceptURI = TerminologyURI.Factory.createConceptURI(prefix, "concept-1");
         var model = new ModelWrapper(ModelFactory.createDefaultModel(), conceptURI.getGraphURI());
 
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
@@ -260,7 +260,7 @@ class ConceptServiceTest {
 
     @Test
     void testDeleteConcept() {
-        var conceptURI = TerminologyURI.createConceptURI("test", "concept-2");
+        var conceptURI = TerminologyURI.Factory.createConceptURI("test", "concept-2");
         var model = TestUtils.getModelFromFile("/terminology-with-concepts.ttl", conceptURI.getGraphURI());
 
         when(repository.fetchByPrefix(conceptURI.getPrefix())).thenReturn(model);
@@ -284,7 +284,7 @@ class ConceptServiceTest {
 
     @Test
     void testChangeResourceStatus() {
-        var uri = TerminologyURI.createTerminologyURI("test");
+        var uri = TerminologyURI.Factory.createTerminologyURI("test");
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", uri.getGraphURI());
         when(repository.fetchByPrefix(uri.getPrefix())).thenReturn(model);
 

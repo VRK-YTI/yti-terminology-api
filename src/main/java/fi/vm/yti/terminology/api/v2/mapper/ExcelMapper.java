@@ -140,7 +140,7 @@ public class ExcelMapper {
                         case RELATED: {
                             getMultiLineValue(cellValue).forEach(r -> {
                                 if (!r.startsWith(Constants.TERMINOLOGY_NAMESPACE)) {
-                                    r = TerminologyURI.createConceptURI(prefix, r).getResourceURI();
+                                    r = TerminologyURI.Factory.createConceptURI(prefix, r).getResourceURI();
                                 }
                                 dto.getRelated().add(r);
                             });

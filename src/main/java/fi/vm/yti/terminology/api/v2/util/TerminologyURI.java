@@ -11,34 +11,6 @@ public class TerminologyURI extends GraphURI {
                                                               "(?<prefix>[\\w-]+)/?" +
                                                               "(?<resource>[\\w-]+)?");
 
-    public static TerminologyURI createTerminologyURI(String prefix) {
-        return new TerminologyURI(prefix);
-    }
-
-    public static TerminologyURI createConceptURI(String prefix, String conceptId) {
-        return new TerminologyURI(prefix, conceptId);
-    }
-
-    public static TerminologyURI createConceptCollectionURI(String prefix, String conceptCollectionId) {
-        return new TerminologyURI(prefix, conceptCollectionId);
-    }
-
-    public static TerminologyURI fromUri(String uri) {
-        // remove query parameters
-        uri = uri.split("\\?")[0];
-        var matcher = iriPattern.matcher(uri);
-        if (matcher.matches()) {
-            var prefix = matcher.group("prefix");
-            var resourceId = matcher.group("resource");
-
-            if (resourceId != null) {
-                return new TerminologyURI(prefix, resourceId);
-            }
-            return new TerminologyURI(prefix);
-        }
-        return new TerminologyURI(uri);
-    }
-
     private TerminologyURI(String prefix) {
         createModelURI(prefix, null);
     }
@@ -55,5 +27,35 @@ public class TerminologyURI extends GraphURI {
     @Override
     public String getModelResourceURI() {
         return Constants.TERMINOLOGY_NAMESPACE + getPrefix() + Constants.RESOURCE_SEPARATOR;
+    }
+
+    public static class Factory {
+        public static TerminologyURI createTerminologyURI(String prefix) {
+            return new TerminologyURI(prefix);
+        }
+
+        public static TerminologyURI createConceptURI(String prefix, String conceptId) {
+            return new TerminologyURI(prefix, conceptId);
+        }
+
+        public static TerminologyURI createConceptCollectionURI(String prefix, String conceptCollectionId) {
+            return new TerminologyURI(prefix, conceptCollectionId);
+        }
+
+        public static TerminologyURI fromUri(String uri) {
+            // remove query parameters
+            uri = uri.split("\\?")[0];
+            var matcher = iriPattern.matcher(uri);
+            if (matcher.matches()) {
+                var prefix = matcher.group("prefix");
+                var resourceId = matcher.group("resource");
+
+                if (resourceId != null) {
+                    return new TerminologyURI(prefix, resourceId);
+                }
+                return new TerminologyURI(prefix);
+            }
+            return new TerminologyURI(uri);
+        }
     }
 }

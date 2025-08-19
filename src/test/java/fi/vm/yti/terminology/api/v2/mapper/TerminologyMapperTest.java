@@ -33,7 +33,7 @@ class TerminologyMapperTest {
     @Test
     void mapDtoToModel() {
         var dto = new TerminologyDTO();
-        var uri = TerminologyURI.createTerminologyURI("test");
+        var uri = TerminologyURI.Factory.createTerminologyURI("test");
         dto.setPrefix(uri.getPrefix());
         dto.setGraphType(GraphType.TERMINOLOGICAL_VOCABULARY);
         dto.setLabel(Map.of("en", "Test terminology"));
@@ -64,7 +64,7 @@ class TerminologyMapperTest {
 
     @Test
     void mapDtoToUpdateModel() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
         var newOrganization = UUID.randomUUID();
         var modifiedOrig = getDate(model.getModelResource(), DCTerms.modified);
@@ -120,7 +120,7 @@ class TerminologyMapperTest {
 
     @Test
     void mapModelToDto() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
         var userMapper = TestUtils.mapUser;
@@ -153,7 +153,7 @@ class TerminologyMapperTest {
 
     @Test
     void mapIndexDto() {
-        var graphURI = TerminologyURI.createTerminologyURI("test").getGraphURI();
+        var graphURI = TerminologyURI.Factory.createTerminologyURI("test").getGraphURI();
         var model = TestUtils.getModelFromFile("/terminology-metadata.ttl", graphURI);
 
         var indexDTO = TerminologyMapper.toIndexDocument(model, TestUtils.categoryDTOs);
