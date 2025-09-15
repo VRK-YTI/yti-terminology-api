@@ -3,12 +3,14 @@ package fi.vm.yti.terminology.api.v2.mapper;
 import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.enums.GraphType;
 import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
@@ -167,6 +169,30 @@ class TerminologyMapperTest {
         assertTrue(indexDTO.getGroups().contains("P10"));
         assertTrue(indexDTO.getLanguages().containsAll(Set.of("fi", "en")));
         assertTrue(indexDTO.getOrganizations().contains(TestUtils.organizationId));
+    }
+
+    @Test
+    void mapToTerminologyCopy() {
+        var originalPrefix = "test";
+        var newPrefix = "new";
+        var originalGraphURI = TerminologyURI.Factory.createTerminologyURI(originalPrefix).getGraphURI();
+        var newGraphURI = TerminologyURI.Factory.createTerminologyURI(newPrefix).getGraphURI();
+        var model = TestUtils.getModelFromFile("/terminology-with-concept-collections.ttl", originalGraphURI);
+
+        var copy = TerminologyMapper.mapToCopy(model, newPrefix);
+
+        var resource = copy.getModelResource();
+
+        assertTrue(copy.listSubjects()
+                .filterDrop(RDFNode::isAnon)
+                .toList().stream()
+                .allMatch(subject -> subject.getNameSpace().equals(newGraphURI)));
+
+        assertEquals(newGraphURI, copy.getGraphURI());
+        assertEquals(newPrefix, copy.getPrefix());
+        assertEquals(newGraphURI, MapperUtils.propertyToString(resource, DCAP.preferredXMLNamespace));
+        assertEquals(newPrefix, MapperUtils.propertyToString(resource, DCAP.preferredXMLNamespacePrefix));
+        assertEquals(originalGraphURI, MapperUtils.propertyToString(resource, SuomiMeta.copiedFrom));
     }
 
     private static LocalDateTime getDate(Resource resource, Property property) {
