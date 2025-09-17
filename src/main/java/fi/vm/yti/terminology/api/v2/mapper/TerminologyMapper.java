@@ -5,6 +5,7 @@ import fi.vm.yti.common.dto.OrganizationDTO;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.dto.ServiceCategoryDTO;
 import fi.vm.yti.common.enums.GraphType;
+import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.properties.DCAP;
 import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.util.MapperUtils;
@@ -14,9 +15,9 @@ import fi.vm.yti.terminology.api.v2.dto.TerminologyDTO;
 import fi.vm.yti.terminology.api.v2.dto.TerminologyInfoDTO;
 import fi.vm.yti.terminology.api.v2.opensearch.IndexTerminology;
 import fi.vm.yti.terminology.api.v2.property.Term;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
+import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
+import org.apache.jena.rdf.model.*;
+import org.apache.jena.util.ResourceUtils;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -144,6 +145,35 @@ public class TerminologyMapper {
         addGroups(dto, categories, modelResource);
 
         MapperUtils.addUpdateMetadata(modelResource, user);
+    }
+
+    public static ModelWrapper mapToCopy(ModelWrapper model, String newPrefix) {
+        var newURI = TerminologyURI.Factory.createTerminologyURI(newPrefix);
+        var copy = ModelFactory.createDefaultModel().add(model);
+
+        copy.listSubjects()
+                .filterDrop(RDFNode::isAnon)
+                .filterKeep(subject -> subject.getNameSpace().equals(model.getGraphURI()))
+                .forEach(subject -> {
+                    var newSubject = TerminologyURI.Factory.createConceptURI(newPrefix, subject.getLocalName());
+                    ResourceUtils.renameResource(subject, newSubject.getResourceURI());
+                });
+
+        var modelResource = copy.listSubjectsWithProperty(RDF.type, SKOS.ConceptScheme)
+                .nextOptional()
+                .orElseThrow(() -> new ResourceNotFoundException(newURI.getModelResourceURI()));
+
+        // add suffix "(Copy)" to terminology's label
+        var label = MapperUtils.localizedPropertyToMap(modelResource, SKOS.prefLabel);
+        modelResource.removeAll(SKOS.prefLabel);
+        label.forEach((lang, value) ->
+                modelResource.addProperty(SKOS.prefLabel, ResourceFactory.createLangLiteral(value + " (Copy)", lang)));
+
+        MapperUtils.updateStringProperty(modelResource, DCAP.preferredXMLNamespace, newURI.getGraphURI());
+        MapperUtils.updateStringProperty(modelResource, DCAP.preferredXMLNamespacePrefix, newURI.getPrefix());
+        MapperUtils.updateStringProperty(modelResource, SuomiMeta.copiedFrom, model.getGraphURI());
+
+        return new ModelWrapper(copy, newURI.getGraphURI());
     }
 
     private static void addGroups(TerminologyDTO dto, List<ServiceCategoryDTO> categories, Resource resource) {

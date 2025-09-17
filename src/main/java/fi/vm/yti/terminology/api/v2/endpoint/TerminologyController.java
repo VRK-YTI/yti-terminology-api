@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -88,7 +89,17 @@ public class TerminologyController {
     @Operation(summary = "Check if prefix already exists")
     @ApiResponse(responseCode = "200", description = "Boolean value indicating whether prefix")
     @GetMapping(value = "/{prefix}/exists", produces = APPLICATION_JSON_VALUE)
-    public Boolean exists(@PathVariable @Parameter(description = "Data model prefix") String prefix) {
+    public Boolean exists(@PathVariable @Parameter(description = "Terminology prefix") String prefix) {
         return terminologyService.exists(prefix);
+    }
+
+    @Operation(summary = "Create new version of terminology")
+    @ApiResponse(responseCode = "200", description = "Boolean value indicating whether prefix")
+    @PostMapping(value = "/{prefix}/createVersion", produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> createVersion(
+            @PathVariable @Parameter(description = "Terminology prefix") String prefix,
+            @RequestParam @Parameter(description = "New prefix") String newPrefix) throws URISyntaxException {
+        var newUri = terminologyService.createVersion(prefix, newPrefix);
+        return ResponseEntity.created(new URI(newUri)).build();
     }
 }

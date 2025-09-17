@@ -18,6 +18,7 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.query.Query;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.SKOS;
@@ -69,6 +70,9 @@ class TerminologyServiceTest {
 
     @Captor
     ArgumentCaptor<Model> modelCaptor;
+
+    @Captor
+    ArgumentCaptor<ModelWrapper> modelWrapperCaptor;
 
     @Captor
     ArgumentCaptor<IndexTerminology> indexCaptor;
@@ -237,6 +241,28 @@ class TerminologyServiceTest {
                 "Concept definition is missing from export");
         assertFalse(responseEntity.getBody().contains("Test note"),
                 "Editorial notes should not be exported");
+    }
+
+    @Test
+    void testMapToTerminologyCopy() {
+        var oldPrefix = "test";
+        var newPrefix = "test-1";
+
+        var result = terminologyService.createVersion(oldPrefix, newPrefix);
+
+        assertEquals(TerminologyURI.Factory.createTerminologyURI("test-1").getGraphURI(), result);
+
+        verify(terminologyRepository).put(eq(result), modelCaptor.capture());
+        verify(indexService).reindexTerminology(modelWrapperCaptor.capture());
+
+        // both saved and indexed resources should have new namespace
+        List.of(modelCaptor.getValue(), modelWrapperCaptor.getValue())
+                .forEach(model -> assertTrue(
+                        model.listSubjects()
+                                .filterDrop(RDFNode::isAnon)
+                                .toList().stream()
+                                .allMatch(s -> s.getNameSpace().equals(result))
+                ));
     }
 
     private static TerminologyDTO getValidTerminologyMetadata() {

@@ -2,6 +2,7 @@ package fi.vm.yti.terminology.api.v2.service;
 
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.enums.Status;
+import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
 import fi.vm.yti.common.properties.SuomiMeta;
 import fi.vm.yti.common.service.AuditService;
@@ -251,5 +252,24 @@ public class TerminologyService {
         countResponse.setConcepts(conceptResult);
         countResponse.setTerms(termResult);
         return countResponse;
+    }
+
+    public String createVersion(String oldPrefix, String newPrefix) {
+        var model = terminologyRepository.fetchByPrefix(oldPrefix);
+        check(authorizationManager.hasRightsToTerminology(oldPrefix, model));
+        var newGraphURI = TerminologyURI.Factory.createTerminologyURI(newPrefix).getGraphURI();
+
+        if (exists(newPrefix)) {
+            throw new ResourceExistsException(newPrefix, newGraphURI);
+        }
+
+        var copy = TerminologyMapper.mapToCopy(model, newPrefix);
+
+        terminologyRepository.put(newGraphURI, copy);
+
+        indexService.reindexTerminology(copy);
+        auditService.log(AuditService.ActionType.CREATE, newGraphURI, authorizationManager.getUser());
+
+        return newGraphURI;
     }
 }
