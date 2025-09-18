@@ -4,6 +4,7 @@ import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.opensearch.OpenSearchClientWrapper;
 import fi.vm.yti.common.opensearch.OpenSearchInitializer;
 import fi.vm.yti.common.opensearch.OpenSearchUtil;
+import fi.vm.yti.common.opensearch.QueryFactoryUtils;
 import fi.vm.yti.common.service.FrontendService;
 import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptMapper;
@@ -66,6 +67,9 @@ public class IndexService extends OpenSearchInitializer {
 
     public void deleteTerminologyFromIndex(String id) {
         client.removeFromIndex(TERMINOLOGY_INDEX, id);
+
+        var query = QueryFactoryUtils.termQuery("namespace", id);
+        client.removeFromIndexWithQuery(CONCEPT_INDEX, query);
     }
 
     public void addConceptToIndex(IndexConcept indexConcept) {
