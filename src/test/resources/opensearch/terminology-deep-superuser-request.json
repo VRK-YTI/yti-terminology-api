@@ -1,35 +1,42 @@
 {
   "from": 0,
-  "highlight": {
-    "fields": {
-      "label.*": {}
-    }
-  },
+  "highlight": { "fields": { "label.*": {} } },
   "query": {
     "bool": {
-      "minimum_should_match": "1",
-      "should": [
+      "must": [
         {
-          "terms": {
-            "uri": [
-              "https://iri.test/terminology/terminology1/"
-            ]
-          }
+          "terms": { "status": ["DRAFT", "INCOMPLETE", "SUGGESTED", "VALID"] }
         },
+        { "terms": { "groups": ["P1", "P11"] } },
         {
           "bool": {
-            "must": [
+            "minimum_should_match": "1",
+            "should": [
               {
                 "bool": {
                   "minimum_should_match": "1",
                   "should": [
                     {
-                      "query_string": {
-                        "default_operator": "or",
-                        "fields": [
-                          "label.*"
-                        ],
-                        "query": "test~1 *test*"
+                      "multi_match": {
+                        "boost": 3.0,
+                        "fields": ["label.*"],
+                        "operator": "and",
+                        "query": "test"
+                      }
+                    },
+                    {
+                      "multi_match": {
+                        "boost": 2.0,
+                        "fields": ["label.*.edge"],
+                        "operator": "and",
+                        "query": "test"
+                      }
+                    },
+                    {
+                      "multi_match": {
+                        "fields": ["label.*.ngram"],
+                        "operator": "or",
+                        "query": "test"
                       }
                     }
                   ]
@@ -37,20 +44,7 @@
               },
               {
                 "terms": {
-                  "status": [
-                    "DRAFT",
-                    "INCOMPLETE",
-                    "SUGGESTED",
-                    "VALID"
-                  ]
-                }
-              },
-              {
-                "terms": {
-                  "groups": [
-                    "P1",
-                    "P11"
-                  ]
+                  "uri": ["https://iri.test/terminology/terminology1/"]
                 }
               }
             ]
