@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
+import static fi.vm.yti.common.opensearch.QueryFactoryUtils.escapeWildcard;
 
 public class ConceptQueryFactory {
     private ConceptQueryFactory() {
@@ -65,9 +66,9 @@ public class ConceptQueryFactory {
             // In case of a single word, search exact match (with fuzzy) or with wild cards. Exact match will be ranked higher.
             final var query = qs.contains(" ")
                     ? Arrays.stream(qs.split("\\s+"))
-                        .map(q -> String.format("*%s*", q))
+                        .map(q -> String.format("*%s*", escapeWildcard(q)))
                         .collect(Collectors.joining(" "))
-                    : String.format("%s~1 *%s*", qs, qs);
+                    : String.format("%s~1 *%s*", escapeWildcard(qs), escapeWildcard(qs));
 
             var definitionQuery = QueryStringQuery.of(q -> q
                     .query(query)

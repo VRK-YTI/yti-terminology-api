@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static fi.vm.yti.common.opensearch.OpenSearchUtil.logPayload;
+import static fi.vm.yti.common.opensearch.QueryFactoryUtils.labelQuery;
 
 public class TerminologyQueryFactory {
 
@@ -126,11 +127,7 @@ public class TerminologyQueryFactory {
         //
         var queryString = request.getQuery();
         if (queryString != null && !queryString.isBlank()) {
-            mustQueries.add(QueryBuilders.bool()
-                    .should(QueryFactoryUtils.labelQuery(queryString))
-                    .minimumShouldMatch("1")
-                    .build()
-                    .toQuery());
+            mustQueries.add(labelQuery(queryString));
         }
 
         //
