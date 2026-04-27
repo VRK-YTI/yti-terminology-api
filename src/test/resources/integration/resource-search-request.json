@@ -36,7 +36,7 @@
               {
                 "multi_match": {
                   "fields": ["label.*.ngram"],
-                  "operator": "or",
+                  "operator": "and",
                   "query": "Search"
                 }
               }

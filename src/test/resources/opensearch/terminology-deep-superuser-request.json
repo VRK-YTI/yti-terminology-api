@@ -3,15 +3,12 @@
   "highlight": { "fields": { "label.*": {} } },
   "query": {
     "bool": {
-      "must": [
-        {
-          "terms": { "status": ["DRAFT", "INCOMPLETE", "SUGGESTED", "VALID"] }
-        },
-        { "terms": { "groups": ["P1", "P11"] } },
+      "minimum_should_match": "1",
+      "should": [
+        { "terms": { "uri": ["https://iri.test/terminology/terminology1/"] } },
         {
           "bool": {
-            "minimum_should_match": "1",
-            "should": [
+            "must": [
               {
                 "bool": {
                   "minimum_should_match": "1",
@@ -35,7 +32,7 @@
                     {
                       "multi_match": {
                         "fields": ["label.*.ngram"],
-                        "operator": "or",
+                        "operator": "and",
                         "query": "test"
                       }
                     }
@@ -44,9 +41,10 @@
               },
               {
                 "terms": {
-                  "uri": ["https://iri.test/terminology/terminology1/"]
+                  "status": ["DRAFT", "INCOMPLETE", "SUGGESTED", "VALID"]
                 }
-              }
+              },
+              { "terms": { "groups": ["P1", "P11"] } }
             ]
           }
         }

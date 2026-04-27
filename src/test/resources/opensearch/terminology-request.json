@@ -9,8 +9,6 @@
             "must_not": [{ "term": { "status": { "value": "INCOMPLETE" } } }]
           }
         },
-        { "terms": { "status": ["VALID"] } },
-        { "terms": { "groups": ["P1", "P11"] } },
         {
           "bool": {
             "minimum_should_match": "1",
@@ -34,13 +32,15 @@
               {
                 "multi_match": {
                   "fields": ["label.*.ngram"],
-                  "operator": "or",
+                  "operator": "and",
                   "query": "test"
                 }
               }
             ]
           }
-        }
+        },
+        { "terms": { "status": ["VALID"] } },
+        { "terms": { "groups": ["P11", "P1"] } }
       ]
     }
   },
