@@ -63,12 +63,12 @@ public class ConceptQueryFactory {
             var qs = queryString.trim();
 
             // If there are spaces in the query, add quotations to search with an exact phrase.
-            // In case of a single word, search exact match (with fuzzy) or with wild cards. Exact match will be ranked higher.
+            // In case of a single word, search exact match or with wild cards. Exact match will be ranked higher.
             final var query = qs.contains(" ")
                     ? Arrays.stream(qs.split("\\s+"))
                         .map(q -> String.format("*%s*", escapeWildcard(q)))
                         .collect(Collectors.joining(" "))
-                    : String.format("%s~1 *%s*", escapeWildcard(qs), escapeWildcard(qs));
+                    : String.format("*%s*", escapeWildcard(qs));
 
             var definitionQuery = QueryStringQuery.of(q -> q
                     .query(query)
