@@ -1,11 +1,6 @@
 {
   "from": 0,
-  "size": 100,
-  "highlight": {
-    "fields": {
-      "label.*": {}
-    }
-  },
+  "highlight": { "fields": { "label.*": {} } },
   "query": {
     "bool": {
       "minimum_should_match": "1",
@@ -15,9 +10,7 @@
             "must": [
               {
                 "terms": {
-                  "uri": [
-                    "https://iri.test/terminology/terminology1/"
-                  ]
+                  "uri": ["https://iri.test/terminology/terminology1/"]
                 }
               },
               {
@@ -34,13 +27,7 @@
                     {
                       "bool": {
                         "must_not": [
-                          {
-                            "term": {
-                              "status": {
-                                "value": "INCOMPLETE"
-                              }
-                            }
-                          }
+                          { "term": { "status": { "value": "INCOMPLETE" } } }
                         ]
                       }
                     }
@@ -67,13 +54,7 @@
                     {
                       "bool": {
                         "must_not": [
-                          {
-                            "term": {
-                              "status": {
-                                "value": "INCOMPLETE"
-                              }
-                            }
-                          }
+                          { "term": { "status": { "value": "INCOMPLETE" } } }
                         ]
                       }
                     }
@@ -85,12 +66,26 @@
                   "minimum_should_match": "1",
                   "should": [
                     {
-                      "query_string": {
-                        "default_operator": "or",
-                        "fields": [
-                          "label.*"
-                        ],
-                        "query": "test~1 *test*"
+                      "multi_match": {
+                        "boost": 3.0,
+                        "fields": ["label.*"],
+                        "operator": "and",
+                        "query": "test"
+                      }
+                    },
+                    {
+                      "multi_match": {
+                        "boost": 2.0,
+                        "fields": ["label.*.edge"],
+                        "operator": "and",
+                        "query": "test"
+                      }
+                    },
+                    {
+                      "multi_match": {
+                        "fields": ["label.*.ngram"],
+                        "operator": "and",
+                        "query": "test"
                       }
                     }
                   ]
@@ -98,26 +93,15 @@
               },
               {
                 "terms": {
-                  "status": [
-                    "DRAFT",
-                    "INCOMPLETE",
-                    "SUGGESTED",
-                    "VALID"
-                  ]
+                  "status": ["DRAFT", "INCOMPLETE", "SUGGESTED", "VALID"]
                 }
               },
-              {
-                "terms": {
-                  "groups": [
-                    "P11",
-                    "P1"
-                  ]
-                }
-              }
+              { "terms": { "groups": ["P1", "P11"] } }
             ]
           }
         }
       ]
     }
-  }
+  },
+  "size": 100
 }
