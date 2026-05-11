@@ -83,10 +83,9 @@ public class TerminologyQueryFactory {
             Set<String> additionalTerminologyUris,
             Set<UUID> privilegedOrganizations) {
 
-        // separate sections within should for the user query and
-        // terminologies from deep search results
-        var shouldQueries = new ArrayList<Query>();
         var mustQueries = new ArrayList<Query>();
+        // label query is kept separate so it can be combined with deep search results as alternatives
+        Query textMatchQuery = null;
 
         var excludeIncomplete = new ArrayList<Query>();
 
@@ -127,7 +126,7 @@ public class TerminologyQueryFactory {
         //
         var queryString = request.getQuery();
         if (queryString != null && !queryString.isBlank()) {
-            mustQueries.add(labelQuery(queryString));
+            textMatchQuery = labelQuery(queryString);
         }
 
         //
@@ -192,10 +191,10 @@ public class TerminologyQueryFactory {
         }
 
         //
-        // Results from deep concept search
+        // Combine label query and deep concept search results.
         //
         if (additionalTerminologyUris != null && !additionalTerminologyUris.isEmpty()) {
-            var additionalTerminologyQuery = TermsQuery.of(q -> q
+            var deepSearchQuery = TermsQuery.of(q -> q
                             .field("uri")
                             .terms(t -> t.value(additionalTerminologyUris
                                     .stream()
@@ -203,51 +202,30 @@ public class TerminologyQueryFactory {
                                     .toList())))
                     .toQuery();
 
-
-            // exclude incomplete terminologies also from additional terminology list
-            if (!isSuperUser) {
-                var additionalTerminologyQueries = new ArrayList<Query>();
-                additionalTerminologyQueries.add(additionalTerminologyQuery);
-
-                additionalTerminologyQueries.add(
-                        QueryBuilders.bool()
-                                .should(excludeIncomplete)
-                                .minimumShouldMatch("1")
-                                .build().toQuery());
-
-                shouldQueries.add(QueryBuilders.bool()
-                        .must(additionalTerminologyQueries)
-                        .build()
-                        .toQuery());
-            } else {
-                shouldQueries.add(additionalTerminologyQuery);
+            var textMatchAlternatives = new ArrayList<Query>();
+            if (textMatchQuery != null) {
+                textMatchAlternatives.add(textMatchQuery);
             }
+            textMatchAlternatives.add(deepSearchQuery);
+
+            mustQueries.add(QueryBuilders.bool()
+                    .should(textMatchAlternatives)
+                    .minimumShouldMatch("1")
+                    .build().toQuery());
+        } else if (textMatchQuery != null) {
+            mustQueries.add(textMatchQuery);
         }
 
         //
         // Construct final query
         //
-        Query mustQuery;
+        if (mustQueries.isEmpty()) {
+            return QueryBuilders.matchAll().build().toQuery();
+        }
         if (mustQueries.size() == 1) {
-            mustQuery = mustQueries.get(0);
-        } else if (mustQueries.size() > 1) {
-            mustQuery = QueryBuilders.bool().must(mustQueries).build().toQuery();
-        } else {
-            mustQuery = QueryBuilders.matchAll().build().toQuery();
+            return mustQueries.get(0);
         }
-
-        Query shouldQuery = null;
-        if (!shouldQueries.isEmpty()) {
-            shouldQueries.add(mustQuery);
-            shouldQuery = QueryBuilders
-                    .bool()
-                    .should(shouldQueries)
-                    .minimumShouldMatch("1")
-                    .build()
-                    .toQuery();
-        }
-
-        return shouldQuery != null ? shouldQuery : mustQuery;
+        return QueryBuilders.bool().must(mustQueries).build().toQuery();
     }
 
     public static SearchRequest createMatchingTerminologiesQuery(
