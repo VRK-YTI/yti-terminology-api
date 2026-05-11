@@ -219,9 +219,6 @@ public class TerminologyQueryFactory {
         //
         // Construct final query
         //
-        if (mustQueries.isEmpty()) {
-            return QueryBuilders.matchAll().build().toQuery();
-        }
         if (mustQueries.size() == 1) {
             return mustQueries.get(0);
         }
