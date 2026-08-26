@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
@@ -75,10 +76,9 @@ public class ConceptCollectionService {
     }
 
     private static Comparator<ConceptCollectionInfoDTO> byLabel(String language) {
-        var lang = (language == null || language.isBlank()) ? "fi" : language;
+        var lang = (language == null || language.isBlank()) ? Constants.DEFAULT_LANGUAGE : language;
         var collator = Collator.getInstance(Locale.forLanguageTag(lang));
         collator.setStrength(Collator.SECONDARY);
-
         return Comparator
                 .comparing(
                         (ConceptCollectionInfoDTO dto) -> pickLabel(dto.getLabel(), lang),
@@ -90,7 +90,7 @@ public class ConceptCollectionService {
         if (labels == null || labels.isEmpty()) {
             return null;
         }
-        return Stream.of(lang, "fi", "en")
+        return Stream.of(lang, Constants.DEFAULT_LANGUAGE, "en")
                 .map(labels::get)
                 .filter(Objects::nonNull)
                 .findFirst()
