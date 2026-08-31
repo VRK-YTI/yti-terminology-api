@@ -1,5 +1,6 @@
 package fi.vm.yti.terminology.api.v2.service;
 
+import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
@@ -14,6 +15,12 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,12 +45,15 @@ public class ConceptCollectionService {
         this.auditService = new AuditService("CONCEPTCOLLECTION");
     }
 
-    public List<ConceptCollectionInfoDTO> list(String prefix) {
+    public List<ConceptCollectionInfoDTO> list(String prefix, String sortLang) {
         var model = repository.fetchByPrefix(prefix);
 
         return model.listSubjectsWithProperty(RDF.type, SKOS.Collection)
-            .mapWith(s -> ConceptCollectionMapper.modelToDTO(model, s.getLocalName(), null))
-            .toList();
+                .mapWith(s -> ConceptCollectionMapper.modelToDTO(model, s.getLocalName(), null))
+                .toList()
+                .stream()
+                .sorted(byLabel(sortLang))
+                .toList();
     }
 
     public ConceptCollectionInfoDTO get(String prefix, String conceptCollectionIdentifier) {
@@ -63,6 +73,32 @@ public class ConceptCollectionService {
                 model,
                 conceptCollectionIdentifier,
                 mapUser);
+    }
+
+    private static Comparator<ConceptCollectionInfoDTO> byLabel(String language) {
+        var lang = (language == null || language.isBlank()) ? Constants.DEFAULT_LANGUAGE : language;
+        var collator = Collator.getInstance(Locale.forLanguageTag(lang));
+        collator.setStrength(Collator.SECONDARY);
+        return Comparator
+                .comparing(
+                        (ConceptCollectionInfoDTO dto) -> pickLabel(dto.getLabel(), lang),
+                        Comparator.<String>nullsLast(collator::compare))
+                .thenComparing(ConceptCollectionInfoDTO::getIdentifier);
+    }
+
+    private static String pickLabel(Map<String, String> labels, String lang) {
+        if (labels == null || labels.isEmpty()) {
+            return null;
+        }
+        return Stream.of(lang, Constants.DEFAULT_LANGUAGE, "en")
+                .map(labels::get)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> labels.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(Map.Entry::getValue)
+                        .findFirst()
+                        .orElse(null));
     }
 
     public URI create(String prefix, ConceptCollectionDTO dto) throws URISyntaxException {
