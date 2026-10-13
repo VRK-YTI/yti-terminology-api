@@ -35,8 +35,10 @@ public class ConceptCollectionController {
             @ApiResponse(responseCode = "200", description = "Concept collections fetched successfully"),
     })
     @GetMapping(path = "/{prefix}")
-    public List<ConceptCollectionInfoDTO> list(@PathVariable @Parameter(description = "Terminology prefix") String prefix) {
-        return conceptCollectionService.list(prefix);
+    public List<ConceptCollectionInfoDTO> list(
+            @PathVariable @Parameter(description = "Terminology prefix") String prefix,
+            @RequestParam(required = false) @Parameter(description = "Alphabetical sorting language") String sortLang) {
+        return conceptCollectionService.list(prefix, sortLang);
     }
 
     @Operation(summary = "Get concept collection information")
