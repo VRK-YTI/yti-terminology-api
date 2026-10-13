@@ -215,12 +215,16 @@ public class ConceptMapper {
     }
 
     private static List<String> getIndexedTerm(Resource resource, Property property) {
-        return resource.listProperties(property)
-                .mapWith(Statement::getResource)
-                .toList().stream()
-                    .filter(r -> r.hasProperty(SKOSXL.literalForm))
-                    .map(r -> r.getProperty(SKOSXL.literalForm).getString())
-                    .toList();
+        var orderProperty = orderProperties.get(property.getLocalName());
+
+        var termResources = orderProperty != null && resource.hasProperty(orderProperty)
+                ? MapperUtils.getResourceList(resource, orderProperty)
+                : resource.listProperties(property).mapWith(Statement::getResource).toList();
+
+        return termResources.stream()
+                .filter(r -> r.hasProperty(SKOSXL.literalForm))
+                .map(r -> r.getProperty(SKOSXL.literalForm).getString())
+                .toList();
     }
 
     private static Set<ConceptReferenceInfoDTO> mapConceptReferencesDTO(Model model, Resource resource, Property property) {
@@ -381,11 +385,24 @@ public class ConceptMapper {
 
         var terms = new ArrayList<TermDTO>();
 
-        var termResources = termProperties.contains(property)
-            ? resource.listProperties(property).mapWith(Statement::getResource).toList()
-            : MapperUtils.getResourceList(resource, property);
+        var termResources = new ArrayList<Resource>();
+        var orderProperty = orderProperties.get(property.getLocalName());
 
-        termResources.forEach(termResource -> {
+        if (orderProperty != null && resource.hasProperty(orderProperty)) {
+            termResources.addAll(MapperUtils.getResourceList(resource, orderProperty));
+        }
+
+        resource.listProperties(property)
+                .mapWith(Statement::getResource)
+                .forEachRemaining(r -> {
+                    if (!termResources.contains(r)) {
+                        termResources.add(r);
+                    }
+                });
+
+        termResources.stream()
+                .filter(r -> r.hasProperty(SKOSXL.literalForm))
+                .forEach(termResource -> {
             var label = termResource.getProperty(SKOSXL.literalForm).getObject().asLiteral();
 
             var term = new TermDTO();

@@ -4,6 +4,7 @@ import fi.vm.yti.common.enums.Status;
 import fi.vm.yti.common.util.MapperUtils;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.TermDTO;
 import fi.vm.yti.terminology.api.v2.enums.TermConjugation;
 import fi.vm.yti.terminology.api.v2.enums.TermFamily;
 import fi.vm.yti.terminology.api.v2.enums.WordClass;
@@ -72,7 +73,20 @@ class NTRFMapperTest {
         assertEquals("Test term recommended FI", MapperUtils.localizedPropertyToMap(recommendedTermFI, SKOSXL.literalForm).get("fi"));
 
         // synonym EN
-        assertEquals(2, synonymEN.size());
+        assertEquals(3, synonymEN.size());
+        assertEquals(
+                List.of("Test synonym 1", "Test synonym 2", "Test synonym 3"),
+                synonymEN.stream()
+                        .map(r -> MapperUtils.localizedPropertyToMap(r, SKOSXL.literalForm).get("en"))
+                        .toList());
+
+        var dto = ConceptMapper.modelToDTO(model, "c100", TestUtils.mapUser);
+        assertEquals(
+                List.of("Test synonym 1", "Test synonym 2", "Test synonym 3"),
+                dto.getSynonyms().stream()
+                    .filter(t -> "en".equals(t.getLanguage()))
+                    .map(TermDTO::getLabel)
+                    .toList());
 
         assertEquals(1, getTerm(concept, SKOS.hiddenLabel, "en").size());
         assertEquals(2, getTerm(concept, Term.notRecommendedSynonym, "en").size());

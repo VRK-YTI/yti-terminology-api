@@ -22,6 +22,9 @@
             <SY>
                 <TERM>Test synonym 2</TERM>
             </SY>
+            <SY>
+                <TERM>Test synonym 3</TERM>
+            </SY>
             <DTE stat="RETIRED">
                 <EQUI value="broader">test</EQUI>
                 <TERM>Not recommended term 1</TERM>
