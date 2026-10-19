@@ -1,6 +1,5 @@
 package fi.vm.yti.terminology.api.v2.service;
 
-import fi.vm.yti.common.Constants;
 import fi.vm.yti.common.dto.ResourceCommonInfoDTO;
 import fi.vm.yti.common.exception.ResourceExistsException;
 import fi.vm.yti.common.exception.ResourceNotFoundException;
@@ -17,10 +16,10 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
-import java.text.Collator;
-import java.util.*;
+
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import java.net.URI;
 import java.net.URISyntaxException;
