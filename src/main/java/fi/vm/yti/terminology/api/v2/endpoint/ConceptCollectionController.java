@@ -48,9 +48,11 @@ public class ConceptCollectionController {
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE)}),
     })
     @GetMapping(path = "/{prefix}/{collectionIdentifier}", produces = APPLICATION_JSON_VALUE)
-    public ConceptCollectionInfoDTO get(@PathVariable @Parameter(description = "Terminology prefix") String prefix,
-                                        @PathVariable @Parameter(description = "Collection identifier") String collectionIdentifier) {
-        return conceptCollectionService.get(prefix, collectionIdentifier);
+    public ConceptCollectionInfoDTO get(
+            @PathVariable @Parameter(description = "Terminology prefix") String prefix,
+            @PathVariable @Parameter(description = "Collection identifier") String collectionIdentifier,
+            @RequestParam(required = false) @Parameter(description = "Alphabetical sorting language for members") String sortLang) {
+        return conceptCollectionService.get(prefix, collectionIdentifier, sortLang);
     }
 
     @Operation(summary = "Create a new concept collection to terminology")

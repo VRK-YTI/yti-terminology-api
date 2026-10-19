@@ -8,23 +8,22 @@ import fi.vm.yti.common.service.AuditService;
 import fi.vm.yti.common.service.GroupManagementService;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
 import fi.vm.yti.terminology.api.v2.mapper.ConceptCollectionMapper;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
+import fi.vm.yti.terminology.api.v2.util.LabelSorting;
 import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
 import java.text.Collator;
-import java.util.Comparator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.function.Consumer;
 
 import static fi.vm.yti.security.AuthorizationException.check;
@@ -52,11 +51,11 @@ public class ConceptCollectionService {
                 .mapWith(s -> ConceptCollectionMapper.modelToDTO(model, s.getLocalName(), null))
                 .toList()
                 .stream()
-                .sorted(byLabel(sortLang))
+                .sorted(LabelSorting.byLabel(sortLang, ConceptCollectionInfoDTO::getLabel, ConceptCollectionInfoDTO::getIdentifier))
                 .toList();
     }
 
-    public ConceptCollectionInfoDTO get(String prefix, String conceptCollectionIdentifier) {
+    public ConceptCollectionInfoDTO get(String prefix, String conceptCollectionIdentifier, String sortLang) {
         var model = repository.fetchByPrefix(prefix);
 
         var resourceURI = TerminologyURI.Factory.createConceptCollectionURI(prefix, conceptCollectionIdentifier).getResourceURI();
@@ -69,36 +68,16 @@ public class ConceptCollectionService {
             mapUser = groupManagementService.mapUser();
         }
 
-        return ConceptCollectionMapper.modelToDTO(
-                model,
-                conceptCollectionIdentifier,
-                mapUser);
-    }
+        var dto = ConceptCollectionMapper.modelToDTO(model, conceptCollectionIdentifier, mapUser);
 
-    private static Comparator<ConceptCollectionInfoDTO> byLabel(String language) {
-        var lang = (language == null || language.isBlank()) ? Constants.DEFAULT_LANGUAGE : language;
-        var collator = Collator.getInstance(Locale.forLanguageTag(lang));
-        collator.setStrength(Collator.SECONDARY);
-        return Comparator
-                .comparing(
-                        (ConceptCollectionInfoDTO dto) -> pickLabel(dto.getLabel(), lang),
-                        Comparator.<String>nullsLast(collator::compare))
-                .thenComparing(ConceptCollectionInfoDTO::getIdentifier);
-    }
-
-    private static String pickLabel(Map<String, String> labels, String lang) {
-        if (labels == null || labels.isEmpty()) {
-            return null;
+        if (sortLang != null && !sortLang.isBlank()) {
+            dto.setMembers(dto.getMembers().stream()
+                    .sorted(LabelSorting.byLabel(sortLang,
+                            ConceptReferenceInfoDTO::getLabel,
+                            ConceptReferenceInfoDTO::getIdentifier))
+                    .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
-        return Stream.of(lang, Constants.DEFAULT_LANGUAGE, "en")
-                .map(labels::get)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElseGet(() -> labels.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .map(Map.Entry::getValue)
-                        .findFirst()
-                        .orElse(null));
+        return dto;
     }
 
     public URI create(String prefix, ConceptCollectionDTO dto) throws URISyntaxException {
