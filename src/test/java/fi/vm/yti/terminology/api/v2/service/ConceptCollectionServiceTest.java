@@ -7,6 +7,7 @@ import fi.vm.yti.common.util.ModelWrapper;
 import fi.vm.yti.security.AuthorizationException;
 import fi.vm.yti.terminology.api.v2.TestUtils;
 import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionDTO;
+import fi.vm.yti.terminology.api.v2.dto.ConceptCollectionInfoDTO;
 import fi.vm.yti.terminology.api.v2.dto.ConceptReferenceInfoDTO;
 import fi.vm.yti.terminology.api.v2.repository.TerminologyRepository;
 import fi.vm.yti.terminology.api.v2.security.TerminologyAuthorizationManager;
@@ -17,6 +18,9 @@ import org.apache.jena.vocabulary.SKOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +83,8 @@ class ConceptCollectionServiceTest {
 
         var dto = conceptCollectionService.get(
                 conceptCollectionURI.getPrefix(),
-                conceptCollectionURI.getResourceId());
+                conceptCollectionURI.getResourceId(),
+                null);
 
         assertFalse(dto.getLabel().isEmpty());
         assertFalse(dto.getDescription().isEmpty());
@@ -107,7 +112,8 @@ class ConceptCollectionServiceTest {
 
         var dto = conceptCollectionService.get(
                 conceptCollectionURI.getPrefix(),
-                conceptCollectionURI.getResourceId());
+                conceptCollectionURI.getResourceId(),
+                null);
 
         assertFalse(dto.getLabel().isEmpty());
         assertFalse(dto.getDescription().isEmpty());
@@ -137,7 +143,62 @@ class ConceptCollectionServiceTest {
                 ResourceNotFoundException.class,
                 () -> conceptCollectionService.get(
                         "test",
-                        "foo"));
+                        "foo",
+                        null));
+    }
+
+    @Test
+    void testGetConceptCollectionMembersSortedFinnish() {
+        var model = getUnorderedCollectionModel();
+        when(repository.fetchByPrefix("test")).thenReturn(model);
+
+        var dto = conceptCollectionService.get("test", "collection-2", "fi");
+
+        // å, ä and ö sort after z in Finnish. Equal labels are ordered by identifier.
+        // concept-d has only a Swedish label, which is used as a fallback
+        assertEquals(
+                List.of("concept-c", "concept-b", "concept-e", "concept-a", "concept-d"),
+                memberIds(dto));
+    }
+
+    @Test
+    void testGetConceptCollectionMembersSortedEnglish() {
+        var model = getUnorderedCollectionModel();
+        when(repository.fetchByPrefix("test")).thenReturn(model);
+
+        var dto = conceptCollectionService.get("test", "collection-2", "en");
+
+        // Ö sorts as O in English. Concept-e has no English label, so its Finnish label is used
+        assertEquals(
+                List.of("concept-c", "concept-a", "concept-d", "concept-b", "concept-e"),
+                memberIds(dto));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", " "})
+    void testGetConceptCollectionMembersKeepStoredOrderWithoutSortLang(String sortLang) {
+        var model = getUnorderedCollectionModel();
+        when(repository.fetchByPrefix("test")).thenReturn(model);
+
+        var dto = conceptCollectionService.get("test", "collection-2", sortLang);
+
+        assertEquals(
+                List.of("concept-d", "concept-b", "concept-e", "concept-a", "concept-c"),
+                memberIds(dto));
+    }
+
+    private static ModelWrapper getUnorderedCollectionModel() {
+        var uri = TerminologyURI.Factory.createConceptCollectionURI("test", "collection-2");
+        return TestUtils.getModelFromFile(
+                "/terminology-with-unordered-collection.ttl",
+                uri.getGraphURI());
+    }
+
+    private static List<String> memberIds(ConceptCollectionInfoDTO dto) {
+        return dto.getMembers().stream()
+                .map(ConceptReferenceInfoDTO::getIdentifier)
+                .toList();
     }
 
     @Test

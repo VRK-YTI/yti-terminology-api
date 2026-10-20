@@ -16,11 +16,9 @@ import fi.vm.yti.terminology.api.v2.util.TerminologyURI;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
-
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.Consumer;
