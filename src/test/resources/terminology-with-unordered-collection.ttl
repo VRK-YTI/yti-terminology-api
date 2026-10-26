@@ -1,0 +1,62 @@
+@prefix dcterms:    <http://purl.org/dc/terms/> .
+@prefix dcap:       <http://purl.org/ws-mmi-dc/terms/> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:       <http://www.w3.org/2004/02/skos/core#> .
+@prefix skos-xl:    <http://www.w3.org/2008/05/skos-xl#> .
+@prefix suomi-meta: <https://iri.suomi.fi/model/suomi-meta/> .
+@prefix term:       <https://iri.suomi.fi/model/term/> .
+@prefix test:       <https://iri.suomi.fi/terminology/test/> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+
+# Terminology metadata
+
+test:   rdf:type                      skos:ConceptScheme;
+        dcterms:language              "en" , "fi" , "sv";
+        dcap:preferredXMLNamespace    "https://iri.suomi.fi/terminology/test/";
+        dcap:preferredXMLNamespacePrefix
+                "test";
+        skos:prefLabel                "Testisanasto"@fi , "Test terminology"@en;
+        suomi-meta:publicationStatus  "http://uri.suomi.fi/codelist/interoperabilityplatform/interoperabilityplatform_status/code/VALID";
+        term:terminologyType          "TERMINOLOGICAL_VOCABULARY" .
+
+# Collection whose stored member order is not alphabetical in any language. Used for testing collection member sorting when building the DTO.
+#
+# Expected order with sortLang=fi: concept-c, concept-b, concept-e, concept-a, concept-d
+#   aakkoset < Zebra = zebra (tie broken by identifier) < Äyriäinen < Örn
+# Expected order with sortLang=en: concept-c, concept-a, concept-d, concept-b, concept-e
+#   Alphabet < Crustacean < Örn (sorts as "O" in English) < Zebra = zebra (fi label as fallback)
+
+test:collection-2   rdf:type    skos:Collection;
+        term:orderedMember            ( test:concept-d test:concept-b test:concept-e test:concept-a test:concept-c );
+        skos:member                   test:concept-a , test:concept-b , test:concept-c , test:concept-d , test:concept-e;
+        skos:prefLabel                "Järjestämätön kokoelma"@fi , "Unordered collection"@en;
+        dcterms:created               "2024-05-15T05:00:00.000Z"^^xsd:dateTime;
+        dcterms:modified              "2024-05-16T04:00:00.000Z"^^xsd:dateTime;
+        suomi-meta:creator            "23006bf4-4c09-4438-8224-785fdf108812";
+        suomi-meta:modifier           "23006bf4-4c09-4438-8224-785fdf108812" .
+
+test:concept-a  skos:inScheme  test:;
+        skos:prefLabel  test:term-a-fi , test:term-a-en .
+test:term-a-fi  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Äyriäinen"@fi .
+test:term-a-en  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Crustacean"@en .
+
+test:concept-b  skos:inScheme  test:;
+        skos:prefLabel  test:term-b-fi , test:term-b-en .
+test:term-b-fi  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Zebra"@fi .
+test:term-b-en  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Zebra"@en .
+
+test:concept-c  skos:inScheme  test:;
+        skos:prefLabel  test:term-c-fi , test:term-c-en .
+test:term-c-fi  rdf:type  skos-xl:Label;  skos-xl:literalForm  "aakkoset"@fi .
+test:term-c-en  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Alphabet"@en .
+
+# Swedish label only: exercises the "first entry" fallback
+test:concept-d  skos:inScheme  test:;
+        skos:prefLabel  test:term-d-sv .
+test:term-d-sv  rdf:type  skos-xl:Label;  skos-xl:literalForm  "Örn"@sv .
+
+# Same Finnish label as concept-b apart from case, no English label
+test:concept-e  skos:inScheme  test:;
+        skos:prefLabel  test:term-e-fi .
+test:term-e-fi  rdf:type  skos-xl:Label;  skos-xl:literalForm  "zebra"@fi .

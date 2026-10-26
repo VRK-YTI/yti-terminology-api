@@ -128,13 +128,27 @@ public class ConceptCollectionControllerTest {
     void shouldGetConceptCollection() throws Exception {
         when(conceptCollectionService.get(
                 "test",
-                "collection-1"))
+                "collection-1",
+                null))
                 .thenReturn(new ConceptCollectionInfoDTO());
 
         this.mvc
                 .perform(get("/v2/collection/test/collection-1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
+
+        verify(conceptCollectionService).get("test", "collection-1", null);
+    }
+
+    @Test
+    void shouldPassSortLangWhenGettingConceptCollection() throws Exception {
+        this.mvc
+                .perform(get("/v2/collection/test/collection-1")
+                        .param("sortLang", "fi"))
+                .andExpect(status().isOk());
+
+        verify(conceptCollectionService).get("test", "collection-1", "fi");
+        verifyNoMoreInteractions(conceptCollectionService);
     }
 
     @Test
