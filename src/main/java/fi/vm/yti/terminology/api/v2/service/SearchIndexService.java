@@ -203,6 +203,7 @@ public class SearchIndexService {
 
             var conceptRequest = new ConceptSearchRequest();
             conceptRequest.setQuery(request.getQuery());
+            conceptRequest.setPageSize(100);
             var query = ConceptQueryFactory.createConceptQuery(
                     conceptRequest,
                     user.isSuperuser(),
