@@ -86,7 +86,7 @@ class LabelSortingTest {
                 new Item("1", Map.of("fi", "Ilta", "en", "Apple")),
                 new Item("2", Map.of("fi", "Aamu", "en", "Zebra")));
 
-        assertEquals(List.of("2¨", "1"), sortedIds(null, items));
+        assertEquals(List.of("2", "1"), sortedIds(null, items));
         assertEquals(List.of("2", "1"), sortedIds(" ", items));
     }
 
