@@ -42,7 +42,7 @@ public class ConceptQueryFactory {
 
         // use score based sorting if query string specified
         if (request.getQuery() == null || request.getQuery().isBlank()) {
-            builder.sort(QueryFactoryUtils.getLangSortOptions(request.getSortLang()));
+            builder.sort(QueryFactoryUtils.getLangSortOptionsWithFallback(request.getSortLang(), "id"));
         }
 
         var sr = builder.build();
